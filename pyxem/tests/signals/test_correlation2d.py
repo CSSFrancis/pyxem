@@ -100,6 +100,10 @@ class TestGetPower:
         assert isinstance(flat_pattern, Power2D)
         assert power is None
 
+    def test_symmetry_stem(self, flat_pattern):
+        p = flat_pattern.get_symmetry_stem()
+        np.testing.assert_array_equal(p,[1,2,6])
+
 
 class TestDecomposition:
     def test_decomposition_is_performed(self, diffraction_pattern):

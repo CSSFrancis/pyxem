@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def _correlation(z, axis=0, mask=None, wrap=True, normalize=True):
+def _correlation(z, axis=0, mask=None, wrap=True, normalize="image_mean"):
     r"""A generic function for applying a correlation with a mask.
 
     Takes a nd image and then preforms a auto-correlation on some axis.
@@ -62,7 +62,7 @@ def _correlation(z, axis=0, mask=None, wrap=True, normalize=True):
     if mask is not None:
         a = np.multiply(np.divide(a, number_unmasked), np.shape(z)[0])
 
-    if normalize:  # simplified way to calculate the normalization
+    if normalize is "image_mean":  # simplified way to calculate the normalization
         row_mean = np.mean(a, axis=axis)
         row_mean[row_mean == 0] = 1
         row_mean = np.expand_dims(row_mean, axis=axis)
@@ -114,3 +114,36 @@ def _power(z, axis=0, mask=None, wrap=True, normalize=True):
 
 def corr_to_power(z):
     return np.power(np.fft.rfft(z, axis=1), 2).real
+
+def get_interpolation_matrix(angles, angular_range, num_points):
+    def wrap_set(list, bottom, top, value):
+        if top > len(list) - 1:
+            list[bottom:] = value
+
+            list[:top % len(list)] = value
+        elif bottom < 0:
+            list[:top] = value
+            list[bottom:] = value
+        else:
+            list[bottom:top] = value
+        return list
+    print("len angles", len(angles))
+    angular_ranges = [(angle - angular_range / np.pi, angle + angular_range / np.pi) for angle in angles]
+    angular_ranges = np.multiply(angular_ranges, num_points)
+    print("number:", np.shape(angular_ranges))
+    interpolation_matrix = np.zeros((len(angular_ranges), num_points))
+    for i, angle in enumerate(angular_ranges):
+        bottom, top = int(np.ceil(angle[0])), int(np.floor(angle[1]))
+        if top > num_points:
+            top = num_points
+        res_bottom, res_top = bottom - angle[0], angle[1] - top
+        interpolation_matrix[i] = wrap_set(interpolation_matrix[i], bottom, top, 1)
+        interpolation_matrix[i] = wrap_set(interpolation_matrix[i], bottom - 1, top, res_bottom)
+        interpolation_matrix[i] = wrap_set(interpolation_matrix[i], bottom, top + 1, res_top)
+    return interpolation_matrix
+
+def symmetry_stem(signal, intepolation):
+    print(np.shape(intepolation))
+    return np.matmul(signal, np.transpose(intepolation))
+
+

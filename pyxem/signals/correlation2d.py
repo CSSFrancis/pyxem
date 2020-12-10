@@ -21,8 +21,9 @@
 from hyperspy.signals import Signal2D, BaseSignal
 from hyperspy._signals.lazy import LazySignal
 
-from pyxem.utils.correlation_utils import corr_to_power
+from pyxem.utils.correlation_utils import corr_to_power, get_interpolation_matrix,symmetry_stem
 from pyxem.signals.common_diffraction import CommonDiffraction
+import numpy as np
 
 
 class Correlation2D(Signal2D, CommonDiffraction):
@@ -107,6 +108,29 @@ class Correlation2D(Signal2D, CommonDiffraction):
         fourier_axis.offset = 0.5
         fourier_axis.scale = 1
         return power
+
+    def get_symmetry_stem(self,
+                          angular_range=0,
+                          max_symmetry=10,
+                          **kwargs,
+                          ):
+        """ Get the symmetry stem for some angular range.
+        Parameters
+        angular_range: float
+            The range of angles to integrate over.
+        symmetries: float
+            The different symmetries to test
+        duplicates: bool
+            Remove any lower order which is repeated. ie. pi/2 would only be included in the 4
+            fold intensity and not the 8 fold intensity"""
+        angles = np.unique([j/i for i in range(1,max_symmetry+1) for j in range(0, i)])
+        print(len(angles))
+        interp = get_interpolation_matrix(angles,
+                                          angular_range,
+                                          num_points=self.axes_manager.signal_axes[0].size)
+        print(len(interp))
+        sym = self.map(symmetry_stem,  intepolation=interp)
+        return sym
 
 
 class LazyCorrelation2D(LazySignal, Correlation2D):
