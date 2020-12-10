@@ -24,6 +24,7 @@ from hyperspy._signals.lazy import LazySignal
 from pyxem.utils.correlation_utils import corr_to_power, get_interpolation_matrix,symmetry_stem
 from pyxem.signals.common_diffraction import CommonDiffraction
 import numpy as np
+from fractions import Fraction as frac
 
 
 class Correlation2D(Signal2D, CommonDiffraction):
@@ -123,14 +124,15 @@ class Correlation2D(Signal2D, CommonDiffraction):
         duplicates: bool
             Remove any lower order which is repeated. ie. pi/2 would only be included in the 4
             fold intensity and not the 8 fold intensity"""
-        angles = np.unique([j/i for i in range(1,max_symmetry+1) for j in range(0, i)])
+        angles = np.unique([frac(j,i) for i in range(1,max_symmetry+1) for j in range(0, i)])
         print(len(angles))
         interp = get_interpolation_matrix(angles,
                                           angular_range,
                                           num_points=self.axes_manager.signal_axes[0].size)
         print(len(interp))
-        sym = self.map(symmetry_stem,  intepolation=interp)
-        sym.set_signal_type()
+        sym = self.map(symmetry_stem,  intepolation=interp, inplace=False)
+        sym.set_signal_type("symmetry")
+        sym.angles = angles
         return sym
 
 

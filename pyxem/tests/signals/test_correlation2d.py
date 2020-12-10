@@ -23,7 +23,7 @@ import dask.array as da
 from hyperspy.signals import Signal2D
 
 from pyxem.signals.correlation2d import Correlation2D, LazyCorrelation2D
-from pyxem.signals.symmetry_stem import SymmetrySTEM
+from pyxem.signals.symmetry2d import SymmetrySTEM
 from pyxem.signals.power2d import Power2D
 
 
