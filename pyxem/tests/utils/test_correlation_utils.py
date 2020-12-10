@@ -34,6 +34,11 @@ class TestCorrelations:
         return ones
 
     @pytest.fixture
+    def random_array(self):
+        rand_array = np.random.rand(10, 20)
+        return rand_array
+
+    @pytest.fixture
     def ones_hundred(self):
         ones = np.ones((10, 20))
         ones[0:20:2, :] = 100
@@ -43,30 +48,52 @@ class TestCorrelations:
         c = _correlation(ones_array)
         np.testing.assert_array_equal(c, np.zeros((10, 20)))
 
+    def test_correlation_random(self, random_array):
+        c = _correlation(random_array)
+        c2 = _correlation(random_array*10)
+        ra_size = random_array.shape
+        ra_size = (ra_size[0], ra_size[1]*2)
+        random_array_long = np.empty(ra_size, dtype=random_array.dtype)
+        random_array_long[:, 0::2] = random_array
+        random_array_long[:, 1::2] = random_array
+        c3 = _correlation(random_array_long)
+        assert (np.max(c) < 1)
+        assert (np.max(c) > -1)
+        np.testing.assert_array_almost_equal(c, c2)
+        np.testing.assert_array_almost_equal(c, c3[:, 0::2])
+
+    def test_correlation_axes(self, random_array):
+        c = _correlation(random_array, axis=0, normalize_axes=0)
+        c2 = _correlation(random_array.transpose(), axis=1, normalize_axes=1)
+        np.testing.assert_array_almost_equal(c, c2.transpose())
+
     def test_correlations_axis(self, ones_zero):
-        c = _correlation(ones_zero, axis=0, normalize=True)
+        c = _correlation(ones_zero, axis=0, normalize_axes=0)
         result = np.ones((10, 20))
         result[1::2, :] = -1
         np.testing.assert_array_equal(c, result)
-        c = _correlation(ones_zero, axis=0, normalize=False)
+        # Show intensity doesn't matter
+        c = _correlation(np.multiply(ones_zero,3), axis=0, normalize_axes=0)
+        np.testing.assert_array_equal(c, result)
+        # Along the axis where everything is the same... This should be equal to zero
+        c = _correlation(ones_zero, axis=1, normalize_axes=1)
         result = np.zeros((10, 20))
-        result[0::2, :] = 5
         np.testing.assert_array_almost_equal(c, result)
 
     def test_correlations_normalization(self, ones_hundred):
-        c = _correlation(ones_hundred, axis=0, normalize=True)
+        c = _correlation(ones_hundred, axis=0, normalize_axes=0)
         result = np.zeros((10, 20))
         result[1::2, :] = -0.96078816
         result[0::2, :] = 0.96078816
         np.testing.assert_array_almost_equal(c, result)
-        c = _correlation(ones_hundred, axis=1, normalize=True)
+        c = _correlation(ones_hundred, axis=1, normalize_axes=1)
         result = np.zeros((10, 20))
         np.testing.assert_array_almost_equal(c, result)
 
     def test_correlations_mask(self, ones_hundred):
         m = np.zeros((10, 20))
         m[2:4, :] = 1
-        c = _correlation(ones_hundred, axis=0, normalize=True, mask=m)
+        c = _correlation(ones_hundred, axis=0, normalize_axes=0, mask=m)
         print(c)
         result = np.zeros((10, 20))
         result[1::2, :] = -0.96078816
@@ -78,7 +105,7 @@ class TestCorrelations:
     ):  # Need to do extra checks to assure this is correct
         m = np.zeros((10, 20))
         m[2:4, :] = 1
-        c = _correlation(ones_hundred, axis=0, normalize=True, wrap=False)
+        c = _correlation(ones_hundred, axis=0, normalize_axes=0, wrap=False)
         print(c)
         result = np.zeros((10, 20))
         result[0::2, :] = 2.26087665
