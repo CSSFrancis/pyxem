@@ -23,6 +23,7 @@ import dask.array as da
 from hyperspy.signals import Signal2D
 
 from pyxem.signals.correlation2d import Correlation2D, LazyCorrelation2D
+from pyxem.signals.symmetry_stem import SymmetrySTEM
 from pyxem.signals.power2d import Power2D
 
 
@@ -102,7 +103,7 @@ class TestGetPower:
 
     def test_symmetry_stem(self, flat_pattern):
         p = flat_pattern.get_symmetry_stem()
-        np.testing.assert_array_equal(p,[1,2,6])
+        assert isinstance(p,SymmetrySTEM)
 
 
 class TestDecomposition:

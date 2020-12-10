@@ -130,6 +130,7 @@ class Correlation2D(Signal2D, CommonDiffraction):
                                           num_points=self.axes_manager.signal_axes[0].size)
         print(len(interp))
         sym = self.map(symmetry_stem,  intepolation=interp)
+        sym.set_signal_type()
         return sym
 
 
