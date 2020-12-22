@@ -566,7 +566,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             t_axis.scale = (azimuth_range[1] - azimuth_range[0]) / npt
             t_axis.offset = azimuth_range[0]
         k_axis.name = "Radius"
-        k_axis.scale = (radial_range[1] - radial_range[0]) / npt
+        k_axis.scale = ((radial_range[1] - radial_range[0])*k_axis.scale)/npt
         k_axis.units = unit
         k_axis.offset = radial_range[0]
 

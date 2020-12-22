@@ -62,6 +62,7 @@ def get_azimuthal_integrator(
 
 def _get_radial_extent(ai, shape=None, unit=None):
     """Takes an Azimuthal Integrator and calculates the domain of the output.
+    Gives this in pixels
 
     Note: this method isn't perfect.
 

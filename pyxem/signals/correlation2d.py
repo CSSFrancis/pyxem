@@ -124,7 +124,7 @@ class Correlation2D(Signal2D, CommonDiffraction):
         duplicates: bool
             Remove any lower order which is repeated. ie. pi/2 would only be included in the 4
             fold intensity and not the 8 fold intensity"""
-        angles = np.unique([frac(j,i) for i in range(1,max_symmetry+1) for j in range(0, i)])
+        angles = np.unique([frac(j,i) for i in range(1, max_symmetry+1) for j in range(0, i)])
         print(len(angles))
         interp = get_interpolation_matrix(angles,
                                           angular_range,
