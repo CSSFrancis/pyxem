@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=0):
+def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
     r"""A generic function for applying a correlation with a mask.
 
     Takes a nd image and then preforms a auto-correlation on some axis.

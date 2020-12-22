@@ -76,11 +76,13 @@ class PolarDiffraction2D(Signal2D):
         Angular correlation with a static matst for
 
         """
+        if normalize:
+            normalize_axes = 1
         correlation = self.map(
             _correlation,
             axis=1,
             mask=mask,
-            normalize=normalize,
+            normalize_axes=normalize_axes,
             inplace=inplace,
             **kwargs
         )
