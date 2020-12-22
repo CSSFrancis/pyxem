@@ -3,6 +3,7 @@ from hyperspy.signals import Signal2D
 import numpy as np
 from fractions import Fraction as frac
 
+
 class Symmetry2D(Signal2D):
     _signal_type = "symmetry"
 
