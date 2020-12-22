@@ -71,8 +71,6 @@ def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
         row_mean2[row_mean2 == 0] = 1
         row_mean1 = np.expand_dims(row_mean1, axis=normalize_axes)
         row_mean2 = np.expand_dims(row_mean2, axis=normalize_axes)
-        print("row_mean", row_mean1)
-        print("what is a", a)
         a = np.divide(np.subtract(a, row_mean1), row_mean2)
 
     if wrap is False:

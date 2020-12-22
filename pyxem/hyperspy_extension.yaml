@@ -197,6 +197,12 @@ signals:
     dtype: real
     lazy: True
     module: pyxem.signals.power2d
+  Symmetry2D:
+    signal_type: symmetry
+    signal_dimension: 2
+    dtype: real
+    lazy: False
+    module: pyxem.signals.symmetry2d
 
 components2D:
     DiffractionComponent:
