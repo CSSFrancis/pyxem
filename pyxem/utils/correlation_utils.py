@@ -120,35 +120,52 @@ def _power(z, axis=0, mask=None, wrap=True, normalize=True):
 def corr_to_power(z):
     return np.power(np.fft.rfft(z, axis=1), 2).real
 
-def get_interpolation_matrix(angles, angular_range, num_points):
-    def wrap_set(list, bottom, top, value):
-        if top > len(list) - 1:
-            list[bottom:] = value
 
-            list[:top % len(list)] = value
-        elif bottom < 0:
-            list[:top] = value
-            list[bottom:] = value
+def wrap_set_float(list, bottom, top, value):
+    """This function sets values in a list assuming that
+    the list is circular and allows for float bottom and float top
+    which are equal to the residual times that value.
+    """
+    ceiling_bottom = int(np.ceil(bottom))
+    residual_bottom = ceiling_bottom-bottom
+    floor_top = int(np.floor(top))
+    residual_top = top-floor_top
+    if floor_top > len(list) - 1:
+        list[ceiling_bottom:] = value
+        new_floor_top = floor_top % len(list)
+        list[new_floor_top] = value
+        list[new_floor_top+1] = value*residual_top
+    elif ceiling_bottom < 0:
+        list[:floor_top] = value
+        list[ceiling_bottom:] = value
+        list[ceiling_bottom-1] = value*residual_bottom
+    else:
+        list[ceiling_bottom:floor_top+1] = value
+        list[ceiling_bottom-1] = value*residual_bottom
+        if floor_top + 1 > len(list) - 1:
+            list[0] = value*residual_top
         else:
-            list[bottom:top] = value
-        return list
-    print("len angles", len(angles))
-    angular_ranges = [(angle - angular_range / np.pi, angle + angular_range / np.pi) for angle in angles]
+            list[floor_top+1] = value*residual_top
+    return list
+
+
+def get_interpolation_matrix(angles, angular_range, num_points):
+    angular_ranges = [(angle - angular_range / (2*np.pi), angle + angular_range / (2*np.pi)) for angle in angles]
     angular_ranges = np.multiply(angular_ranges, num_points)
-    print("number:", np.shape(angular_ranges))
-    interpolation_matrix = np.zeros((len(angular_ranges), num_points))
+    interpolation_matrix = np.zeros(num_points)
     for i, angle in enumerate(angular_ranges):
-        bottom, top = int(np.ceil(angle[0])), int(np.floor(angle[1]))
-        if top > num_points:
-            top = num_points
-        res_bottom, res_top = bottom - angle[0], angle[1] - top
-        interpolation_matrix[i] = wrap_set(interpolation_matrix[i], bottom, top, 1)
-        interpolation_matrix[i] = wrap_set(interpolation_matrix[i], bottom - 1, top, res_bottom)
-        interpolation_matrix[i] = wrap_set(interpolation_matrix[i], bottom, top + 1, res_top)
+        wrap_set_float(interpolation_matrix, top=angle[1], bottom=angle[0], value=1)
     return interpolation_matrix
 
-def symmetry_stem(signal, intepolation):
-    print(np.shape(intepolation))
-    return np.matmul(signal, np.transpose(intepolation))
 
+def symmetry_stem(signal, interpolation):
+    return np.matmul(signal, np.transpose(interpolation))
+
+
+def blob_finding(data, method, **kwargs):
+    """This method helps to format the output from the blob methods
+    in skimage for a more hyperspy like format using hs.markers
+    """
+    method_dict = {"log": blob_log, "dog": blob_dog, "doh": blob_doh}
+    method_dict[method]()
 

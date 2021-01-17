@@ -23,7 +23,7 @@ import dask.array as da
 from hyperspy.signals import Signal2D
 
 from pyxem.signals.correlation2d import Correlation2D, LazyCorrelation2D
-from pyxem.signals.symmetry2d import SymmetrySTEM
+#from pyxem.signals.symmetry2d import SymmetrySTEM
 from pyxem.signals.power2d import Power2D
 
 
@@ -105,6 +105,22 @@ class TestGetPower:
         p = flat_pattern.get_symmetry_stem()
         assert isinstance(p,SymmetrySTEM)
 
+class TestSymmetrySTEM:
+    @pytest.fixture
+    def sym_pattern(self):
+        sym_data = np.random.random(size=(20, 20, 20, 90))
+        sym_data[1:3, 1:3, 15:19, 45] = 10  # 2 fold
+        sym_data[1:3, 1:3, 10:15, 22:23] = 10  # 4 fold
+        sym_data[1:3, 1:3, 10:15, 67:68] = 10  # 4 fold
+        pd = Correlation2D(data=sym_data)
+        pd.axes_manager.signal_axes[0].scale = (np.pi / 45)
+        pd.axes_manager.signal_axes[0].name = "phi"
+        pd.axes_manager.signal_axes[1].scale = 2
+        pd.axes_manager.signal_axes[1].name = "k"
+        return pd
+
+    def test_find_clusters(self, sym_pattern):
+        print(sym_pattern.find_clusters())
 
 class TestDecomposition:
     def test_decomposition_is_performed(self, diffraction_pattern):

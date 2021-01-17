@@ -58,7 +58,7 @@ class Symmetry2D(Signal2D):
                         even=True,
                         unique=False):
         """ This function separates the symmetries by decomposing them
-        allowing for better and more faithful reconstruction of the symmetriesc
+        allowing for better and more faithful reconstruction of the symmetries
 
         Parameters
         even: bool

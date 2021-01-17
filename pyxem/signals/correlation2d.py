@@ -20,11 +20,15 @@
 
 from hyperspy.signals import Signal2D, BaseSignal
 from hyperspy._signals.lazy import LazySignal
+import hyperspy.drawing._markers.
 
-from pyxem.utils.correlation_utils import corr_to_power, get_interpolation_matrix,symmetry_stem
+from pyxem.utils.correlation_utils import corr_to_power,\
+    get_interpolation_matrix,\
+    symmetry_stem
 from pyxem.signals.common_diffraction import CommonDiffraction
 import numpy as np
 from fractions import Fraction as frac
+from skimage.feature import blob_dog, blob_log, blob_doh
 
 
 class Correlation2D(Signal2D, CommonDiffraction):
@@ -110,9 +114,64 @@ class Correlation2D(Signal2D, CommonDiffraction):
         fourier_axis.scale = 1
         return power
 
+    def find_clusters(self,
+                      symmetries=[1,2,4,6,8,10],
+                      angular_range=0,
+                      k_range=None,
+                      include_duplicates=False,
+                      method="log",
+                      **kwargs):
+        """ This function is for finding and extracting information about clusters
+        based on the angular symmetries. This a pretty catch all method which has
+        a couple of different operating principles.
+
+        If k_range=None the function uses a 3 dimensional version of blob finding and attempts to
+        find blobs in the 3 dimensional space, x,y,k for each symmetry.
+
+        Parameters
+        ------------
+        symmetries: list
+            The symmetries to calculate
+        include_duplicates: bool
+            Include duplicates like 2 and 4
+        method: one of "log", "dog" or "doh"
+            The `skimage.features` method for finding blobs.
+        :return:
+        """
+        method_dict = {"log": blob_log, "dog": blob_dog, "doh": blob_doh}
+        angles = [set(frac(j, i) for j in range(0, i))for i in symmetries]
+        if not include_duplicates:
+            already_used = set()
+            new_angles = []
+            for a in angles:
+                new_angles.append(a.difference(already_used))
+                already_used = already_used.union(a)
+            angles = new_angles
+        interp = [get_interpolation_matrix(a,
+                                           angular_range,
+                                           num_points=self.axes_manager.signal_axes[0].size)
+                  for a in angles]
+        signals = self.map(symmetry_stem, interpolation=interp, show_progressbar=True, inplace=False)
+        if k_range is None:
+            # 3-D signal (x,y,k) for each symmetry
+            signals = signals.transpose(navigation_axes=(2,))
+        else:
+            signals = signals.isig[:, k_range[0]:k_range[1]]
+            signals = signals.T
+        s = signals.map(method_dict[method],
+                        **kwargs,
+                        inplace=False)
+        for i in np.ndindex(s.axes_manager.navigation_shape):
+            blobs = s.inav[i].data
+            [marker. indefor b in blobs]
+
+
+
+
+
     def get_symmetry_stem(self,
                           angular_range=0,
-                          max_symmetry=10,
+                          symmetry=10,
                           **kwargs,
                           ):
         """ Get the symmetry stem for some angular range.
@@ -124,7 +183,7 @@ class Correlation2D(Signal2D, CommonDiffraction):
         duplicates: bool
             Remove any lower order which is repeated. ie. pi/2 would only be included in the 4
             fold intensity and not the 8 fold intensity"""
-        angles = np.unique([frac(j,i) for i in range(1, max_symmetry+1) for j in range(0, i)])
+        angles = np.unique([frac(j, i) for i in range(1, max_symmetry+1) for j in range(0, i)])
         print(len(angles))
         interp = get_interpolation_matrix(angles,
                                           angular_range,

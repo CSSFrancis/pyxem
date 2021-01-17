@@ -19,7 +19,7 @@
 import pytest
 import numpy as np
 
-from pyxem.utils.correlation_utils import _correlation
+from pyxem.utils.correlation_utils import _correlation,wrap_set_float, get_interpolation_matrix
 
 
 class TestCorrelations:
@@ -111,3 +111,30 @@ class TestCorrelations:
         result[0::2, :] = 2.26087665
         result[1::2, :] = -0.93478899
         np.testing.assert_array_almost_equal(c, result)
+
+    def test_wrap_set(self):
+        z = np.zeros(10)
+        wrap_set_float(z, bottom=3.5, top=6.7, value=10)
+        answer = [0., 0., 0., 5., 10., 10., 10., 7., 0., 0.]
+        np.testing.assert_array_almost_equal(z,answer)
+
+    def test_wrap_set(self):
+        z = np.zeros(10)
+        wrap_set_float(z, bottom=3.5, top=6.7, value=10)
+        answer = [0., 0., 0., 5., 10., 10., 10., 7., 0., 0.]
+        np.testing.assert_array_almost_equal(z, answer)
+
+    def test_get_interp_matrix(self):
+        angles = [0, .25, .5, .75, 1]
+        mat = get_interpolation_matrix(angles=angles, angular_range=np.pi/45, num_points=90)
+        z = np.zeros(90)
+        z[:2] = 1
+        z[-1] = 1
+        z[44:47] = 1
+        z[22:24] = 1
+        z[67:69] = 1
+        z[21] = .5
+        z[24] = .5
+        z[66] = .5
+        z[69] = .5
+        np.testing.assert_array_almost_equal(mat, z)
