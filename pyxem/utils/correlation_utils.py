@@ -1,4 +1,6 @@
 import numpy as np
+from hyperspy.drawing._markers import point
+from skimage.feature import blob_dog, blob_log, blob_doh
 
 
 def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
@@ -167,5 +169,5 @@ def blob_finding(data, method, **kwargs):
     in skimage for a more hyperspy like format using hs.markers
     """
     method_dict = {"log": blob_log, "dog": blob_dog, "doh": blob_doh}
-    method_dict[method]()
-
+    points = method_dict[method](data, **kwargs)
+    return points

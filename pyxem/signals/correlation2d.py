@@ -20,15 +20,13 @@
 
 from hyperspy.signals import Signal2D, BaseSignal
 from hyperspy._signals.lazy import LazySignal
-import hyperspy.drawing._markers.
 
 from pyxem.utils.correlation_utils import corr_to_power,\
     get_interpolation_matrix,\
-    symmetry_stem
+    symmetry_stem,blob_finding
 from pyxem.signals.common_diffraction import CommonDiffraction
 import numpy as np
 from fractions import Fraction as frac
-from skimage.feature import blob_dog, blob_log, blob_doh
 
 
 class Correlation2D(Signal2D, CommonDiffraction):
@@ -138,7 +136,7 @@ class Correlation2D(Signal2D, CommonDiffraction):
             The `skimage.features` method for finding blobs.
         :return:
         """
-        method_dict = {"log": blob_log, "dog": blob_dog, "doh": blob_doh}
+        #method_dict = {"log": blob_log, "dog": blob_dog, "doh": blob_doh}
         angles = [set(frac(j, i) for j in range(0, i))for i in symmetries]
         if not include_duplicates:
             already_used = set()
@@ -158,12 +156,13 @@ class Correlation2D(Signal2D, CommonDiffraction):
         else:
             signals = signals.isig[:, k_range[0]:k_range[1]]
             signals = signals.T
-        s = signals.map(method_dict[method],
+        s = signals.map(blob_finding,
+                        method=method,
                         **kwargs,
                         inplace=False)
-        for i in np.ndindex(s.axes_manager.navigation_shape):
-            blobs = s.inav[i].data
-            [marker. indefor b in blobs]
+       for i, points in enumerate(s.data):
+           for point in points:
+               point(x=p)
 
 
 
