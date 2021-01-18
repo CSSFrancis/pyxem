@@ -23,7 +23,7 @@ import dask.array as da
 from hyperspy.signals import Signal2D
 
 from pyxem.signals.correlation2d import Correlation2D, LazyCorrelation2D
-#from pyxem.signals.symmetry2d import SymmetrySTEM
+from pyxem.signals.symmetry1d import Symmetry1D
 from pyxem.signals.power2d import Power2D
 
 
@@ -108,7 +108,7 @@ class TestGetPower:
 class TestSymmetrySTEM:
     @pytest.fixture
     def sym_pattern(self):
-        sym_data = np.random.random(size=(20, 20, 20, 90))
+        sym_data = np.random.random(size=(21, 20, 19, 90))
         sym_data[1:3, 1:3, 15:19, 45] = 10  # 2 fold
         sym_data[1:3, 1:3, 10:15, 22:23] = 10  # 4 fold
         sym_data[1:3, 1:3, 10:15, 67:68] = 10  # 4 fold
@@ -120,7 +120,30 @@ class TestSymmetrySTEM:
         return pd
 
     def test_find_clusters(self, sym_pattern):
-        print(sym_pattern.find_clusters())
+        sym = sym_pattern.get_symmetry_stem()
+        assert sym.axes_manager.navigation_shape[1:] == sym_pattern.axes_manager.navigation_shape
+        assert isinstance(sym, Symmetry1D)
+        np.testing.assert_array_equal(sym.symmetries, [1, 2, 4, 6, 8, 10])
+
+class TestSymmetry1D:
+    @pytest.fixture
+    def sym_pattern(self):
+        sym_data = np.random.random(size=(21, 20, 6,  19))
+        sym_data[1, 1:3, 1:3, 15:19] = 10  # 2 fold
+        sym_data[2, 1:3, 10:15] = 10  # 4 fold
+        sym_data[3, 1:3, 10:15] = 10  # 6 fold
+        pd = Symmetry1D(data=sym_data)
+        pd.axes_manager.signal_axes[0].scale = 2
+        pd.axes_manager.signal_axes[0].name = "k"
+        pd.symmetries = [1,2,4,6,8,10]
+        return pd
+
+    @pytest.mark.parametrize("method", ["log", "dog", "doh","adsk"]         )
+    def test_cluster(self, sym_pattern, method):
+        sym_pattern.get_clusters(method=method)
+
+    def test_plot(self):
+        pd.plot_all()
 
 class TestDecomposition:
     def test_decomposition_is_performed(self, diffraction_pattern):
