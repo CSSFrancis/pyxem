@@ -1,5 +1,5 @@
 from hyperspy.roi import CircleROI
-
+from matplotlib.pyplot import Circle
 
 class Cluster(CircleROI):
     """This is a real space cluster of like symmetry diffraction
@@ -28,11 +28,6 @@ class Cluster(CircleROI):
         r: float
             The radius of the cluster
         k: The k
-        :param x:
-        :param y:
-        :param r:
-        :param k:
-        :param kwargs:
         """
         super().__init__(cx=x, cy=y, r=radius,  **kwargs)
         self.k = k
@@ -43,3 +38,18 @@ class Cluster(CircleROI):
         return ("Position: <" + str(self.cx) +", " +
                str(self.cy) + ">  k: "+ str(self.k) +
                " radius: "+str(self.r)+" Symmetry: " +str(self.symmetry))
+
+    def to_circle(self,
+                  linewidth=2,
+                  fill=False,
+                  color="blue",
+                  **kwargs):
+        """This takes the object and turns it into a matplotlib.Circle object
+        """
+        return Circle(xy=(self.cy,self.cx),
+                      radius=self.r,
+                      linewidth=linewidth,
+                      fill=fill,
+                      color=color,
+                      **kwargs)
+

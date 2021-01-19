@@ -19,8 +19,7 @@
 import pytest
 import numpy as np
 import dask.array as da
-
-from hyperspy.signals import Signal2D
+import matplotlib.pyplot as plt
 
 from pyxem.signals.correlation2d import Correlation2D, LazyCorrelation2D
 from pyxem.signals.symmetry1d import Symmetry1D
@@ -135,15 +134,18 @@ class TestSymmetry1D:
         pd = Symmetry1D(data=sym_data)
         pd.axes_manager.signal_axes[0].scale = 2
         pd.axes_manager.signal_axes[0].name = "k"
-        pd.symmetries = [1,2,4,6,8,10]
+        pd.symmetries = [1, 2, 4, 6, 8, 10]
         return pd
 
     @pytest.mark.parametrize("method", ["log", "dog", "doh","adsk"]         )
     def test_cluster(self, sym_pattern, method):
         sym_pattern.get_clusters(method=method)
 
-    def test_plot(self):
-        pd.plot_all()
+    def test_plot(self,
+                  sym_pattern):
+        sym_pattern.plot_all(k_range=[0, 38])
+        plt.show()
+
 
 class TestDecomposition:
     def test_decomposition_is_performed(self, diffraction_pattern):

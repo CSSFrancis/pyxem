@@ -1,6 +1,8 @@
 from hyperspy.utils.plot import plot_images
 from hyperspy.signals import Signal1D
 import hyperspy.api as hs
+
+import matplotlib.pyplot as plt
 import numpy as np
 from pyxem.utils.cluster_roi import Cluster
 from pyxem.utils.correlation_utils import blob_finding
@@ -88,9 +90,26 @@ class Symmetry1D(Signal1D):
 
     def plot_all(self,
                  k_range,
-                 include_clusters=True):
-        signals = self.isig[k_range[0]:k_range[1]].sum(axis=-1).split()
-        plot_images(signals)
+                 include_clusters=True,
+                 fig_size=(10, 10),
+                 **kwargs):
+        f = plt.figure(figsize=fig_size)
+        signals = self.isig[k_range[0]:k_range[1]].sum(axis=-1).split(axis=0)
+        print(signals)
+        labels = [str(s) + "-Fold Symmetry" for s in self.symmetries]
+        plot_images(signals,
+                    label=labels,
+                    fig=f,
+                    **kwargs)
+        if include_clusters:
+            axs = f.get_axes()
+            if self.clusters is not None:
+                for ax, clusters in zip(axs[::2], self.clusters):
+                    print(ax)
+                    for cluster in clusters:
+                        ax.add_patch(cluster.to_circle())
+
+
 
 
 
