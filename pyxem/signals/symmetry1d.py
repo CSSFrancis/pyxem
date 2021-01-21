@@ -81,7 +81,7 @@ class Symmetry1D(Signal1D):
             else:
                 cluster_list.append([Cluster(x=cluster[0]*self.axes_manager.navigation_axes[-1].scale,
                                              y=cluster[1]*self.axes_manager.navigation_axes[-1].scale,
-                                             radius=cluster[3] * np.sqrt(2)*self.axes_manager.navigation_axes[-1].scale,
+                                             radius=cluster[2] * np.sqrt(2)*self.axes_manager.navigation_axes[-1].scale,
                                              k=k_range,
                                              symmetry=symmetry)
                                      for cluster in clusters])
