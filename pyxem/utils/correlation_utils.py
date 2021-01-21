@@ -160,7 +160,7 @@ def get_interpolation_matrix(angles, angular_range, num_points):
     return interpolation_matrix
 
 
-def symmetry_stem(signal, interpolation, symmetry):
+def symmetry_stem(signal, interpolation):
     return np.matmul(signal, np.transpose(interpolation))
 
 
