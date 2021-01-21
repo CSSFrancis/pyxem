@@ -72,16 +72,16 @@ class Symmetry1D(Signal1D):
         for clusters, symmetry in zip(s.data, self.symmetries):
             print(clusters)
             if k_range is None:
-                cluster_list.append([Cluster(x=cluster[0],
-                                             y=cluster[1],
-                                             radius=cluster[3] * np.sqrt(2),
-                                             k=cluster[2],
+                cluster_list.append([Cluster(x=cluster[0]*self.axes_manager.navigation_axes[-1].scale,
+                                             y=cluster[1]*self.axes_manager.navigation_axes[-1].scale,
+                                             radius=cluster[3] * np.sqrt(2)*self.axes_manager.navigation_axes[-1].scale,
+                                             k=cluster[2*self.axes_manager.signal_axes[-1].scale],
                                              symmetry=symmetry)
                                      for cluster in clusters])
             else:
-                cluster_list.append([Cluster(x=cluster[0],
-                                             y=cluster[1],
-                                             radius=cluster[3] * np.sqrt(2),
+                cluster_list.append([Cluster(x=cluster[0]*self.axes_manager.navigation_axes[-1].scale,
+                                             y=cluster[1]*self.axes_manager.navigation_axes[-1].scale,
+                                             radius=cluster[3] * np.sqrt(2)*self.axes_manager.navigation_axes[-1].scale,
                                              k=k_range,
                                              symmetry=symmetry)
                                      for cluster in clusters])
