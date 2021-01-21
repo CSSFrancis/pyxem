@@ -545,6 +545,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             mask=mask,
             sum=sum,
             correctSolidAngle=correctSolidAngle,
+            output_signal_size=(npt, npt_azim),
+            output_dtype=float,
             **kwargs,
         )
 
