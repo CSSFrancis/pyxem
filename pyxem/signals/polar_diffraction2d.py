@@ -20,6 +20,7 @@
 
 from hyperspy.signals import Signal2D, BaseSignal
 from hyperspy._signals.lazy import LazySignal
+import numpy as np
 
 from pyxem.utils.correlation_utils import _correlation, _power
 
@@ -78,6 +79,8 @@ class PolarDiffraction2D(Signal2D):
         """
         if normalize:
             normalize_axes = 1
+        else:
+            normalize_axes=None
         correlation = self.map(
             _correlation,
             axis=1,
@@ -133,6 +136,18 @@ class PolarDiffraction2D(Signal2D):
         fourier_axis.offset = 0.5
         fourier_axis.scale = 1
         return power
+
+    def get_common_signal(self, method="multiply"):
+        """This function takes all of some group of signals and looks for common
+        features among the signals.
+        """
+        if method is "multiply":
+            self.unfold(unfold_navigation=True, unfold_signal=False)
+            return np.prod(self, axis=0)
+        elif method is "sum":
+            return self.sum()
+        elif method is "corelation":
+
 
 
 class LazyPolarDiffraction2D(LazySignal, PolarDiffraction2D):

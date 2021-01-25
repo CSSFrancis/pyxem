@@ -164,6 +164,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         self.ai = ai
         return ai
 
+
+
     def get_direct_beam_mask(self, radius):
         """Generate a signal mask for the direct beam.
 
