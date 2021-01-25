@@ -146,10 +146,11 @@ class PolarDiffraction2D(Signal2D):
             return np.prod(self, axis=0)
         elif method is "sum":
             return self.sum()
-        elif method is "corelation":
-
+        else:
+            print("Method " + method + " is not one of 'sum' ,'multiply', 'correlation' please "
+                                       "use one of these methods")
+            return
 
 
 class LazyPolarDiffraction2D(LazySignal, PolarDiffraction2D):
-
     pass
