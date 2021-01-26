@@ -151,15 +151,18 @@ class PolarDiffraction2D(Signal2D):
             A method used to determine the common signal
         local_threshold: bool
             Apply a local threshold to better visualize the "Eigen Pattern"
+        kwargs: dict
+            Any additional arguments to pass to `skimage.filters.threshold_local`
         """
         if method is "multiply":
             self.unfold(unfold_navigation=True, unfold_signal=False)
             multiplied = np.prod(self.data, axis=0)
             block_size = 35
             local_thresh = threshold_local(multiplied, block_size, offset=10)
-            binary_local = multiplied > local_thresh
-            multiplied[binary_local] = 0
-            signal = self._deepcopy_with_new_data(data=multiplied)
+            binary_local = multiplied < local_thresh
+            mean = self.mean().data
+            mean[binary_local] = 0
+            signal = self._deepcopy_with_new_data(data=mean)
             signal.axes_manager.remove(0)
             return signal
         elif method is "sum":
