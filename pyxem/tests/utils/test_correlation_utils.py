@@ -73,7 +73,7 @@ class TestCorrelations:
         result[1::2, :] = -1
         np.testing.assert_array_equal(c, result)
         # Show intensity doesn't matter
-        c = _correlation(np.multiply(ones_zero,3), axis=0, normalize_axes=0)
+        c = _correlation(np.multiply(ones_zero, 3), axis=0, normalize_axes=0)
         np.testing.assert_array_equal(c, result)
         # Along the axis where everything is the same... This should be equal to zero
         c = _correlation(ones_zero, axis=1, normalize_axes=1)

@@ -183,10 +183,11 @@ class PolarDiffraction2D(Signal2D):
                        inplace=True
                        ):
         from skimage.feature.corner import _compute_derivatives
-        from scipy.ndimage import gaussian_filter
-        derivatives = _compute_derivatives(self.data,
-                                           mode=mode,
-                                           cval=cval)
+        from scipy.ndimage import gaussian_filter, sobel
+        print(self.data.shape)
+        derivatives = [sobel(self.data, axis=i, mode=mode, cval=cval)
+                       for i in range(self.data.ndim)]
+        print(len(derivatives))
         A_elems = gaussian_filter(np.prod(derivatives, axis=-1),
                                   sigmas,
                                   mode=mode,

@@ -80,9 +80,9 @@ class TestComputeAndAsLazy2D:
         np.testing.assert_array_equal(np.shape(common), (11, 15))
 
     def test_speckle_filter(self):
-        data = np.ones((10, 11, 15))
+        data = np.ones((10,10, 11, 15))
         s = PolarDiffraction2D(data)
-        common = s.speckle_filter(sigmas=[2,3,4])
+        common = s.speckle_filter(sigmas=[2,3,4,4])
 
 class TestCorrelations:
     @pytest.fixture
