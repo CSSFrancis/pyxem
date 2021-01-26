@@ -187,8 +187,8 @@ class PolarDiffraction2D(Signal2D):
         print(self.data.shape)
         derivatives = [sobel(self.data, axis=i, mode=mode, cval=cval)
                        for i in range(self.data.ndim)]
-        print(len(derivatives))
-        A_elems = gaussian_filter(np.prod(derivatives, axis=-1),
+        derivatives = derivatives[0]*derivatives[1]*derivatives[2]*derivatives[3]
+        A_elems = gaussian_filter(derivatives,
                                   sigmas,
                                   mode=mode,
                                   cval=cval)
