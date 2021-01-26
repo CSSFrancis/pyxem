@@ -82,7 +82,7 @@ class TestComputeAndAsLazy2D:
     def test_speckle_filter(self):
         data = np.ones((10,10, 11, 15))
         s = PolarDiffraction2D(data)
-        common = s.speckle_filter(sigmas=[2,3,4,4])
+        common = s.speckle_filter(sigmas=[2,3,1,1])
 
 class TestCorrelations:
     @pytest.fixture

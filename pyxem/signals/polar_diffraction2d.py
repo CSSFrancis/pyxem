@@ -178,16 +178,15 @@ class PolarDiffraction2D(Signal2D):
 
     def speckle_filter(self,
                        sigmas,
-                       mode="wrap",
+                       mode='reflect',
                        cval=0,
                        inplace=True
                        ):
-        from skimage.feature.corner import _compute_derivatives
         from scipy.ndimage import gaussian_filter, sobel
-        print(self.data.shape)
         derivatives = [sobel(self.data, axis=i, mode=mode, cval=cval)
-                       for i in range(self.data.ndim)]
-        derivatives = derivatives[0]*derivatives[1]*derivatives[2]*derivatives[3]
+                       for i in range(2)]
+        print(len(derivatives))
+        derivatives = derivatives[0]*derivatives[1]
         A_elems = gaussian_filter(derivatives,
                                   sigmas,
                                   mode=mode,

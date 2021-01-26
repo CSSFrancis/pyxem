@@ -26,6 +26,7 @@ from pyxem.signals.symmetry1d import Symmetry1D
 from pyxem.signals.power2d import Power2D
 
 
+
 class TestComputeAndAsLazy2D:
     def test_2d_data_compute(self):
         dask_array = da.random.random((100, 150), chunks=(50, 50))
@@ -35,6 +36,7 @@ class TestComputeAndAsLazy2D:
         s.axes_manager[1].scale = scale1
         s.metadata.Test = metadata_string
         s.compute()
+
         assert s.__class__ == Correlation2D
         assert not hasattr(s.data, "compute")
         assert s.axes_manager[0].scale == scale0
