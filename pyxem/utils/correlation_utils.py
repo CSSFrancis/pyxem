@@ -62,14 +62,14 @@ def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
     a = np.fft.irfft(I_fft * np.conjugate(I_fft), axis=axis)
 
     if mask is not None:
-        a = np.multiply(np.divide(a, number_unmasked), np.shape(z)[axis])
+        a = np.divide(a, number_unmasked)
     else:
         a = np.divide(a, np.shape(z)[axis])
 
     if normalize_axes is not None:  # simplified way to calculate the normalization
         # Need two row mean's for the case when row mean = 0.  I don't know if that
         row_mean1 = np.mean(a, axis=normalize_axes)
-        row_mean2 = row_mean1
+        row_mean2 = np.mean(a, axis=normalize_axes)
         row_mean2[row_mean2 == 0] = 1
         row_mean1 = np.expand_dims(row_mean1, axis=normalize_axes)
         row_mean2 = np.expand_dims(row_mean2, axis=normalize_axes)
