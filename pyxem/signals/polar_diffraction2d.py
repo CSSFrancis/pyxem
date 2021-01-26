@@ -21,7 +21,8 @@
 from hyperspy.signals import Signal2D, BaseSignal
 from hyperspy._signals.lazy import LazySignal
 import numpy as np
-from skimage.filters import threshold_local
+from skimage.feature import blob_dog
+from skimage.draw import circle
 
 from pyxem.utils.correlation_utils import _correlation, _power
 
@@ -157,11 +158,14 @@ class PolarDiffraction2D(Signal2D):
         if method is "multiply":
             self.unfold(unfold_navigation=True, unfold_signal=False)
             multiplied = np.prod(self.data, axis=0)
-            block_size = 35
-            local_thresh = threshold_local(multiplied, block_size, offset=10)
-            binary_local = multiplied < local_thresh
+            blobs = blob_dog(multiplied, **kwargs)
+            shape = np.shape(multiplied)
+            mask = np.ones(shape=shape, dtype=bool)
+            for x, y,sigma in blobs:
+                rr, cc = circle(x, y, sigma*1.414, shape=shape)
+                mask[rr, cc] = 0
             mean = self.mean().data
-            mean[binary_local] = 0
+            mean[mask] = 0
             signal = self._deepcopy_with_new_data(data=mean)
             signal.axes_manager.remove(0)
             return signal
