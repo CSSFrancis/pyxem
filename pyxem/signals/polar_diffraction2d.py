@@ -176,6 +176,26 @@ class PolarDiffraction2D(Signal2D):
                                        "use one of these methods")
             return
 
+    def speckle_filter(self,
+                       sigmas,
+                       mode="wrap",
+                       cval=0,
+                       inplace=True
+                       ):
+        from skimage.feature.corner import _compute_derivatives
+        from scipy.ndimage import gaussian_filter
+        derivatives = _compute_derivatives(self.data,
+                                           mode=mode,
+                                           cval=cval)
+        A_elems = gaussian_filter(np.prod(derivatives, axis=-1),
+                                  sigmas,
+                                  mode=mode,
+                                  cval=cval)
+        if inplace:
+            self.data =A_elems
+        else:
+            return self._deepcopy_with_new_data(data=A_elems)
+
 
 class LazyPolarDiffraction2D(LazySignal, PolarDiffraction2D):
     pass
