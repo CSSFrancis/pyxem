@@ -21,6 +21,7 @@
 from hyperspy.signals import Signal2D, BaseSignal
 from hyperspy._signals.lazy import LazySignal
 import numpy as np
+from skimage.filters import threshold_local
 
 from pyxem.utils.correlation_utils import _correlation, _power
 
@@ -137,13 +138,30 @@ class PolarDiffraction2D(Signal2D):
         fourier_axis.scale = 1
         return power
 
-    def get_common_signal(self, method="multiply"):
+    def get_common_signal(self,
+                          method="multiply",
+                          local_threshold=True,
+                          **kwargs):
         """This function takes all of some group of signals and looks for common
         features among the signals.
+
+        Parameters
+        -----------
+        method: ['multiply', 'sum']
+            A method used to determine the common signal
+        local_threshold: bool
+            Apply a local threshold to better visualize the "Eigen Pattern"
         """
         if method is "multiply":
             self.unfold(unfold_navigation=True, unfold_signal=False)
-            return np.prod(self, axis=0)
+            multiplied = np.prod(self.data, axis=0)
+            block_size = 35
+            local_thresh = threshold_local(multiplied, block_size, offset=10)
+            binary_local = multiplied > local_thresh
+            multiplied[binary_local] = 0
+            signal = self._deepcopy_with_new_data(data=multiplied)
+            signal.axes_manager.remove(0)
+            return signal
         elif method is "sum":
             return self.sum()
         else:

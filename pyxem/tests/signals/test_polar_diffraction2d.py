@@ -72,6 +72,13 @@ class TestComputeAndAsLazy2D:
         assert s_lazy.__class__ == LazyPolarDiffraction2D
         assert data.shape == s_lazy.data.shape
 
+    def test_get_common_signal(self):
+        data = np.ones((10, 11, 15))
+        s = PolarDiffraction2D(data)
+        common = s.get_common_signal()
+        print(common.data)
+        np.testing.assert_array_equal(np.shape(common), (11, 15))
+
 
 class TestCorrelations:
     @pytest.fixture

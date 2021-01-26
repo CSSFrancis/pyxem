@@ -116,6 +116,7 @@ class Correlation2D(Signal2D, CommonDiffraction):
                           symmetries=[1, 2, 4, 6, 8, 10],
                           angular_range=0,
                           include_duplicates=False,
+                          normalize=True,
                           **kwargs):
         """ This function is for finding and extracting information about clusters
         based on the angular symmetries. This a pretty catch all method which has
@@ -130,8 +131,7 @@ class Correlation2D(Signal2D, CommonDiffraction):
             The symmetries to calculate
         include_duplicates: bool
             Include duplicates like 2 and 4
-        method: one of "log", "dog" or "doh"
-            The `skimage.features` method for finding blobs.
+
         :return:
         """
         angles = [set(frac(j, i) for j in range(0, i))for i in symmetries]
@@ -142,6 +142,7 @@ class Correlation2D(Signal2D, CommonDiffraction):
                 new_angles.append(a.difference(already_used))
                 already_used = already_used.union(a)
             angles = new_angles
+        num_angles = [len(a) for a in angles]
         interp = [get_interpolation_matrix(a,
                                            angular_range,
                                            num_points=self.axes_manager.signal_axes[0].size)
@@ -150,6 +151,8 @@ class Correlation2D(Signal2D, CommonDiffraction):
                            interpolation=interp,
                            show_progressbar=True,
                            inplace=False)
+        if normalize:
+            signals = np.divide(signals, num_angles)
         # 3-D signal (x,y,k) for each symmetry
         signals = signals.transpose(navigation_axes=(2, 0, 1))
         signals.set_signal_type("symmetry")
