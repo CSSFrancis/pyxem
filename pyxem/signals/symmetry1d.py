@@ -92,11 +92,11 @@ class Symmetry1D(Signal1D):
     def find_peaks(self,
                    overlap=0.5,
                    **kwargs):
-        self.transpose(navigation_axes=(0,))
+
         print(self)
         print(self.sigma)
         print(self.symmetries)
-        s = self.map(peak_finding,
+        s = self.transpose(navigation_axes=(0,)).map(peak_finding,
                      sigma=self.sigma,
                      overlap=overlap,
                      inplace=False,
