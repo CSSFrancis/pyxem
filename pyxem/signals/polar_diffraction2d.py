@@ -20,9 +20,12 @@
 
 from hyperspy.signals import Signal2D, BaseSignal
 from hyperspy._signals.lazy import LazySignal
+from hyperspy.api import stack
 import numpy as np
 from skimage.feature import blob_dog
 from skimage.draw import circle
+from scipy.ndimage import gaussian_filter as sci_gaussian_filter
+from skimage.feature.peak import peak_local_max
 
 from pyxem.utils.correlation_utils import _correlation, _power
 
@@ -175,6 +178,75 @@ class PolarDiffraction2D(Signal2D):
             print("Method " + method + " is not one of 'sum' ,'multiply', 'correlation' please "
                                        "use one of these methods")
             return
+
+    def get_cluster_peaks(self,
+                          theta_size,
+                          k_size,
+                          **kwargs):
+        library = self.get_symmetry_stem_library(theta_size=theta_size,
+                                                 k_size=k_size,
+                                                 **kwargs)
+
+
+    def get_symmetry_stem_library(self,
+                                  theta_size,
+                                  k_size,
+                                  min_cluster_size=1,
+                                  max_cluster_size=10,
+                                  sigma_ratio=1.6,
+                                  mask=None,
+                                  threshold=2.0,
+                                  exclude_border=False,
+                                  ):
+        gaussian_symmetry_stem = []
+        if isinstance(theta_size,float):
+            theta_size =theta_size/self.axes_manager.signal_axes[1].scale
+        if isinstance(k_size, float):
+            k_size = k_size / self.axes_manager.signal_axes[0].scale
+        if isinstance(min_cluster_size, float):
+            min_cluster_size = min_cluster_size / self.axes_manager.navigation_axes[0].scale
+        if isinstance(max_cluster_size, float):
+            max_cluster_size = min_cluster_size / self.axes_manager.navigation_axes[0].scale
+
+        # k such that min_sigma*(sigma_ratio**k) > max_sigma
+        k = int(np.mean(np.log(max_cluster_size / min_cluster_size) / np.log(sigma_ratio) + 1))
+
+        # a geometric progression of standard deviations for gaussian kernels
+        sigma_list = np.array([[min_cluster_size * (sigma_ratio ** i),
+                                min_cluster_size * (sigma_ratio ** i),
+                                theta_size,
+                                k_size]
+                               for i in range(k + 1)])
+
+
+
+        for s in sigma_list:
+            filtered = self.gaussian_filter(sigma=s, inplace=False)
+            filtered.get_angular_correlation(mask=mask, inplace=True)
+            filtered = filtered.get_symmetry_stem()
+            filtered.metadata.General["title"] = str(s) + " Sigma Sym STEM"
+            gaussian_symmetry_stem.append(filtered)
+
+        dog_images = [(gaussian_symmetry_stem[i] - gaussian_symmetry_stem[i + 1])
+                      * np.mean(sigma_list[i]) for i in range(k)]
+
+        image_cube = stack(dog_images, axis=None)
+        image_cube = image_cube.split(axis=0)
+        peaks = [peak_local_max(cube.data,
+                       threshold_abs=threshold,
+                       footprint=np.ones((3,) * (4)),
+                       threshold_rel=0.0,
+                       exclude_border=exclude_border,) for cube in image_cube]
+        return peaks
+
+    def gaussian_filter(self,
+                        sigma,
+                        inplace=False):
+        if inplace:
+            self.data = sci_gaussian_filter(self.data,sigma)
+        else:
+            return self._deepcopy_with_new_data(data=sci_gaussian_filter(self.data,sigma))
+
 
     def speckle_filter(self,
                        sigmas,

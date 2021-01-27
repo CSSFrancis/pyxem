@@ -1,7 +1,8 @@
 import numpy as np
 from hyperspy.drawing._markers import point
-from skimage.feature import blob_dog, blob_log, blob_doh
 
+from skimage.feature import blob_dog, blob_log, blob_doh
+from scipy.ndimage import gaussian_filter
 
 def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
     r"""A generic function for applying a correlation with a mask.
@@ -171,3 +172,9 @@ def blob_finding(data, method, **kwargs):
     method_dict = {"log": blob_log, "dog": blob_dog, "doh": blob_doh}
     points = method_dict[method](data, **kwargs)
     return points
+
+
+
+
+
+

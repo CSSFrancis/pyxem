@@ -84,6 +84,13 @@ class TestComputeAndAsLazy2D:
         s = PolarDiffraction2D(data)
         common = s.speckle_filter(sigmas=[2,3,1,1])
 
+    def test_get_symmetry_stem_library(self):
+        data = np.ones((10, 10, 11, 15))
+        s = PolarDiffraction2D(data)
+        common = s.get_symmetry_stem_library(theta_size=1.,k_size=2.)
+        print(common)
+
+
 class TestCorrelations:
     @pytest.fixture
     def flat_pattern(self):
