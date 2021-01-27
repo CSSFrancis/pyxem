@@ -179,13 +179,14 @@ def peak_finding(data, sigma, overlap=0.5, **kwargs):
     """This method helps to format the output from the blob methods
     in skimage for a more hyperspy like format using hs.markers
     """
+    print("data shape",np.shape(data))
     local_maxima = peak_local_max(data, **kwargs)
     # Catch no peaks
     if local_maxima.size == 0:
         return np.empty((0, 4))
         # Convert local_maxima to float64
     lm = local_maxima.astype(np.float64)
-
+    print(lm)
     # translate final column of lm, which contains the index of the
     # sigma that produced the maximum intensity value, into the sigma
     sigmas_of_peaks = sigma[local_maxima[:, 0]]
