@@ -226,6 +226,7 @@ class PolarDiffraction2D(Signal2D):
             filtered = filtered.get_symmetry_stem()
             filtered.metadata.General["title"] = str(s) + " Sigma Sym STEM"
             gaussian_symmetry_stem.append(filtered)
+            print(s)
 
         dog_images = [(gaussian_symmetry_stem[i] - gaussian_symmetry_stem[i + 1])
                       * np.mean(sigma_list[i]) for i in range(k)]
