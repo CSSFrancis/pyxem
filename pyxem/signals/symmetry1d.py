@@ -104,12 +104,13 @@ class Symmetry1D(Signal1D):
         cluster_list = []
 
         for clusters, symmetry in zip(s.data, self.symmetries):
-            cluster_list.append([Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
-                                         y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
-                                         radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
-                                         k=cluster[2 * self.axes_manager.signal_axes[-1].scale],
-                                         symmetry=symmetry)
-                                for cluster in clusters])
+            cluster_sym=[Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
+                                  y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
+                                  radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
+                                  k=cluster[2] * self.axes_manager.signal_axes[-1].scale,
+                                  symmetry=symmetry)
+                          for cluster in clusters]
+            cluster_list.append((cluster_sym))
         self.clusters=cluster_list
         return cluster_list
 
