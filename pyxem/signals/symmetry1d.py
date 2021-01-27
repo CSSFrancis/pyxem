@@ -110,7 +110,8 @@ class Symmetry1D(Signal1D):
 
         sigma_dim = sigmas_of_peaks.shape[1]
 
-        return _prune_blobs(lm, overlap, sigma_dim=sigma_dim)
+        pruned = _prune_blobs(lm, overlap, sigma_dim=3)
+
     def plot_all(self,
                  k_range,
                  include_clusters=True,
