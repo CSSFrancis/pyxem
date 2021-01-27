@@ -64,7 +64,6 @@ class Symmetry1D(Signal1D):
                                  " (difference of Hessians) method doesn't "
                                  "currently support 3 dimensional data")
                 return
-        print(s)
         s = s.map(blob_finding,
                   method=method,
                   inplace=False,
@@ -94,29 +93,27 @@ class Symmetry1D(Signal1D):
     def find_peaks(self,
                    overlap=0.5,
                    **kwargs):
-        local_maxima = peak_local_max(self.data, **kwargs)
-        # Catch no peaks
-        if local_maxima.size == 0:
-            return np.empty((0, 3))
-            # Convert local_maxima to float64
-        lm = local_maxima.astype(np.float64)
+        self.transpose()
+        for s in self.symmetries:
+            local_maxima = peak_local_max(self.data, **kwargs)
+            # Catch no peaks
+            if local_maxima.size == 0:
+                return np.empty((0, 3))
+                # Convert local_maxima to float64
+            lm = local_maxima.astype(np.float64)
 
-        # translate final column of lm, which contains the index of the
-        # sigma that produced the maximum intensity value, into the sigma
-        sigmas_of_peaks = self.sigma[local_maxima[:, 0]]
-        print(sigmas_of_peaks)
-        # Remove sigma index and replace with sigmas
-        lm = np.hstack([lm[:, :-1], sigmas_of_peaks])
-
-        sigma_dim = sigmas_of_peaks.shape[1]
-
-        pruned = _prune_blobs(lm, overlap, sigma_dim=3)
-        self.clusters = [Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
-                                 y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
-                                 radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
-                                 k=cluster[2 * self.axes_manager.signal_axes[-1].scale],
-                                 symmetry=self.symmetries)
-                             for cluster in pruned]
+            # translate final column of lm, which contains the index of the
+            # sigma that produced the maximum intensity value, into the sigma
+            sigmas_of_peaks = self.sigma[local_maxima[:, 0]]
+            # Remove sigma index and replace with sigmas
+            lm = np.hstack([lm[:, :-1], sigmas_of_peaks])
+            pruned = _prune_blobs(lm, overlap, sigma_dim=3)
+            self.clusters.append([Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
+                                          y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
+                                          radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
+                                          k=cluster[2 * self.axes_manager.signal_axes[-1].scale],
+                                          symmetry=s)
+                                  for cluster in pruned])
 
     def plot_all(self,
                  k_range,
@@ -138,11 +135,5 @@ class Symmetry1D(Signal1D):
                     print(ax)
                     for cluster in clusters:
                         ax.add_patch(cluster.to_circle())
-
-    def plot_clusters(self):
-
-
-
-
 
 
