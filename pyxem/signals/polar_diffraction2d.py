@@ -25,7 +25,7 @@ import numpy as np
 from skimage.feature import blob_dog
 from skimage.draw import circle
 from scipy.ndimage import gaussian_filter as sci_gaussian_filter
-from skimage.feature.peak import peak_local_max
+
 
 from pyxem.utils.correlation_utils import _correlation, _power
 
@@ -179,15 +179,6 @@ class PolarDiffraction2D(Signal2D):
                                        "use one of these methods")
             return
 
-    def get_cluster_peaks(self,
-                          theta_size,
-                          k_size,
-                          **kwargs):
-        library = self.get_symmetry_stem_library(theta_size=theta_size,
-                                                 k_size=k_size,
-                                                 **kwargs)
-
-
     def get_symmetry_stem_library(self,
                                   theta_size,
                                   k_size,
@@ -233,6 +224,8 @@ class PolarDiffraction2D(Signal2D):
 
         image_cube = stack(dog_images, axis=None)
         image_cube = image_cube.split(axis=0)
+        for i in image_cube:
+            i.sigma = sigma_list
         return image_cube
 
     def gaussian_filter(self,

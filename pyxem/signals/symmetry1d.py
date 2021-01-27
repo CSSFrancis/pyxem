@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pyxem.utils.cluster_roi import Cluster
 from pyxem.utils.correlation_utils import blob_finding
+from skimage.feature.peak import peak_local_max
+from skimage.feature.blob import _prune_blobs
 
 
 class Symmetry1D(Signal1D):
@@ -16,6 +18,7 @@ class Symmetry1D(Signal1D):
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.clusters = None
+        self.sigma = None
 
     @property
     def symmetries(self):
@@ -88,6 +91,26 @@ class Symmetry1D(Signal1D):
         self.clusters = cluster_list
         return cluster_list
 
+    def find_peaks(self,
+                   overlap=0.5,
+                   **kwargs):
+        local_maxima = peak_local_max(self.data, **kwargs)
+        # Catch no peaks
+        if local_maxima.size == 0:
+            return np.empty((0, 3))
+            # Convert local_maxima to float64
+        lm = local_maxima.astype(np.float64)
+
+        # translate final column of lm, which contains the index of the
+        # sigma that produced the maximum intensity value, into the sigma
+        sigmas_of_peaks = self.sigma[local_maxima[:, 0]]
+        print(sigmas_of_peaks)
+        # Remove sigma index and replace with sigmas
+        lm = np.hstack([lm[:, :-1], sigmas_of_peaks])
+
+        sigma_dim = sigmas_of_peaks.shape[1]
+
+        return _prune_blobs(lm, overlap, sigma_dim=sigma_dim)
     def plot_all(self,
                  k_range,
                  include_clusters=True,
