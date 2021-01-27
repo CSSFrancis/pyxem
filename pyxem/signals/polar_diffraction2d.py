@@ -224,8 +224,9 @@ class PolarDiffraction2D(Signal2D):
 
         image_cube = stack(dog_images, axis=None)
         image_cube = image_cube.split(axis=0)
-        for i in image_cube:
+        for i,sym in zip(image_cube,[1,2,4,6,8,10]):
             i.sigma = sigma_list
+            i.symmetries = sym
         return image_cube
 
     def gaussian_filter(self,

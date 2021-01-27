@@ -111,6 +111,13 @@ class Symmetry1D(Signal1D):
         sigma_dim = sigmas_of_peaks.shape[1]
 
         pruned = _prune_blobs(lm, overlap, sigma_dim=3)
+        print(puned)
+        self.clusters = [Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
+                                 y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
+                                 radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
+                                 k=cluster[2 * self.axes_manager.signal_axes[-1].scale],
+                                 symmetry=self.symmetries)
+                             for cluster in pruned]
 
     def plot_all(self,
                  k_range,
