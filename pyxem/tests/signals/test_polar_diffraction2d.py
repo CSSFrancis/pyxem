@@ -88,7 +88,7 @@ class TestComputeAndAsLazy2D:
         data = np.ones((10, 10, 11, 15))
         s = PolarDiffraction2D(data)
         common = s.get_symmetry_stem_library(theta_size=1.,k_size=2.)
-        print(common)
+        common.find_peaks()
 
 
 class TestCorrelations:

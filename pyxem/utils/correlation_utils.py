@@ -3,6 +3,8 @@ from hyperspy.drawing._markers import point
 
 from skimage.feature import blob_dog, blob_log, blob_doh
 from scipy.ndimage import gaussian_filter
+from skimage.feature.peak import peak_local_max
+from skimage.feature.blob import _prune_blobs
 
 def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
     r"""A generic function for applying a correlation with a mask.
@@ -172,6 +174,25 @@ def blob_finding(data, method, **kwargs):
     method_dict = {"log": blob_log, "dog": blob_dog, "doh": blob_doh}
     points = method_dict[method](data, **kwargs)
     return points
+
+def peak_finding(data, sigma, overlap=0.5, **kwargs):
+    """This method helps to format the output from the blob methods
+    in skimage for a more hyperspy like format using hs.markers
+    """
+    local_maxima = peak_local_max(data, **kwargs)
+    # Catch no peaks
+    if local_maxima.size == 0:
+        return np.empty((0, 4))
+        # Convert local_maxima to float64
+    lm = local_maxima.astype(np.float64)
+
+    # translate final column of lm, which contains the index of the
+    # sigma that produced the maximum intensity value, into the sigma
+    sigmas_of_peaks = sigma[local_maxima[:, 0]]
+    # Remove sigma index and replace with sigmas
+    lm = np.hstack([lm[:, :-1], sigmas_of_peaks])
+    pruned = _prune_blobs(lm, overlap, sigma_dim=3)
+    return pruned
 
 
 

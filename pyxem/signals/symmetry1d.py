@@ -5,9 +5,8 @@ import hyperspy.api as hs
 import matplotlib.pyplot as plt
 import numpy as np
 from pyxem.utils.cluster_roi import Cluster
-from pyxem.utils.correlation_utils import blob_finding
-from skimage.feature.peak import peak_local_max
-from skimage.feature.blob import _prune_blobs
+from pyxem.utils.correlation_utils import blob_finding,peak_finding
+
 
 
 class Symmetry1D(Signal1D):
@@ -93,27 +92,23 @@ class Symmetry1D(Signal1D):
     def find_peaks(self,
                    overlap=0.5,
                    **kwargs):
-        self.transpose()
-        for s in self.symmetries:
-            local_maxima = peak_local_max(self.data, **kwargs)
-            # Catch no peaks
-            if local_maxima.size == 0:
-                return np.empty((0, 3))
-                # Convert local_maxima to float64
-            lm = local_maxima.astype(np.float64)
-
-            # translate final column of lm, which contains the index of the
-            # sigma that produced the maximum intensity value, into the sigma
-            sigmas_of_peaks = self.sigma[local_maxima[:, 0]]
-            # Remove sigma index and replace with sigmas
-            lm = np.hstack([lm[:, :-1], sigmas_of_peaks])
-            pruned = _prune_blobs(lm, overlap, sigma_dim=3)
-            self.clusters.append([Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
-                                          y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
-                                          radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
-                                          k=cluster[2 * self.axes_manager.signal_axes[-1].scale],
-                                          symmetry=s)
-                                  for cluster in pruned])
+        self.transpose(navigation_axes=(0,))
+        s = self.map(peak_finding,
+                     sigma=self.sigma,
+                     overlap=overlap,
+                     inplace=False,
+                     **kwargs)
+        cluster_list = []
+        print(s)
+        for clusters, symmetry in zip(s.data, self.symmetries):
+            cluster_list.append([Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
+                                         y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
+                                         radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
+                                         k=cluster[2 * self.axes_manager.signal_axes[-1].scale],
+                                         symmetry=symmetry)
+                                for cluster in clusters])
+        self.clusters=cluster_list
+        return cluster_list
 
     def plot_all(self,
                  k_range,
