@@ -233,12 +233,7 @@ class PolarDiffraction2D(Signal2D):
 
         image_cube = stack(dog_images, axis=None)
         image_cube = image_cube.split(axis=0)
-        peaks = [peak_local_max(cube.data,
-                       threshold_abs=threshold,
-                       footprint=np.ones((3,) * (4)),
-                       threshold_rel=0.0,
-                       exclude_border=exclude_border,) for cube in image_cube]
-        return peaks
+        return image_cube
 
     def gaussian_filter(self,
                         sigma,
