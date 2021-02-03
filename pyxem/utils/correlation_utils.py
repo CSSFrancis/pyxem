@@ -175,11 +175,12 @@ def blob_finding(data, method, **kwargs):
     points = method_dict[method](data, **kwargs)
     return points
 
+
 def peak_finding(data, sigma, overlap=0.5, **kwargs):
     """This method helps to format the output from the blob methods
     in skimage for a more hyperspy like format using hs.markers
     """
-    print("data shape",np.shape(data))
+    print("data shape", np.shape(data))
     local_maxima = peak_local_max(data, **kwargs)
     # Catch no peaks
     if local_maxima.size == 0:

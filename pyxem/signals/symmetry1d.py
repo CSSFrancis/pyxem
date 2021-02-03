@@ -8,7 +8,6 @@ from pyxem.utils.cluster_roi import Cluster
 from pyxem.utils.correlation_utils import blob_finding,peak_finding
 
 
-
 class Symmetry1D(Signal1D):
     _signal_type = "symmetry"
 
@@ -92,26 +91,30 @@ class Symmetry1D(Signal1D):
     def find_peaks(self,
                    overlap=0.5,
                    **kwargs):
+        """ This method takes a library of SymmetrySTEM Objects and finds peaks
+        in the library.  This method might be moved to a different SymmetrySTEMLibrary Class
+        which better handles the different Sigma applied to the dataset.
 
-        print(self)
-        print(self.sigma)
-        print(self.symmetries)
+        :param overlap:
+        :param kwargs:
+        :return:
+        """
         s = self.transpose(navigation_axes=(0,)).map(peak_finding,
-                     sigma=self.sigma,
-                     overlap=overlap,
-                     inplace=False,
-                     **kwargs)
+                                                     sigma=self.sigma,
+                                                     overlap=overlap,
+                                                     inplace=False,
+                                                     **kwargs)
         cluster_list = []
 
         for clusters, symmetry in zip(s.data, self.symmetries):
-            cluster_sym=[Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
-                                  y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
-                                  radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
-                                  k=cluster[2] * self.axes_manager.signal_axes[-1].scale,
-                                  symmetry=symmetry)
-                          for cluster in clusters]
-            cluster_list.append((cluster_sym))
-        self.clusters=cluster_list
+            cluster_sym = [Cluster(x=cluster[0] * self.axes_manager.navigation_axes[-1].scale,
+                                   y=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
+                                   radius=cluster[3] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
+                                   k=cluster[2] * self.axes_manager.signal_axes[-1].scale,
+                                   symmetry=symmetry)
+                           for cluster in clusters]
+            cluster_list.append(cluster_sym)
+        self.clusters = cluster_list
         return cluster_list
 
     def plot_all(self,
@@ -134,5 +137,23 @@ class Symmetry1D(Signal1D):
                     print(ax)
                     for cluster in clusters:
                         ax.add_patch(cluster.to_circle())
+
+    def plot_clusters(self, k_range=None):
+        fig, ax = plt.subplots()
+        extent = self.axes_manager.navigation_extent
+        ax.set_xlim(extent[2], extent[3])
+        ax.set_ylim(extent[4], extent[5])
+        colors = ["black", "blue", "red", "green", "yellow", "red", "orange", "purple"]
+        for symmetry,color in zip(self.clusters, colors[:len(self.clusters)]):
+            for c in symmetry:
+                if k_range is None or (c.k is None or (c.k <k_range[1] and c.k > k_range[0])):
+                    ax.add_patch(c.to_circle(fill=True, color=color))
+        from matplotlib.lines import Line2D
+        leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
+                      markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
+
+        ax.legend(handles=leg)
+        return
+        
 
 

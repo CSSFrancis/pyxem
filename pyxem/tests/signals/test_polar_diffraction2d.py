@@ -25,9 +25,34 @@ from hyperspy.signals import Signal2D
 from pyxem.signals.polar_diffraction2d import PolarDiffraction2D, LazyPolarDiffraction2D
 from pyxem.signals.correlation2d import Correlation2D
 from pyxem.signals.power2d import Power2D
+from pyxem.signals.symmetry1d import Symmetry1D
 
+from hyperspy.decorators import lazifyTestClass
 
+@lazifyTestClass
 class TestComputeAndAsLazy2D:
+    @pytest.fixture
+    def flat_pattern(self):
+        pd = PolarDiffraction2D(data=np.ones(shape=(4, 5, 15, 10)))
+        pd.axes_manager.signal_axes[0].scale = 0.5
+        pd.axes_manager.signal_axes[0].name = "theta"
+        pd.axes_manager.signal_axes[1].scale = 2
+        pd.axes_manager.signal_axes[1].name = "k"
+        return pd
+    @pytest.fixture
+    def cluster_pattern(self):
+        data = np.ones((20, 20, 11, 60))
+        data[2:5, 2:5, 5, ::30] = 100  # 2 fold
+        data[10:13, 10:13:, 7, ::15] = 100  # 4 fold
+        data[10:13, 3:6:, 9, ::10] = 100  # 6 fold
+        data[2:5, 15:18:, 2, ::6] = 100  # 10 fold
+        pd = PolarDiffraction2D(data)
+        pd.axes_manager.signal_axes[0].scale = 0.5
+        pd.axes_manager.signal_axes[0].name = "theta"
+        pd.axes_manager.signal_axes[1].scale = 2
+        pd.axes_manager.signal_axes[1].name = "k"
+        return pd
+
     def test_2d_data_compute(self):
         dask_array = da.random.random((100, 150), chunks=(50, 50))
         s = LazyPolarDiffraction2D(dask_array)
@@ -84,11 +109,46 @@ class TestComputeAndAsLazy2D:
         s = PolarDiffraction2D(data)
         common = s.speckle_filter(sigmas=[2,3,1,1])
 
-    def test_get_symmetry_stem_library(self):
-        data = np.ones((10, 10, 11, 15))
-        s = PolarDiffraction2D(data)
-        common = s.get_symmetry_stem_library(theta_size=1.,k_size=2.)
-        common.find_peaks()
+    def test_gaussian_filter(self,
+                             flat_pattern):
+        filtered = flat_pattern.gaussian_filter(sigma=2,
+                                                inplace=False)
+        np.testing.assert_array_almost_equal(filtered, np.ones(shape=(4, 5, 15, 10)))
+        if flat_pattern._lazy:
+            assert isinstance(flat_pattern.data, da.array)
+
+    def test_get_symmetry_stem_library(self,
+                                       cluster_pattern):
+        common = cluster_pattern.get_symmetry_stem_library(theta_size=1,
+                                                           k_size=1,
+                                                           min_cluster_size=.5,
+                                                           max_cluster_size=2,
+                                                           sigma_ratio=1.2)
+        assert isinstance(common, Symmetry1D)
+        if cluster_pattern._lazy:
+            assert isinstance(common.data, da.array)
+        peaks = common.find_peaks(threshold_rel=.1)
+        ans = [[[7, 11], [6, 3]],
+               [[1, 1], [4, 4], [7, 7], [6, 4]],
+               [[4, 4]],
+               [[7, 7]],
+               [],
+               [[6, 6]]]
+        centers = [[[p.cx, p.cy] for p in s] for s in peaks]
+        assert np.testing.assert_array_almost_equal(ans, centers)
+
+    def test_plot_clusters(self,cluster_pattern):
+        common = cluster_pattern.get_symmetry_stem_library(theta_size=1,
+                                                           k_size=1,
+                                                           min_cluster_size=.5,
+                                                           max_cluster_size=2,
+                                                           sigma_ratio=1.2)
+        assert isinstance(common, Symmetry1D)
+        if cluster_pattern._lazy:
+            assert isinstance(common.data, da.array)
+        peaks = common.find_peaks(threshold_rel=.1)
+        common.plot_clusters()
+
 
 
 class TestCorrelations:

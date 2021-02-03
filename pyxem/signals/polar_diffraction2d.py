@@ -25,7 +25,7 @@ import numpy as np
 from skimage.feature import blob_dog
 from skimage.draw import circle
 from scipy.ndimage import gaussian_filter as sci_gaussian_filter
-
+from dask_image.ndfilters import  gaussian_filter as lazy_gaussian_filter
 
 from pyxem.utils.correlation_utils import _correlation, _power
 
@@ -186,8 +186,6 @@ class PolarDiffraction2D(Signal2D):
                                   max_cluster_size=10,
                                   sigma_ratio=1.6,
                                   mask=None,
-                                  threshold=2.0,
-                                  exclude_border=False,
                                   ):
         gaussian_symmetry_stem = []
         if isinstance(theta_size,float):
@@ -209,8 +207,6 @@ class PolarDiffraction2D(Signal2D):
                                 k_size]
                                for i in range(k + 1)])
 
-
-
         for s in sigma_list:
             filtered = self.gaussian_filter(sigma=s, inplace=False)
             filtered.get_angular_correlation(mask=mask, inplace=True)
@@ -224,19 +220,24 @@ class PolarDiffraction2D(Signal2D):
 
         image_cube = stack(dog_images, axis=None)
         image_cube.sigma = sigma_list
-        #image_cube = image_cube.split(axis=0)
-        #for i,sym in zip(image_cube,[1,2,4,6,8,10]):
-        #    i.sigma = sigma_list
-        #    i.symmetries = sym
         return image_cube
 
     def gaussian_filter(self,
                         sigma,
                         inplace=False):
         if inplace:
-            self.data = sci_gaussian_filter(self.data,sigma)
+            if self._lazy:
+                self.data = lazy_gaussian_filter(self.data,
+                                                 sigma)
+            else:
+                self.data = sci_gaussian_filter(self.data, sigma)
         else:
-            return self._deepcopy_with_new_data(data=sci_gaussian_filter(self.data,sigma))
+            if self._lazy:
+                return self._deepcopy_with_new_data(data=lazy_gaussian_filter(self.data,
+                                                                              sigma))
+            else:
+                return self._deepcopy_with_new_data(data=sci_gaussian_filter(self.data,
+                                                                             sigma))
 
 
     def speckle_filter(self,
