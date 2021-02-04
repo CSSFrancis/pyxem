@@ -157,7 +157,7 @@ class Symmetry1D(Signal1D):
         return ax
 
     def get_cluster_size_distribution(self):
-        radii = [[cluster.radius for cluster in symmetry]for i,symmetry in self.clusters]
+        radii = [[cluster.radius for cluster in symmetry]for symmetry in self.clusters]
         return radii
 
     def plot_cluster_size_distribution(self,
@@ -169,7 +169,7 @@ class Symmetry1D(Signal1D):
         ax.hist(size, nbins, histtype='step', stacked=True, fill=False)
 
     def get_k_range_distribution(self):
-        k_range = [[cluster.k for cluster in symmetry]for i,symmetry in self.clusters]
+        k_range = [[cluster.k for cluster in symmetry]for symmetry in self.clusters]
         return k_range
 
     def plot_k_range_distribution(self,
