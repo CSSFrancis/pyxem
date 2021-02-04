@@ -187,14 +187,13 @@ def peak_finding(data, sigma, overlap=0.5, **kwargs):
         return np.empty((0, 4))
         # Convert local_maxima to float64
     lm = local_maxima.astype(np.float64)
-    print(lm)
     # translate final column of lm, which contains the index of the
     # sigma that produced the maximum intensity value, into the sigma
     sigmas_of_peaks = sigma[local_maxima[:, 0]]
     # Remove sigma index and replace with sigmas
-    lm[:, 0] = sigmas_of_peaks
-    pruned = _prune_blobs(lm, overlap, sigma_dim=3)
-    return pruned
+    #lm[:, 0] = sigmas_of_peaks
+    #pruned = _prune_blobs(lm, overlap, sigma_dim=3)
+    return lm
 
 
 
