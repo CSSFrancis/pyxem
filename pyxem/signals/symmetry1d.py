@@ -138,8 +138,9 @@ class Symmetry1D(Signal1D):
                     for cluster in clusters:
                         ax.add_patch(cluster.to_circle())
 
-    def plot_clusters(self, k_range=None):
-        fig, ax = plt.subplots()
+    def plot_clusters(self, ax=None, k_range=None):
+        if ax is None:
+            fig, ax = plt.subplots()
         extent = self.axes_manager.navigation_extent
         ax.set_xlim(extent[2], extent[3])
         ax.set_ylim(extent[4], extent[5])
@@ -147,13 +148,48 @@ class Symmetry1D(Signal1D):
         for symmetry,color in zip(self.clusters, colors[:len(self.clusters)]):
             for c in symmetry:
                 if k_range is None or (c.k is None or (c.k <k_range[1] and c.k > k_range[0])):
-                    ax.add_patch(c.to_circle(fill=True, color=color))
+                    ax.add_patch(c.to_circle(fill=True, color=color, alpha=0.5))
         from matplotlib.lines import Line2D
         leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
                       markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
 
         ax.legend(handles=leg)
-        return
+        return ax
+
+    def get_cluster_size_distribution(self):
+        radii = [[cluster.radius for cluster in symmetry]for i,symmetry in self.clusters]
+        return radii
+
+    def plot_cluster_size_distribution(self,
+                                       nbins=5,
+                                       ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        size = self.get_cluster_size_distribution()
+        ax.hist(size, nbins, histtype='step', stacked=True, fill=False)
+
+    def get_k_range_distribution(self):
+        k_range = [[cluster.k for cluster in symmetry]for i,symmetry in self.clusters]
+        return k_range
+
+    def plot_k_range_distribution(self,
+                                  nbins=5,
+                                  ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        k_range = self.get_k_range_distribution()
+        ax.hist(k_range, nbins, histtype='step', stacked=True, fill=False)
+
+    def plot_cluster_stats(self, k_range=True, size=True, spatial=True):
+        fig = plt.figure(constrained_layout=True)
+        gs = fig.add_gridspec(3, 2)
+        ax1 = fig.add_subplot(gs[:2, :2])
+        ax1.set_title('Spatial Clusters')
+        self.plot_clusters(ax=ax1)
+        ax2 = fig.add_subplot(gs[2, 0])
+        ax2.set_title('Size Distribution')
+        ax3 = fig.add_subplot(gs[2:, 1])
+        ax3.set_title('K Distribution')
         
 
 

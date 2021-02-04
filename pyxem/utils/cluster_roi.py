@@ -43,6 +43,7 @@ class Cluster(CircleROI):
                   linewidth=2,
                   fill=False,
                   color="blue",
+                  alpha=None,
                   **kwargs):
         """This takes the object and turns it into a matplotlib.Circle object
         """
@@ -51,5 +52,6 @@ class Cluster(CircleROI):
                       linewidth=linewidth,
                       fill=fill,
                       color=color,
+                      alpha=alpha,
                       **kwargs)
 
