@@ -109,7 +109,7 @@ class Symmetry1D(Signal1D):
         for clusters, symmetry in zip(s.data, self.symmetries):
             cluster_sym = [Cluster(x=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
                                    y=cluster[2] * self.axes_manager.navigation_axes[-1].scale,
-                                   radius=self.sigma[cluster[0]] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
+                                   radius=cluster[0] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
                                    k=((cluster[3] * self.axes_manager.signal_axes[-1].scale) +
                                       self.axes_manager.signal_axes[-1].offset),
                                    symmetry=symmetry)
