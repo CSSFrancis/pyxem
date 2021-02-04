@@ -157,7 +157,7 @@ class Symmetry1D(Signal1D):
         return ax
 
     def get_cluster_size_distribution(self):
-        radii = [[cluster.radius for cluster in symmetry]for symmetry in self.clusters]
+        radii = [[cluster.r for cluster in symmetry]for symmetry in self.clusters]
         return radii
 
     def plot_cluster_size_distribution(self,
