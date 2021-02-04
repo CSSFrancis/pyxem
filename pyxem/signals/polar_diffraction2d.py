@@ -219,7 +219,7 @@ class PolarDiffraction2D(Signal2D):
                       * np.mean(sigma_list[i]) for i in range(k)]
 
         image_cube = stack(dog_images, axis=None)
-        image_cube.sigma = sigma_list
+        image_cube.sigma = sigma_list[:,0]
         return image_cube
 
     def gaussian_filter(self,
