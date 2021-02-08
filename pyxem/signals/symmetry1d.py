@@ -135,7 +135,6 @@ class Symmetry1D(Signal1D):
             axs = f.get_axes()
             if self.clusters is not None:
                 for ax, clusters in zip(axs[::2], self.clusters):
-                    print(ax)
                     for cluster in clusters:
                         ax.add_patch(cluster.to_circle())
 
@@ -143,8 +142,8 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         extent = self.axes_manager.navigation_extent
-        ax.set_xlim(extent[2]-10, extent[3]+10)
-        ax.set_ylim(extent[4]-10, extent[5]+10)
+        ax.set_xlim(extent[2]-5, extent[3]+5)
+        ax.set_ylim(extent[4]-5, extent[5]+5)
         for symmetry, color in zip(self.clusters, colors[:len(self.clusters)]):
             for c in symmetry:
                 if k_range is None or (c.k is None or (c.k <k_range[1] and c.k > k_range[0])):
@@ -186,7 +185,7 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         k_range = self.get_k_range_distribution()
-        s_extent = s.axes_manager.signal_extent
+        s_extent = self.axes_manager.signal_extent
         histogram_k = np.array([np.histogram(ks,
                                              nbins,
                                              s_extent) for ks in k_range])
