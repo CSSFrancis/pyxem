@@ -105,7 +105,7 @@ class Symmetry1D(Signal1D):
                                                      inplace=False,
                                                      **kwargs)
         cluster_list = []
-        print("sigma:",self.sigma)
+        print("sigma:", self.sigma)
         for clusters, symmetry in zip(s.data, self.symmetries):
             cluster_sym = [Cluster(x=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
                                    y=cluster[2] * self.axes_manager.navigation_axes[-1].scale,
@@ -146,7 +146,7 @@ class Symmetry1D(Signal1D):
         ax.set_xlim(extent[2], extent[3])
         ax.set_ylim(extent[4], extent[5])
         colors = ["black", "blue", "red", "green", "yellow", "red", "orange", "purple"]
-        for symmetry,color in zip(self.clusters, colors[:len(self.clusters)]):
+        for symmetry, color in zip(self.clusters, colors[:len(self.clusters)]):
             for c in symmetry:
                 if k_range is None or (c.k is None or (c.k <k_range[1] and c.k > k_range[0])):
                     ax.add_patch(c.to_circle(fill=True, color=color, alpha=0.5))
@@ -179,7 +179,13 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         k_range = self.get_k_range_distribution()
-        ax.hist(k_range, nbins, histtype='step', stacked=True, fill=False)
+        ax.hist(k_range,
+                nbins,
+                histtype='step',
+                stacked=True,
+                fill=False,
+                label=self.symmetries)
+
 
     def plot_cluster_stats(self, k_range=True, size=True, spatial=True):
         fig = plt.figure(constrained_layout=True)

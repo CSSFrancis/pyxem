@@ -186,9 +186,10 @@ class PolarDiffraction2D(Signal2D):
                                   max_cluster_size=10,
                                   sigma_ratio=1.6,
                                   mask=None,
+                                  **kwargs,
                                   ):
         gaussian_symmetry_stem = []
-        if isinstance(theta_size,float):
+        if isinstance(theta_size, float):
             theta_size =theta_size/self.axes_manager.signal_axes[1].scale
         if isinstance(k_size, float):
             k_size = k_size / self.axes_manager.signal_axes[0].scale
@@ -210,7 +211,7 @@ class PolarDiffraction2D(Signal2D):
         for s in sigma_list:
             filtered = self.gaussian_filter(sigma=s, inplace=False)
             filtered.get_angular_correlation(mask=mask, inplace=True)
-            filtered = filtered.get_symmetry_stem()
+            filtered = filtered.get_symmetry_stem(**kwargs)
             filtered.metadata.General["title"] = str(s) + " Sigma Sym STEM"
             gaussian_symmetry_stem.append(filtered)
             print(s)
@@ -219,7 +220,7 @@ class PolarDiffraction2D(Signal2D):
                       * np.mean(sigma_list[i]) for i in range(k)]
 
         image_cube = stack(dog_images, axis=None)
-        image_cube.sigma = sigma_list[:,0]
+        image_cube.sigma = sigma_list[:, 0]
         return image_cube
 
     def gaussian_filter(self,
