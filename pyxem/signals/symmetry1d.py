@@ -29,8 +29,6 @@ class Symmetry1D(Signal1D):
     def symmetries(self, symmetries):
         self.metadata.set_item("Signal.symmetries", symmetries)
 
-    def print_clusters(self):
-        for s,c in s.clusters
     def get_clusters(self,
                      method="log",
                      k_range=None,
