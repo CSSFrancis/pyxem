@@ -167,7 +167,13 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         size = self.get_cluster_size_distribution()
-        ax.hist(size, nbins, histtype='step', stacked=True, fill=False)
+        ax.hist(size,
+                nbins,
+                histtype='step',
+                stacked=True,
+                fill=False,
+                label=self.symmetries)
+        ax.legend()
 
     def get_k_range_distribution(self):
         k_range = [[cluster.k for cluster in symmetry]for symmetry in self.clusters]
@@ -185,6 +191,7 @@ class Symmetry1D(Signal1D):
                 stacked=True,
                 fill=False,
                 label=self.symmetries)
+        ax.legend()
 
 
     def plot_cluster_stats(self, k_range=True, size=True, spatial=True):
