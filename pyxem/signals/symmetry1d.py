@@ -109,7 +109,7 @@ class Symmetry1D(Signal1D):
         for clusters, symmetry in zip(s.data, self.symmetries):
             cluster_sym = [Cluster(x=cluster[1] * self.axes_manager.navigation_axes[-1].scale,
                                    y=cluster[2] * self.axes_manager.navigation_axes[-1].scale,
-                                   radius=cluster[0] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
+                                   radius=self.sigma[int(cluster[0])] * np.sqrt(2) * self.axes_manager.navigation_axes[-1].scale,
                                    k=((cluster[3] * self.axes_manager.signal_axes[-1].scale) +
                                       self.axes_manager.signal_axes[-1].offset),
                                    symmetry=symmetry)
@@ -153,7 +153,7 @@ class Symmetry1D(Signal1D):
         leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
                       markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
 
-        ax.legend(handles=leg)
+        ax.legend(handles=leg, loc='upper right')
         return ax
 
     def get_cluster_size_distribution(self):
@@ -166,17 +166,14 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         size = self.get_cluster_size_distribution()
+        leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
         ax.hist(size,
                 nbins,
                 histtype='step',
                 stacked=True,
                 fill=False,
-                label=self.symmetries)
-        from matplotlib.lines import Line2D
-        leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
-                      markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
-
-        ax.legend(handles=leg)
+                label=leg)
+        ax.legend(loc='upper right')
 
     def get_k_range_distribution(self):
         k_range = [[cluster.k for cluster in symmetry]for symmetry in self.clusters]
@@ -188,17 +185,14 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         k_range = self.get_k_range_distribution()
+        leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
         ax.hist(k_range,
                 nbins,
                 histtype='step',
                 stacked=True,
                 fill=False,
-                label=self.symmetries)
-        from matplotlib.lines import Line2D
-        leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
-                      markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
-
-        ax.legend(handles=leg)
+                label=leg)
+        ax.legend(loc='upper right')
 
 
     def plot_cluster_stats(self, k_range=True, size=True, spatial=True):
