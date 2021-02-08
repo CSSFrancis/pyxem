@@ -7,7 +7,7 @@ import numpy as np
 from pyxem.utils.cluster_roi import Cluster
 from pyxem.utils.correlation_utils import blob_finding,peak_finding
 
-
+colors = ["black", "blue", "red", "green", "yellow", "red", "orange", "purple"]
 class Symmetry1D(Signal1D):
     _signal_type = "symmetry"
 
@@ -145,7 +145,6 @@ class Symmetry1D(Signal1D):
         extent = self.axes_manager.navigation_extent
         ax.set_xlim(extent[2], extent[3])
         ax.set_ylim(extent[4], extent[5])
-        colors = ["black", "blue", "red", "green", "yellow", "red", "orange", "purple"]
         for symmetry, color in zip(self.clusters, colors[:len(self.clusters)]):
             for c in symmetry:
                 if k_range is None or (c.k is None or (c.k <k_range[1] and c.k > k_range[0])):
@@ -173,7 +172,11 @@ class Symmetry1D(Signal1D):
                 stacked=True,
                 fill=False,
                 label=self.symmetries)
-        ax.legend()
+        from matplotlib.lines import Line2D
+        leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
+                      markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
+
+        ax.legend(handles=leg)
 
     def get_k_range_distribution(self):
         k_range = [[cluster.k for cluster in symmetry]for symmetry in self.clusters]
@@ -191,7 +194,11 @@ class Symmetry1D(Signal1D):
                 stacked=True,
                 fill=False,
                 label=self.symmetries)
-        ax.legend()
+        from matplotlib.lines import Line2D
+        leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
+                      markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
+
+        ax.legend(handles=leg)
 
 
     def plot_cluster_stats(self, k_range=True, size=True, spatial=True):
