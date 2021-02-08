@@ -7,7 +7,7 @@ import numpy as np
 from pyxem.utils.cluster_roi import Cluster
 from pyxem.utils.correlation_utils import blob_finding,peak_finding
 
-colors = ["black", "blue", "red", "green", "yellow", "red", "orange", "purple"]
+colors = ["black", "blue", "red", "green", "yellow", "orange", "purple"]
 class Symmetry1D(Signal1D):
     _signal_type = "symmetry"
 
@@ -29,6 +29,8 @@ class Symmetry1D(Signal1D):
     def symmetries(self, symmetries):
         self.metadata.set_item("Signal.symmetries", symmetries)
 
+    def print_clusters(self):
+        for s,c in s.clusters
     def get_clusters(self,
                      method="log",
                      k_range=None,
