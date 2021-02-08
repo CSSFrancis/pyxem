@@ -167,12 +167,13 @@ class Symmetry1D(Signal1D):
             fig, ax = plt.subplots()
         size = self.get_cluster_size_distribution()
         leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
-        ax.hist(size,
-                nbins,
-                histtype='step',
-                stacked=True,
-                fill=False,
-                label=leg)
+        s_extent = (min(self.sigma) * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale,
+                    max(self.sigma) * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale)
+        histogram_s = np.array([np.histogram(s,
+                                             nbins,
+                                             s_extent) for s in size])
+        for s, l in zip(histogram_s, leg):
+            ax.plot(s[1][0:-1], s[0], label=l)
         ax.legend(loc='upper right')
 
     def get_k_range_distribution(self):
@@ -185,13 +186,13 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         k_range = self.get_k_range_distribution()
-        leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
-        ax.hist(k_range,
-                nbins,
-                histtype='step',
-                stacked=True,
-                fill=False,
-                label=leg)
+        s_extent = s.axes_manager.signal_extent
+        histogram_k = np.array([np.histogram(ks,
+                                             nbins,
+                                             s_extent) for ks in k_range])
+        leg = [str(sym)+" fold symmetry" for sym in reversed(self.symmetries)]
+        for k, l in zip(histogram_k, leg):
+            ax.plot(k[1][0:-1], k[0], label=l)
         ax.legend(loc='upper right')
 
 
