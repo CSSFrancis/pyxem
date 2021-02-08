@@ -189,7 +189,7 @@ class Symmetry1D(Signal1D):
         histogram_k = np.array([np.histogram(ks,
                                              nbins,
                                              s_extent) for ks in k_range])
-        leg = [str(sym)+" fold symmetry" for sym in reversed(self.symmetries)]
+        leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
         for k, l in zip(histogram_k, leg):
             ax.plot(k[1][0:-1], k[0], label=l)
         ax.legend(loc='upper right')
