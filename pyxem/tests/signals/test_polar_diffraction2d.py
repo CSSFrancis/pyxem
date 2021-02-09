@@ -23,6 +23,7 @@ import dask.array as da
 from hyperspy.signals import Signal2D
 
 from pyxem.signals.polar_diffraction2d import PolarDiffraction2D, LazyPolarDiffraction2D
+from pyxem.signals.electron_diffraction2d import ElectronDiffraction2D
 from pyxem.signals.correlation2d import Correlation2D
 from pyxem.signals.power2d import Power2D
 from pyxem.signals.symmetry1d import Symmetry1D
@@ -216,6 +217,28 @@ class TestCorrelations:
         ac = flat_pattern.get_angular_power(inplace=True)
         assert ac is None
         assert isinstance(flat_pattern, Power2D)
+
+
+class TestSymmetrySTEMProcess:
+    @pytest.fixture
+    def four_fold_cluster(self):
+        data = np.random.random((10, 10, 100, 100))
+        data[:, :, 48:52, 23:27] = 100
+        data[:, :, 23:27, 48:52] = 100
+        data[:, :, 73:77, 48:52] = 100
+        data[:, :, 48:52, 73:77] = 100
+        d = ElectronDiffraction2D(data)
+        d.axes_manager.signal_axes[0].scale = 0.1
+        d.axes_manager.signal_axes[0].name = "kx"
+        d.axes_manager.signal_axes[1].scale = 0.1
+        d.axes_manager.signal_axes[1].name = "ky"
+        d.unit = "k_nm^-1"
+        d.beam_energy=200
+        d.set_ai()
+        return d
+
+    def test_to_polar(self, four_fold_cluster):
+        four_fold_cluster.get_azimuthal_integral2d(50)
 
 
 class TestDecomposition:

@@ -210,7 +210,12 @@ class PolarDiffraction2D(Signal2D):
 
         for s in sigma_list:
             filtered = self.gaussian_filter(sigma=s, inplace=False)
-            filtered.get_angular_correlation(mask=mask, inplace=True)
+            print(s[-2:])
+            if mask is not None:
+                filtered_mask = sci_gaussian_filter(mask, s[-2:]) > 0
+                filtered.get_angular_correlation(mask=filtered_mask, inplace=True)
+            else:
+                filtered.get_angular_correlation(mask=mask, inplace=True)
             filtered = filtered.get_symmetry_stem(**kwargs)
             filtered.metadata.General["title"] = str(s) + " Sigma Sym STEM"
             gaussian_symmetry_stem.append(filtered)

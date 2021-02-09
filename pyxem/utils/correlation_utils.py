@@ -55,9 +55,7 @@ def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
         number_unmasked = np.fft.irfft(
             mask_fft * np.conjugate(mask_fft), axis=axis
         ).real
-        number_unmasked[
-            number_unmasked < 1
-        ] = 1  # get rid of divide by zero error for completely masked rows
+        number_unmasked[number_unmasked < 1] = 1  # get rid of divide by zero error for completely masked rows
         z[m] = 0
 
     # fast method uses a FFT and is a process which is O(n) = n log(n)
