@@ -221,8 +221,7 @@ class PolarDiffraction2D(Signal2D):
             gaussian_symmetry_stem.append(filtered)
             print(s)
 
-        dog_images = [(gaussian_symmetry_stem[i] - gaussian_symmetry_stem[i + 1])
-                      * np.mean(sigma_list[i]) for i in range(k)]
+        dog_images = [(gaussian_symmetry_stem[i] - gaussian_symmetry_stem[i + 1]) for i in range(k)]
 
         image_cube = stack(dog_images, axis=None)
         image_cube.sigma = sigma_list[:, 0]
