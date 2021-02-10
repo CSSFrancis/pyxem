@@ -157,6 +157,9 @@ class Correlation2D(Signal2D, CommonDiffraction):
         signals = signals.transpose(navigation_axes=(2, 0, 1))
         signals.set_signal_type("symmetry")
         signals.symmetries = symmetries
+        signals.axes_manager.navigation_axes[0].scale = 1
+        signals.axes_manager.navigation_axes[0].name = "Symmetry"
+        signals.axes_manager.navigation_axes[0].offset = 0
         return signals
 
 
