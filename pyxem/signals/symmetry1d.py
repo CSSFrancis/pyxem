@@ -259,7 +259,12 @@ class Symmetry1D(Signal1D):
         ax3 = fig.add_subplot(gs[2:, 1])
         ax3.set_title('K Distribution')
 
-    def plot_cluster_numbers(self):
-        
+    def plot_cluster_numbers(self,ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        ax.bar(range(len(self.clusters)),
+               [len(c) for c in self.clusters],
+               tick_label=[sym for sym in self.symmetries])
+
 
 
