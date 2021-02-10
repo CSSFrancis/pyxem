@@ -10,7 +10,8 @@ from scipy.ndimage import gaussian_filter as sci_gaussian_filter
 from dask_image.ndfilters import  gaussian_filter as lazy_gaussian_filter
 from hyperspy.api import stack
 
-colors = ["black", "blue", "red", "green", "yellow", "orange", "purple"]
+colors = ["black", "blue", "red", "green", "yellow", "orange", "purple", "gray", "pink", "cyan",
+          "olive", "brown", "ivory", "lime", "gold"]
 class Symmetry1D(Signal1D):
     _signal_type = "symmetry"
 
