@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pyxem.utils.cluster_roi import Cluster
 from pyxem.utils.correlation_utils import blob_finding,peak_finding
+from scipy.ndimage import gaussian_filter as sci_gaussian_filter
+from dask_image.ndfilters import  gaussian_filter as lazy_gaussian_filter
+from hyperspy.api import stack
 
 colors = ["black", "blue", "red", "green", "yellow", "orange", "purple"]
 class Symmetry1D(Signal1D):
@@ -67,10 +70,8 @@ class Symmetry1D(Signal1D):
                   inplace=False,
                   ragged=True,
                   **kwargs)
-        print(np.shape(s.data))
         cluster_list = []
         for clusters, symmetry in zip(s.data, self.symmetries):
-            print(clusters)
             if k_range is None:
                 cluster_list.append([Cluster(x=cluster[0]*self.axes_manager.navigation_axes[-1].scale,
                                              y=cluster[1]*self.axes_manager.navigation_axes[-1].scale,
@@ -91,7 +92,8 @@ class Symmetry1D(Signal1D):
     def find_peaks(self,
                    overlap=0.5,
                    **kwargs):
-        """ This method takes a library of SymmetrySTEM Objects and finds peaks
+        """
+        This method takes a library of SymmetrySTEM Objects and finds peaks
         in the library.  This method might be moved to a different SymmetrySTEMLibrary Class
         which better handles the different Sigma applied to the dataset.
 
@@ -138,6 +140,37 @@ class Symmetry1D(Signal1D):
                     for cluster in clusters:
                         ax.add_patch(cluster.to_circle())
 
+    def get_blurred_library(self,
+                            min_cluster_size=0.5,
+                            max_cluster_size=5.0,
+                            sigma_ratio=1.6,
+                            k_sigma=2):
+        gaussian_symmetry_stem = []
+        if isinstance(k_sigma, float):
+            k_sigma = k_sigma / self.axes_manager.signal_axes[0].scale
+        if isinstance(min_cluster_size, float):
+            min_cluster_size = min_cluster_size / self.axes_manager.navigation_axes[0].scale
+        if isinstance(max_cluster_size, float):
+            max_cluster_size = min_cluster_size / self.axes_manager.navigation_axes[0].scale
+
+        # k such that min_sigma*(sigma_ratio**k) > max_sigma
+        k = int(np.mean(np.log(max_cluster_size / min_cluster_size) / np.log(sigma_ratio) + 1))
+
+        # a geometric progression of standard deviations for gaussian kernels
+        sigma_list = np.array([[min_cluster_size * (sigma_ratio ** i),
+                                min_cluster_size * (sigma_ratio ** i),
+                                k_sigma]
+                               for i in range(k + 1)])
+
+        for s in sigma_list:
+            filtered = self.gaussian_filter(sigma=s, inplace=False)
+            gaussian_symmetry_stem.append(filtered)
+
+        dog_images = [(gaussian_symmetry_stem[i] - gaussian_symmetry_stem[i + 1]) for i in range(k)]
+        image_cube = stack(dog_images, axis=None)
+        image_cube.sigma = sigma_list[:, 0]
+        return image_cube
+
     def plot_clusters(self, ax=None, k_range=None):
         if ax is None:
             fig, ax = plt.subplots()
@@ -154,6 +187,23 @@ class Symmetry1D(Signal1D):
 
         ax.legend(handles=leg, loc='upper right')
         return ax
+
+    def gaussian_filter(self,
+                        sigma,
+                        inplace=False):
+        if inplace:
+            if self._lazy:
+                self.data = lazy_gaussian_filter(self.data,
+                                                 sigma)
+            else:
+                self.data = sci_gaussian_filter(self.data, sigma)
+        else:
+            if self._lazy:
+                return self._deepcopy_with_new_data(data=lazy_gaussian_filter(self.data,
+                                                                              sigma))
+            else:
+                return self._deepcopy_with_new_data(data=sci_gaussian_filter(self.data,
+                                                                             sigma))
 
     def get_cluster_size_distribution(self):
         radii = [[cluster.r for cluster in symmetry]for symmetry in self.clusters]
