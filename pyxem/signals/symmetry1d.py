@@ -151,7 +151,7 @@ class Symmetry1D(Signal1D):
         if isinstance(min_cluster_size, float):
             min_cluster_size = min_cluster_size / self.axes_manager["x"].scale
         if isinstance(max_cluster_size, float):
-            max_cluster_size = min_cluster_size / self.axes_manager["x"].scale
+            max_cluster_size = max_cluster_size / self.axes_manager["x"].scale
 
         # k such that min_sigma*(sigma_ratio**k) > max_sigma
         k = int(np.mean(np.log(max_cluster_size / min_cluster_size) / np.log(sigma_ratio) + 1))
@@ -167,9 +167,10 @@ class Symmetry1D(Signal1D):
             filtered = self.gaussian_filter(sigma=s, inplace=False)
             gaussian_symmetry_stem.append(filtered)
 
+        print(sigma_list)
         dog_images = [(gaussian_symmetry_stem[i] - gaussian_symmetry_stem[i + 1]) for i in range(k)]
         image_cube = stack(dog_images, axis=None)
-        image_cube.axes_manager.navigation_axes[0].name ="Sigma"
+        image_cube.axes_manager.navigation_axes[-1].name ="Sigma"
         image_cube.sigma = sigma_list[:, 0]
         return image_cube
 
@@ -257,6 +258,8 @@ class Symmetry1D(Signal1D):
         ax2.set_title('Size Distribution')
         ax3 = fig.add_subplot(gs[2:, 1])
         ax3.set_title('K Distribution')
+
+    def plot_cluster_numbers(self):
         
 
 
