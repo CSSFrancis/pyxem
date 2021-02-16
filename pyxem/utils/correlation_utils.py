@@ -72,19 +72,15 @@ def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
     if normalize_axes is not None:  # simplified way to calculate the normalization
         # Need two row mean's for the case when row mean = 0.  I don't know if that
         num_not_zero = np.sum(number_unmasked !=1, axis=normalize_axes)
-        print(num_not_zero)
         row_mean1 = np.divide(np.sum(a, axis=normalize_axes), num_not_zero)
-        print(row_mean1)
         row_mean2 =row_mean1
         row_mean2[row_mean2 == 0] = 1
-        print(row_mean2)
         row_mean1 = np.expand_dims(row_mean1, axis=normalize_axes)
         row_mean2 = np.expand_dims(row_mean2, axis=normalize_axes)
         a = np.divide(np.subtract(a, row_mean1), row_mean2)
         a[number_unmasked == 1] = 0
 
     if wrap is False:
-        print(slicer)
         a = a[slicer]
     return a
 
