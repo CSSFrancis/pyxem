@@ -25,8 +25,9 @@ import numpy as np
 from skimage.feature import blob_dog
 from skimage.draw import circle
 from scipy.ndimage import gaussian_filter as sci_gaussian_filter
-from dask_image.ndfilters import  gaussian_filter as lazy_gaussian_filter
+from dask_image.ndfilters import gaussian_filter as lazy_gaussian_filter
 
+#from pyxem.signals.diffraction2d import Diffraction2D
 from pyxem.utils.correlation_utils import _correlation, _power
 
 

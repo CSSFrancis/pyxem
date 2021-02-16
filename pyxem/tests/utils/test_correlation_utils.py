@@ -45,18 +45,18 @@ class TestCorrelations:
         return ones
 
     def test_correlation_ones(self, ones_array):
-        c = _correlation(ones_array)
+        c = _correlation(ones_array, normalize_axes=1)
         np.testing.assert_array_equal(c, np.zeros((10, 20)))
 
     def test_correlation_random(self, random_array):
-        c = _correlation(random_array)
-        c2 = _correlation(random_array*10)
+        c = _correlation(random_array,normalize_axes=0)
+        c2 = _correlation(random_array*10, normalize_axes=0)
         ra_size = random_array.shape
         ra_size = (ra_size[0], ra_size[1]*2)
         random_array_long = np.empty(ra_size, dtype=random_array.dtype)
         random_array_long[:, 0::2] = random_array
         random_array_long[:, 1::2] = random_array
-        c3 = _correlation(random_array_long)
+        c3 = _correlation(random_array_long, normalize_axes=0)
         assert (np.max(c) < 1)
         assert (np.max(c) > -1)
         np.testing.assert_array_almost_equal(c, c2)
@@ -99,6 +99,22 @@ class TestCorrelations:
         result[1::2, :] = -0.96078816
         result[0::2, :] = 0.96078816
         np.testing.assert_array_almost_equal(c, result)
+
+    def test_correlations_mask2(self, ones_array):
+        m = np.zeros((10, 20))
+        m[1, 1] = 1
+        m[2, 1:3] = 1
+        m[3, 1:4] = 1
+        m[4, 1:5] = 1
+        m[5, 1:5] = 1
+        m[6, 1:5] = 1
+        m[7, 1:5] = 1
+        c = _correlation(ones_array*7, axis=1, normalize_axes=1, mask=m)
+        c2 = _correlation(ones_array*7, axis=0,normalize_axes=0,  mask=m)
+        print(c2)
+        result = np.zeros((10, 20))
+        np.testing.assert_array_almost_equal(c, result)
+        np.testing.assert_array_almost_equal(c2, result)
 
     def test_correlations_wrapping(
         self, ones_hundred

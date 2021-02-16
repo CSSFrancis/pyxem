@@ -2743,6 +2743,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             s_bad_pixel_removed.compute(progressbar=show_progressbar)
         return s_bad_pixel_removed
 
+
     def make_probe_navigation(self, method="fast"):
         nav_dim = self.axes_manager.navigation_dimension
         if (0 == nav_dim) or (nav_dim > 2):
