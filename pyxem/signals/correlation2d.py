@@ -24,12 +24,12 @@ from hyperspy._signals.lazy import LazySignal
 from pyxem.utils.correlation_utils import corr_to_power,\
     get_interpolation_matrix,\
     symmetry_stem
-from pyxem.signals.common_diffraction import CommonDiffraction
+from pyxem.signals.polar_diffraction2d import PolarDiffraction2D
 import numpy as np
 from fractions import Fraction as frac
 
 
-class Correlation2D(Signal2D, CommonDiffraction):
+class Correlation2D(Signal2D, PolarDiffraction2D):
     _signal_type = "correlation"
 
     def __init__(self, *args, **kwargs):
