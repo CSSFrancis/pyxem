@@ -174,15 +174,10 @@ def get_interpolation_matrix(angles, angular_range, num_points, method="average"
 
 def symmetry_stem(signal, interpolation, method="average"):
     if method is "average":
-        print("interpoliatoin:", interpolation)
         return np.matmul(signal, np.transpose(interpolation))
-    print(np.shape(interpolation))
     if method is "max":
-        for interp in interpolation:
-            print("interpoliatoin:",np.shape(interp))
         val = [np.amax([np.matmul(signal, i)for i in interp], axis=0)
                for interp in interpolation]
-        print("shape",np.shape(val))
         return val
 
 
