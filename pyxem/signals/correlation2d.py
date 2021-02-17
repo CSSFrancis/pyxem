@@ -29,7 +29,7 @@ import numpy as np
 from fractions import Fraction as frac
 
 
-class Correlation2D(Signal2D, PolarDiffraction2D):
+class Correlation2D(PolarDiffraction2D):
     _signal_type = "correlation"
 
     def __init__(self, *args, **kwargs):
