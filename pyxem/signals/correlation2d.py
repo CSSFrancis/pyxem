@@ -113,8 +113,9 @@ class Correlation2D(PolarDiffraction2D):
         return power
 
     def get_symmetry_stem(self,
-                          symmetries=[1, 2, 4, 6, 8, 10],
+                          symmetries=[1, 2,3, 4,5, 6,7, 8,9, 10],
                           angular_range=0,
+                          method="average",
                           include_duplicates=False,
                           normalize=True,
                           **kwargs):
@@ -129,6 +130,8 @@ class Correlation2D(PolarDiffraction2D):
         ------------
         symmetries: list
             The symmetries to calculate
+        method: str
+            One of max or average
         include_duplicates: bool
             Include duplicates like 2 and 4
 
@@ -145,13 +148,15 @@ class Correlation2D(PolarDiffraction2D):
         num_angles = [len(a) for a in angles]
         interp = [get_interpolation_matrix(a,
                                            angular_range,
-                                           num_points=self.axes_manager.signal_axes[0].size)
+                                           num_points=self.axes_manager.signal_axes[0].size,
+                                           method=method)
                   for a in angles]
         signals = self.map(symmetry_stem,
                            interpolation=interp,
                            show_progressbar=True,
-                           inplace=False)
-        if normalize:
+                           inplace=False,
+                           method=method)
+        if normalize & (method is not "max"):
             signals = np.divide(signals, num_angles)
         # 3-D signal (x,y,k) for each symmetry
         signals = signals.transpose(navigation_axes=(2, 0, 1))

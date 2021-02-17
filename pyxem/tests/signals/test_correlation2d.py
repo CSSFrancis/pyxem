@@ -77,7 +77,7 @@ class TestComputeAndAsLazy2D:
 class TestGetPower:
     @pytest.fixture
     def flat_pattern(self):
-        pd = Correlation2D(data=np.ones(shape=(2, 2, 5, 5)))
+        pd = Correlation2D(data=np.ones(shape=(2, 2, 5, 6)))
         pd.axes_manager.signal_axes[0].scale = 0.5
         pd.axes_manager.signal_axes[0].name = "theta"
         pd.axes_manager.signal_axes[1].scale = 2
@@ -105,6 +105,9 @@ class TestGetPower:
     def test_symmetry_stem(self, flat_pattern):
         p = flat_pattern.get_symmetry_stem()
         assert isinstance(p,SymmetrySTEM)
+
+    def test_symmetry_stem2(self, flat_pattern):
+        p = flat_pattern.get_symmetry_stem(symmetries=[1,2,3,4,5,6,7,8,9,10,11],method="max", normalize=False)
 
 class TestSymmetrySTEM:
     @pytest.fixture

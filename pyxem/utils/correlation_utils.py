@@ -156,17 +156,35 @@ def wrap_set_float(list, bottom, top, value):
     return list
 
 
-def get_interpolation_matrix(angles, angular_range, num_points):
-    angular_ranges = [(angle - angular_range / (2*np.pi), angle + angular_range / (2*np.pi)) for angle in angles]
-    angular_ranges = np.multiply(angular_ranges, num_points)
-    interpolation_matrix = np.zeros(num_points)
-    for i, angle in enumerate(angular_ranges):
-        wrap_set_float(interpolation_matrix, top=angle[1], bottom=angle[0], value=1)
-    return interpolation_matrix
+def get_interpolation_matrix(angles, angular_range, num_points, method="average"):
+    if method is "average":
+        angular_ranges = [(angle - angular_range / (2*np.pi), angle + angular_range / (2*np.pi)) for angle in angles]
+        angular_ranges = np.multiply(angular_ranges, num_points)
+        interpolation_matrix = np.zeros(num_points)
+        for i, angle in enumerate(angular_ranges):
+            wrap_set_float(interpolation_matrix, top=angle[1], bottom=angle[0], value=1)
+        return interpolation_matrix
+    else:
+        angular_ranges = [(angle - angular_range / (2*np.pi), angle + angular_range / (2*np.pi)) for angle in angles]
+        angular_ranges = np.multiply(angular_ranges, num_points)
+        interpolation_matrix = np.zeros((len(angles),num_points))
+        for i, angle in enumerate(angular_ranges):
+            wrap_set_float(interpolation_matrix[i,:], top=angle[1], bottom=angle[0], value=1)
+        return interpolation_matrix
 
+def symmetry_stem(signal, interpolation, method="average"):
+    if method is "average":
+        print("interpoliatoin:", interpolation)
+        return np.matmul(signal, np.transpose(interpolation))
+    print(np.shape(interpolation))
+    if method is "max":
+        for interp in interpolation:
+            print("interpoliatoin:",np.shape(interp))
+        val = [np.amax([np.matmul(signal, i)for i in interp], axis=0)
+               for interp in interpolation]
+        print("shape",np.shape(val))
+        return val
 
-def symmetry_stem(signal, interpolation):
-    return np.matmul(signal, np.transpose(interpolation))
 
 
 def blob_finding(data, method, **kwargs):
