@@ -142,7 +142,8 @@ class TestCorrelations:
 
     def test_get_interp_matrix(self):
         angles = [0, .25, .5, .75, 1]
-        mat = get_interpolation_matrix(angles=angles, angular_range=np.pi/45, num_points=90)
+        mat = get_interpolation_matrix(angles=angles, angular_range=0, num_points=18)
+        print(mat)
         z = np.zeros(90)
         z[:2] = 1
         z[-1] = 1
