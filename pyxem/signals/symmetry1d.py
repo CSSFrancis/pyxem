@@ -114,8 +114,7 @@ class Symmetry1D(Signal1D):
         # computing gaussian laplace
         # average s**2 provides scale invariance
 
-        gl_images = [self._deepcopy_with_new_data(data=-sci_gaussian_laplace(self.data, s) * np.mean(s) ** 2)
-                            for s in sigma_list]
+        gl_images = [self.laplacian(sigma=s) for s in sigma_list]
 
         gl_images = stack(gl_images, axis=None)
         gl_images.axes_manager.navigation_axes[-1].name = "Sigma"
@@ -245,6 +244,19 @@ class Symmetry1D(Signal1D):
             else:
                 return self._deepcopy_with_new_data(data=sci_gaussian_filter(self.data,
                                                                              sigma))
+    def laplacian(self, sigma, inplace=False):
+        if inplace:
+            if self._lazy:
+                self.data = [lazy_gaussian_laplace(d, sigma) *np.mean(sigma)for d in self.data]
+            else:
+                self.data = [sci_gaussian_laplace(d, sigma)*np.mean(sigma) for d in self.data]
+        else:
+            if self._lazy:
+                return self._deepcopy_with_new_data(data=[lazy_gaussian_laplace(d, sigma)*np.mean(sigma)
+                                                          for d in self.data])
+            else:
+                return self._deepcopy_with_new_data(data=[sci_gaussian_laplace(d, sigma) * np.mean(sigma) ** 2
+                                                          for d in self.data])
 
     def get_cluster_size_distribution(self):
         radii = [[cluster.r for cluster in symmetry]for symmetry in self.clusters]
