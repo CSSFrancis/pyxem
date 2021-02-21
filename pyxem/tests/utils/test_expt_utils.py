@@ -35,6 +35,7 @@ from pyxem.utils.expt_utils import (
     find_beam_center_interpolate,
     azimuthal_integrate1d,
     azimuthal_integrate2d,
+    counting_filter,
 )
 
 
@@ -234,3 +235,10 @@ class TestAzimuthalIntegration:
             unit="2th_rad",
             correctSolidAngle=True,
         )
+
+    def test_counting_filter(self):
+        image = np.zeros(shape=(11, 11))
+        positions = np.random.randint(0, 10, size=(2, 10))
+        image[positions] = 100
+        counting_filter(image, threshold=5)
+

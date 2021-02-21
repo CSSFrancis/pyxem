@@ -26,6 +26,7 @@ from skimage import morphology, filters
 from skimage.draw import ellipse_perimeter
 from skimage.registration import phase_cross_correlation
 from tqdm import tqdm
+from skimage import measure
 
 from pyxem.utils.pyfai_utils import get_azimuthal_integrator
 
@@ -141,6 +142,29 @@ def azimuthal_integrate1d(
     else:
         return output[1]
 
+def counting_filter(data, threshold=5):
+    SEnumber = 0
+    SEint = 0
+    image_binary = data > threshold  # more readable than heaviside
+    print(image_binary.dtype)
+    selem = [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
+
+    all_labels = measure.label(image_binary)
+
+    for label in all_labels:
+        component_idx = np.where(all_labels == i)
+
+        # append total intensity of this SE event to the total
+        int_list = data[component_idx[0], component_idx[1]]
+        SEint = SEint + np.sum(int_list)
+        SEnumber = SEnumber + 1
+
+        # calculate COM for this event and assign that pixel to 1
+        cor_row = np.average(component_idx[0], weights=int_list)
+        cor_col = np.average(component_idx[1], weights=int_list)
+        image_counting[int(cor_row), int(cor_col)] = 1
+
+    return (image_counting)
 
 def azimuthal_integrate2d(
     z, azimuthal_integrator, npt_rad, npt_azim=None, mask=None, sum=False, **kwargs
