@@ -121,6 +121,7 @@ class Symmetry1D(Signal1D):
         gl_images.axes_manager.navigation_axes[-1].name = "Sigma"
         gl_images.axes_manager.navigation_axes[-1].scale = (max_sigma[0]+1-min_sigma[0])/num_sigma
         gl_images.axes_manager.navigation_axes[-1].offset = min_sigma[0]
+        gl_images.sigma = sigma_list[:, 0]
         return gl_images
 
 
@@ -149,7 +150,7 @@ class Symmetry1D(Signal1D):
                                    y=cluster[2] * self.axes_manager.navigation_axes[2].scale,
                                    radius=self.sigma[int(cluster[0])] * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale,
                                     k=((cluster[3] * self.axes_manager.signal_axes[-1].scale) +
-                                      self.axes_manager.signal_axes[-1].offset),
+                                    self.axes_manager.signal_axes[-1].offset),
                                    symmetry=symmetry,
                                    correlation=correlation)
                            for cluster in clusters]
