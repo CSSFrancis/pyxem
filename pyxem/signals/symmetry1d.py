@@ -93,15 +93,12 @@ class Symmetry1D(Signal1D):
         return cluster_list
 
     def get_space_scale_representation(self,
-                                       min_sigma= (1,1,0),
-                                       max_sigma=(5,5,0),
+                                       min_sigma= (0,1,1,0),
+                                       max_sigma=(0,5,5,0),
                                        log_scale=False,
                                        num_sigma=5,
                                        **kwargs):
-        if np.isscalar(max_sigma):
-            max_sigma = np.full(image.ndim, max_sigma, dtype=float)
-        if np.isscalar(min_sigma):
-            min_sigma = np.full(image.ndim, min_sigma, dtype=float)
+
         min_sigma = np.asarray(min_sigma, dtype=float)
         max_sigma = np.asarray(max_sigma, dtype=float)
         if log_scale:
@@ -116,6 +113,7 @@ class Symmetry1D(Signal1D):
             sigma_list = scale * (max_sigma - min_sigma) + min_sigma
         # computing gaussian laplace
         # average s**2 provides scale invariance
+
         gl_images = [-sci_gaussian_laplace(self.data, s) * np.mean(s) ** 2
                             for s in sigma_list]
         gl_images = Symmetry1D(gl_images)
