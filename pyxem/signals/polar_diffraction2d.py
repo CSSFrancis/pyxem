@@ -25,7 +25,9 @@ import numpy as np
 from skimage.feature import blob_dog
 from skimage.draw import circle
 from scipy.ndimage import gaussian_filter as sci_gaussian_filter
+from scipy.ndimage import gaussian_laplace as sci_gaussian_laplace
 from dask_image.ndfilters import gaussian_filter as lazy_gaussian_filter
+from dask_image.ndfilters import gaussian_laplace as lazy_gaussian_laplace
 
 #from pyxem.signals.diffraction2d import Diffraction2D
 from pyxem.utils.correlation_utils import _correlation, _power
@@ -179,6 +181,52 @@ class PolarDiffraction2D(Signal2D):
             print("Method " + method + " is not one of 'sum' ,'multiply', 'correlation' please "
                                        "use one of these methods")
             return
+
+    def get_space_scale_representation(self,
+                                       min_sigma=(1,1,0,0),
+                                       max_sigma=(5,5,0,0),
+                                       num_sigma=5,
+                                       log_scale=False,
+                                       **kwargs):
+        """ This method returns a space scale representation of the data. This is a
+        common data form for finding objects that have some specific spatial frequency.
+
+        Parameters:
+
+        For more information https://en.wikipedia.org/wiki/Scale_space.
+        """
+        # if both min and max sigma are scalar, function returns only one sigma
+        if np.isscalar(max_sigma):
+            max_sigma = np.full(image.ndim, max_sigma, dtype=float)
+        if np.isscalar(min_sigma):
+            min_sigma = np.full(image.ndim, min_sigma, dtype=float)
+        min_sigma = np.asarray(min_sigma, dtype=float)
+        max_sigma = np.asarray(max_sigma, dtype=float)
+        if log_scale:
+            # for anisotropic data, we use the "highest resolution/variance" axis
+            standard_axis = np.argmax(min_sigma)
+            start = np.log10(min_sigma[standard_axis])
+            stop = np.log10(max_sigma[standard_axis])
+            scale = np.logspace(start, stop, num_sigma)[:, np.newaxis]
+            sigma_list = scale * min_sigma / np.max(min_sigma)
+        else:
+            scale = np.linspace(0, 1, num_sigma)[:, np.newaxis]
+            sigma_list = scale * (max_sigma - min_sigma) + min_sigma
+        # computing gaussian laplace
+        # average s**2 provides scale invariance
+        if self._lazy:
+            gl_images = [-lazy_gaussian_laplace(self.data, s) * np.mean(s) ** 2
+                         for s in sigma_list]
+            gl_images = LazyPolarDiffraction2D(gl_images)
+        else:
+            gl_images = [-sci_gaussian_laplace(self.data, s) * np.mean(s) ** 2
+                            for s in sigma_list]
+            gl_images = PolarDiffraction2D(gl_images)
+            gl_images.axes_manager.navigation_axes[-1].name = "Sigma"
+            gl_images.axes_manager.navigation_axes[-1].scale = (max_sigma[0]+1-min_sigma[0])/num_sigma
+            gl_images.axes_manager.navigation_axes[-1].offset = min_sigma[0]
+        return gl_images
+
 
     def get_symmetry_stem_library(self,
                                   theta_size,

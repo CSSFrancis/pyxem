@@ -150,6 +150,10 @@ class TestComputeAndAsLazy2D:
         peaks = common.find_peaks(threshold_rel=.1)
         common.plot_clusters()
 
+    def test_get_space_scale(self, cluster_pattern):
+        space_sclae = cluster_pattern.get_space_scale_representation()
+        print(space_sclae.axes_manager)
+
 
 
 class TestCorrelations:
