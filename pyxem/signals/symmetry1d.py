@@ -93,8 +93,8 @@ class Symmetry1D(Signal1D):
         return cluster_list
 
     def get_space_scale_representation(self,
-                                       min_sigma= (0,1,1,0),
-                                       max_sigma=(0,5,5,0),
+                                       min_sigma= (1,1,0,0),
+                                       max_sigma=(5,5,0, 0),
                                        log_scale=False,
                                        num_sigma=5,
                                        **kwargs):
@@ -114,9 +114,10 @@ class Symmetry1D(Signal1D):
         # computing gaussian laplace
         # average s**2 provides scale invariance
 
-        gl_images = [-sci_gaussian_laplace(self.data, s) * np.mean(s) ** 2
+        gl_images = [self._deepcopy_with_new_data(data=-sci_gaussian_laplace(self.data, s) * np.mean(s) ** 2)
                             for s in sigma_list]
-        gl_images = Symmetry1D(gl_images)
+
+        gl_images = stack(gl_images, axis=None)
         gl_images.axes_manager.navigation_axes[-1].name = "Sigma"
         gl_images.axes_manager.navigation_axes[-1].scale = (max_sigma[0]+1-min_sigma[0])/num_sigma
         gl_images.axes_manager.navigation_axes[-1].offset = min_sigma[0]
@@ -125,6 +126,7 @@ class Symmetry1D(Signal1D):
 
     def find_peaks(self,
                    overlap=0.5,
+                   correlation=None,
                    **kwargs):
         """
         This method takes a library of SymmetrySTEM Objects and finds peaks
@@ -146,9 +148,10 @@ class Symmetry1D(Signal1D):
             cluster_sym = [Cluster(x=cluster[1] * self.axes_manager.navigation_axes[2].scale,
                                    y=cluster[2] * self.axes_manager.navigation_axes[2].scale,
                                    radius=self.sigma[int(cluster[0])] * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale,
-                                   k=((cluster[3] * self.axes_manager.signal_axes[-1].scale) +
+                                    k=((cluster[3] * self.axes_manager.signal_axes[-1].scale) +
                                       self.axes_manager.signal_axes[-1].offset),
-                                   symmetry=symmetry)
+                                   symmetry=symmetry,
+                                   correlation=correlation)
                            for cluster in clusters]
             cluster_list.append(cluster_sym)
         self.clusters = cluster_list

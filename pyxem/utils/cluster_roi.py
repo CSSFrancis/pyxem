@@ -15,6 +15,7 @@ class Cluster(CircleROI):
                  radius=None,
                  k=None,
                  symmetry=None,
+                 correlation=None,
                  **kwargs):
         """ Initializes some cluster. The coordinates x and y are the real space
         coordinates defining the circle of interest
@@ -27,12 +28,20 @@ class Cluster(CircleROI):
             The real space y position of the clusters
         r: float
             The radius of the cluster
-        k: The k
+        k: float
+            The inverse spacing for the cluster
+        correlation: Array-like
+            The saved angular correlation for the center of the cluster at some k.
+
         """
         super().__init__(cx=x, cy=y, r=radius,  **kwargs)
         self.k = k
         self.time = time
         self.symmetry = symmetry
+        if correlation is not None:
+            self.correlation = correlation.inav[x, y].isig[:, k]
+        else:
+            self.correlation = None
 
     def __str__(self):
         return ("Position: <" + str(self.cx) +", " +
@@ -54,4 +63,9 @@ class Cluster(CircleROI):
                       color=color,
                       alpha=alpha,
                       **kwargs)
+
+    def plot(self, **kwargs):
+        self.correlation.plot(**kwargs)
+
+
 
