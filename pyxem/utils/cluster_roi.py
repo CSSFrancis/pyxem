@@ -1,4 +1,5 @@
 from hyperspy.roi import CircleROI
+import hyperspy.api as hs
 from matplotlib.pyplot import Circle
 
 class Cluster(CircleROI):
@@ -40,6 +41,9 @@ class Cluster(CircleROI):
         self.symmetry = symmetry
         if correlation is not None:
             self.correlation = correlation.inav[x, y].isig[:, k]
+            self.correlation.axes_manager.signal_axes[0].offset=0
+            markers = [hs.markers.vertical_line(j * 6.28/self.symmetry) for j in range(j)]
+            self.correlation.add_marker(markers,permanent=True)
         else:
             self.correlation = None
 

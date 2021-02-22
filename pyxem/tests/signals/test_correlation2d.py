@@ -142,7 +142,7 @@ class TestSymmetry1D:
         pd.symmetries = [1, 2, 4, 6, 8, 10]
         return pd
 
-    @pytest.mark.parametrize("method", ["log", "dog", "doh","adsk"]         )
+    @pytest.mark.parametrize("method", ["log", "dog", "doh","adsk"])
     def test_cluster(self, sym_pattern, method):
         sym_pattern.get_clusters(method=method)
 

@@ -167,6 +167,40 @@ class Correlation2D(PolarDiffraction2D):
         signals.axes_manager.navigation_axes[0].offset = 0
         return signals
 
+    def get_blurred_library(self,
+                            min_cluster_size=0.5,
+                            max_cluster_size=5.0,
+                            sigma_ratio=1.6,
+                            k_sigma=2):
+        gaussian_symmetry_stem = []
+        if isinstance(k_sigma, float):
+            k_sigma = k_sigma / self.axes_manager.signal_axes[0].scale
+        if isinstance(min_cluster_size, float):
+            min_cluster_size = min_cluster_size / self.axes_manager["x"].scale
+        if isinstance(max_cluster_size, float):
+            max_cluster_size = max_cluster_size / self.axes_manager["x"].scale
+
+        # k such that min_sigma*(sigma_ratio**k) > max_sigma
+        k = int(np.mean(np.log(max_cluster_size / min_cluster_size) / np.log(sigma_ratio) + 1))
+
+        # a geometric progression of standard deviations for gaussian kernels
+        sigma_list = np.array([[min_cluster_size * (sigma_ratio ** i),
+                                min_cluster_size * (sigma_ratio ** i),
+                                0,
+                                k_sigma]
+                               for i in range(k + 1)])
+
+        for s in sigma_list:
+            filtered = self.gaussian_filter(sigma=s, inplace=False)
+            gaussian_symmetry_stem.append(filtered)
+
+        print(sigma_list)
+        dog_images = [(gaussian_symmetry_stem[i] - gaussian_symmetry_stem[i + 1]) for i in range(k)]
+        image_cube = stack(dog_images, axis=None)
+        image_cube.axes_manager.navigation_axes[-1].name ="Sigma"
+        image_cube.sigma = sigma_list[:, 0]
+        return image_cube
+
 
 
 class LazyCorrelation2D(LazySignal, Correlation2D):
