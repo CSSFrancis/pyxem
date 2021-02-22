@@ -153,7 +153,7 @@ class Symmetry1D(Signal1D):
                                     self.axes_manager.signal_axes[-1].offset),
                                    symmetry=symmetry,
                                    correlation=correlation)
-                           for cluster in clusters if (cluster[0]>0 and trim_edges)]
+                           for cluster in clusters if (cluster[0] > 0 and trim_edges)]
             cluster_list.append(cluster_sym)
         self.clusters = cluster_list
         return cluster_list

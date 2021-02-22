@@ -71,7 +71,10 @@ def _correlation(z, axis=0, mask=None, wrap=True, normalize_axes=None):
 
     if normalize_axes is not None:  # simplified way to calculate the normalization
         # Need two row mean's for the case when row mean = 0.  I don't know if that
-        num_not_zero = np.sum(number_unmasked !=1, axis=normalize_axes)
+        if mask is not None:
+            num_not_zero = np.sum(number_unmasked !=1, axis=normalize_axes)
+        else:
+            num_not_zero = np.shape(z)[axis]
         row_mean1 = np.divide(np.sum(a, axis=normalize_axes), num_not_zero)
         row_mean2 =row_mean1
         row_mean2[row_mean2 == 0] = 1
