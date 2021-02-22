@@ -127,6 +127,7 @@ class Symmetry1D(Signal1D):
     def find_peaks(self,
                    overlap=0.5,
                    correlation=None,
+                   trim_edges=True,
                    **kwargs):
         """
         This method takes a library of SymmetrySTEM Objects and finds peaks
@@ -152,7 +153,7 @@ class Symmetry1D(Signal1D):
                                     self.axes_manager.signal_axes[-1].offset),
                                    symmetry=symmetry,
                                    correlation=correlation)
-                           for cluster in clusters]
+                           for cluster in clusters if (cluster[0]>0 and trim_edges)]
             cluster_list.append(cluster_sym)
         self.clusters = cluster_list
         return cluster_list
@@ -245,11 +246,12 @@ class Symmetry1D(Signal1D):
                 return self._deepcopy_with_new_data(data=sci_gaussian_filter(self.data,
                                                                              sigma))
     def laplacian(self, sigma, inplace=False):
+        s = self.transpose(navigation_axes=(0,))
         if inplace:
             if self._lazy:
-                self.data = [lazy_gaussian_laplace(d, sigma) *np.mean(sigma)for d in self.data]
+                self.data = [lazy_gaussian_laplace(d, sigma) * np.mean(sigma)for d in self.data]
             else:
-                self.data = [sci_gaussian_laplace(d, sigma)*np.mean(sigma) for d in self.data]
+                self.data = [sci_gaussian_laplace(d, sigma) * np.mean(sigma) for d in self.data]
         else:
             if self._lazy:
                 return self._deepcopy_with_new_data(data=[lazy_gaussian_laplace(d, sigma)*np.mean(sigma)
