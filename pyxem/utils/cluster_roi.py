@@ -42,8 +42,6 @@ class Cluster(CircleROI):
         if correlation is not None:
             self.correlation = correlation.inav[x, y].isig[:, k]
             self.correlation.axes_manager.signal_axes[0].offset=0
-            markers = [hs.markers.vertical_line(j * 6.28/self.symmetry) for j in range(self.symmetry)]
-            self.correlation.add_marker(markers,permanent=True, plot_marker=False)
         else:
             self.correlation = None
 
@@ -69,7 +67,8 @@ class Cluster(CircleROI):
                       **kwargs)
 
     def plot(self, **kwargs):
-        self.correlation.plot(**kwargs)
+        markers = [hs.markers.vertical_line(j * 6.28 / self.symmetry) for j in range(self.symmetry)]
+        self.correlation.add_marker(markers, permanent=True, plot_marker=True)
 
 
 
