@@ -146,11 +146,11 @@ class Symmetry1D(Signal1D):
         cluster_list = []
         print("sigma:", self.sigma)
         for clusters, symmetry in zip(s.data, self.symmetries):
-            cluster_sym = [Cluster(x=cluster[1] * self.axes_manager.navigation_axes[2].scale,
-                                   y=cluster[2] * self.axes_manager.navigation_axes[2].scale,
+            cluster_sym = [Cluster(x=cluster[2] * self.axes_manager.navigation_axes[2].scale,
+                                   y=cluster[1] * self.axes_manager.navigation_axes[2].scale,
                                    radius=self.sigma[int(cluster[0])] * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale,
-                                    k=((cluster[3] * self.axes_manager.signal_axes[-1].scale) +
-                                    self.axes_manager.signal_axes[-1].offset),
+                                   k=((cluster[3] * self.axes_manager.signal_axes[-1].scale) +
+                                   self.axes_manager.signal_axes[-1].offset),
                                    symmetry=symmetry,
                                    correlation=correlation)
                            for cluster in clusters if (cluster[0] > 0 and trim_edges)]

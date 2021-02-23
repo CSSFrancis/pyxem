@@ -188,7 +188,8 @@ class TestCorrelations:
     def test_masking_correlation(self, flat_pattern):
         mask = np.zeros(shape=(5, 5))
         mask[1:2, 2:4] = 1
-        ap = flat_pattern.get_angular_correlation(mask=mask, normalize =False)
+        twoflat = flat_pattern*2
+        ap = twoflat.get_angular_correlation(mask=mask, normalize =False)
         np.testing.assert_array_almost_equal(ap.data, np.ones((2,2,5,4)))
         assert isinstance(ap, Correlation2D)
 
