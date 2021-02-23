@@ -184,7 +184,7 @@ def symmetry_stem(signal, interpolation, method="average"):
         val = np.transpose([np.amax([np.matmul(signal, np.transpose(i))for i in interp], axis=0)
                for interp in interpolation])
     if method is "first":
-        val = np.transpose(np.matmul(signal, np.transpose(interpolation[0])))
+        val = np.transpose([np.matmul(signal, np.transpose(interp[0])) for interp in interpolation])
     return val
 
 
