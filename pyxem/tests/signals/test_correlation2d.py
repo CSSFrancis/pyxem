@@ -109,6 +109,9 @@ class TestGetPower:
     def test_symmetry_stem2(self, flat_pattern):
         p = flat_pattern.get_symmetry_stem(symmetries=[1,2,3,4,5,6,7,8,9,10,11],method="max", normalize=False)
 
+    def test_symmetry_stem3(self, flat_pattern):
+        p = flat_pattern.get_symmetry_stem(symmetries=[1,2,3,4,5,6,7,8,9,10,11],method="first", normalize=False)
+
 class TestSymmetrySTEM:
     @pytest.fixture
     def sym_pattern(self):

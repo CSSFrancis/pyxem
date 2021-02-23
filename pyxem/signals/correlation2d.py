@@ -156,7 +156,7 @@ class Correlation2D(PolarDiffraction2D):
                            show_progressbar=True,
                            inplace=False,
                            method=method)
-        if normalize & (method is not "max"):
+        if normalize & (method is not "max" or method is not "first"):
             signals = np.divide(signals, num_angles)
         # 3-D signal (x,y,k) for each symmetry
         signals = signals.transpose(navigation_axes=(2, 0, 1))
