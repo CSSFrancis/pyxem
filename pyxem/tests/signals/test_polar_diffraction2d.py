@@ -185,11 +185,11 @@ class TestCorrelations:
             == flat_pattern.axes_manager.signal_axes[1].name
         )
 
-    @pytest.mark.parametrize(
-        "mask", [None, np.zeros(shape=(5, 5)), Signal2D(np.zeros(shape=(2, 2, 5, 5)))]
-    )
-    def test_masking_correlation(self, flat_pattern, mask):
-        ap = flat_pattern.get_angular_correlation(mask=mask)
+    def test_masking_correlation(self, flat_pattern):
+        mask = np.zeros(shape=(5, 5))
+        mask[1:2, 2:4] = 1
+        ap = flat_pattern.get_angular_correlation(mask=mask, normalize =False)
+        np.testing.assert_array_almost_equal(ap.data, np.ones((2,2,5,4)))
         assert isinstance(ap, Correlation2D)
 
     def test_correlation_inplace(self, flat_pattern):
