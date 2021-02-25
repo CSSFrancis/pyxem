@@ -270,14 +270,13 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         size = self.get_cluster_size_distribution()
-        leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
-        s_extent = (min(self.sigma) * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale,
-                    max(self.sigma) * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale)
-        histogram_s = np.array([np.histogram(s,
-                                             nbins,
-                                             s_extent) for s in size])
-        for s, l in zip(histogram_s, leg):
-            ax.plot(s[1][0:-1], s[0], label=l)
+        rad = self.sigma * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale
+        leg = [str(sym) + " fold symmetry" for sym in signal.symmetries]
+        num = [[s.count(sig) for sig in rad] for s in size]
+        ax.set_xlabel("Cluster Size, nm", fontsize=14)
+        ax.set_ylabel("Number of Clusters", fontsize=14)
+        for s, l in zip(num, leg):
+            ax.plot(rad, s, label=l)
         ax.legend(loc='upper right')
 
     def get_k_range_distribution(self):
