@@ -62,7 +62,6 @@ def get_azimuthal_integrator(
 
 def _get_radial_extent(ai, shape=None, unit=None):
     """Takes an Azimuthal Integrator and calculates the domain of the output.
-    Gives this in pixels
 
     Note: this method isn't perfect.
 
@@ -135,27 +134,27 @@ def _get_setup(wavelength, pyxem_unit, pixel_scale, radial_range=None):
             pixel_1_size = np.tan(pixel_scale[0])
             pixel_2_size = np.tan(pixel_scale[1])
     else:
-        pixel_1_size = (
-            pixel_scale[0] * (wavelength / wavelength_scale) * detector_distance
-        )
-        pixel_2_size = (
-            pixel_scale[1] * (wavelength / wavelength_scale) * detector_distance
-        )
+        theta0 = pixel_scale[0] * (wavelength / wavelength_scale)
+        theta1 = pixel_scale[1] * (wavelength / wavelength_scale)
+        pixel_1_size = np.tan(theta0)*detector_distance
+        pixel_2_size = np.tan(theta1)* detector_distance
     detector = Detector(pixel1=pixel_1_size, pixel2=pixel_2_size)
     if radial_range is not None:
         radial_range = [radial_range[0], radial_range[1]]
-    return (detector,
-            detector_distance,
-            radial_range,)
+    return (
+        detector,
+        detector_distance,
+        radial_range,
+    )
 
 
 register_radial_unit(
     "k_A^-1",
     center="qArray",
     delta="deltaQ",
-    scale=.1/(2*np.pi),
+    scale=.1 / (2 * np.pi),
     label=r"Scattering vector $k$ ($\AA^{-1}$)",
-    equation=lambda x, y, z, wavelength: (eq_q(x, y, z, wavelength) / (2.0 * np.pi)) ** 2,
+    equation=eq_q,
     short_name="k",
     unit_symbol=r"\AA^{-1}",
 )
@@ -164,9 +163,9 @@ register_radial_unit(
     "k_nm^-1",
     center="qArray",
     delta="deltaQ",
-    scale=1/(2*np.pi),
+    scale=1 / (2 * np.pi),
     label=r"Scattering vector $k$ ($\nm^{-1}$)",
-    equation= eq_q,
+    equation=eq_q,
     short_name="k",
     unit_symbol=r"\nm^{-1}",
 )
