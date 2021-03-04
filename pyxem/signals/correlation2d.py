@@ -160,12 +160,12 @@ class Correlation2D(PolarDiffraction2D):
         if normalize & (method is not "max" or method is not "first"):
             signals = np.divide(signals, num_angles)
         # 3-D signal (x,y,k) for each symmetry
-        signals = signals.transpose(navigation_axes=(0, 1, 2))
+        signals = signals.transpose(navigation_axes=(2, 0, 1))
         signals.set_signal_type("symmetry")
         signals.symmetries = symmetries
-        signals.axes_manager.navigation_axes[2].scale = 1
-        signals.axes_manager.navigation_axes[2].name = "Symmetry"
-        signals.axes_manager.navigation_axes[2].offset = 0
+        signals.axes_manager.navigation_axes[0].scale = 1
+        signals.axes_manager.navigation_axes[0].name = "Symmetry"
+        signals.axes_manager.navigation_axes[0].offset = 0
         return signals
 
     def get_blurred_library(self,
