@@ -178,6 +178,39 @@ class Symmetry1D(Signal1D):
                     for cluster in clusters:
                         ax.add_patch(cluster.to_circle())
 
+    def get_blurred_library_log(self,
+                                min_sigma=(0.5, 0.5, 1),
+                                max_sigma=(0.5, 0.5, 1),
+                                num_sigma=5,
+                                log_scale=False,
+                                ):
+        # if both min and max sigma are scalar, function returns only one sigma
+        if np.isscalar(max_sigma):
+            max_sigma = np.full(self.data.ndim, max_sigma, dtype=float)
+        if np.isscalar(min_sigma):
+            min_sigma = np.full(self.data.ndim, min_sigma, dtype=float)
+        min_sigma = np.asarray(min_sigma, dtype=float)
+        max_sigma = np.asarray(max_sigma, dtype=float)
+        if log_scale:
+            # for anisotropic data, we use the "highest resolution/variance" axis
+            standard_axis = np.argmax(min_sigma)
+            start = np.log10(min_sigma[standard_axis])
+            stop = np.log10(max_sigma[standard_axis])
+            scale = np.logspace(start, stop, num_sigma)[:, np.newaxis]
+            sigma_list = scale * min_sigma / np.max(min_sigma)
+        else:
+            scale = np.linspace(0, 1, num_sigma)[:, np.newaxis]
+            sigma_list = scale * (max_sigma - min_sigma) + min_sigma
+        # computing gaussian laplace
+        # average s**2 provides scale invariance
+        gl_images = [-sci_gaussian_laplace(self.data, s) * np.mean(s) ** 2
+                        for s in sigma_list]
+        gl_images = Symmetry1D(gl_images)
+        gl_images.axes_manager.navigation_axes[-1].name = "Sigma"
+        gl_images.axes_manager.navigation_axes[-1].scale = (max_sigma[0]+1-min_sigma[0])/num_sigma
+        gl_images.axes_manager.navigation_axes[-1].offset = min_sigma[0]
+        return gl_images
+
     def get_blurred_library(self,
                             min_cluster_size=0.5,
                             max_cluster_size=5.0,
