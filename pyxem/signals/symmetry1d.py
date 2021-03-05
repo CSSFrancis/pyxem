@@ -264,13 +264,12 @@ class Symmetry1D(Signal1D):
         return radii
 
     def plot_cluster_size_distribution(self,
-                                       nbins=5,
                                        ax=None):
         if ax is None:
             fig, ax = plt.subplots()
         size = self.get_cluster_size_distribution()
         rad = self.sigma * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale
-        leg = [str(sym) + " fold symmetry" for sym in signal.symmetries]
+        leg = [str(sym) + " fold symmetry" for sym in self.symmetries]
         num = [[s.count(sig) for sig in rad] for s in size]
         ax.set_xlabel("Cluster Size, nm", fontsize=14)
         ax.set_ylabel("Number of Clusters", fontsize=14)
@@ -283,19 +282,38 @@ class Symmetry1D(Signal1D):
         return k_range
 
     def plot_k_range_distribution(self,
-                                  nbins=5,
                                   ax=None):
         if ax is None:
             fig, ax = plt.subplots()
         k_range = self.get_k_range_distribution()
         s_extent = self.axes_manager.signal_extent
         histogram_k = np.array([np.histogram(ks,
-                                             nbins,
+                                             np.shape(self)[-1],
                                              s_extent) for ks in k_range])
-        leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
+        leg = [str(sym) + " fold symmetry" for sym in self.symmetries]
+        ax.set_xlabel("k, nm$^{-1}$", fontsize=14)
+        ax.set_ylabel("Number of Clusters", fontsize=14)
         for k, l in zip(histogram_k, leg):
             ax.plot(k[1][0:-1], k[0], label=l)
         ax.legend(loc='upper right')
+
+    def plot_d_range_distribution(self,
+                                  ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        k_range = self.get_k_range_distribution()
+        s_extent = self.axes_manager.signal_extent
+        histogram_k = np.array([np.histogram(ks,
+                                             np.shape(self)[-1],
+                                             s_extent) for ks in k_range])
+        leg = [str(sym) + " fold symmetry" for sym in self.symmetries]
+        ax.set_xlabel("d-spacing, nm", fontsize=14)
+        ax.set_ylabel("Number of Clusters", fontsize=14)
+
+        for k, l in zip(histogram_k, leg):
+            d = k[1][0:-1] ** -1
+            ax.plot(d, k[0], label=l)
+        return ax
 
 
     def plot_cluster_stats(self, k_range=True, size=True, spatial=True):
