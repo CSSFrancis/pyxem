@@ -313,6 +313,7 @@ class Symmetry1D(Signal1D):
         for k, l in zip(histogram_k, leg):
             d = k[1][0:-1] ** -1
             ax.plot(d, k[0], label=l)
+        ax.legend(loc='upper left')
         return ax
 
 
