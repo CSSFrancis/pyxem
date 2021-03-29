@@ -216,8 +216,8 @@ class Symmetry1D(Signal1D):
         if ax is None:
             fig, ax = plt.subplots()
         extent = self.axes_manager.navigation_extent
-        ax.set_xlim(extent[2]-5, extent[3]+5)
-        ax.set_ylim(extent[4]-5, extent[5]+5)
+        #ax.set_xlim(extent[2]-5, extent[3]+5)
+        #ax.set_ylim(extent[4]-5, extent[5]+5)
 
         for symmetry, color in zip(self.clusters, colors[:len(self.clusters)]):
             for c in symmetry:
