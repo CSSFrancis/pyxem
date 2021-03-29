@@ -212,16 +212,18 @@ class Symmetry1D(Signal1D):
         image_cube.sigma = sigma_list[:, 0]
         return image_cube
 
-    def plot_clusters(self, ax=None, k_range=None):
+    def plot_clusters(self, ax=None, k_range=None, symmetry=None):
         if ax is None:
             fig, ax = plt.subplots()
         extent = self.axes_manager.navigation_extent
         ax.set_xlim(extent[2]-5, extent[3]+5)
         ax.set_ylim(extent[4]-5, extent[5]+5)
+
         for symmetry, color in zip(self.clusters, colors[:len(self.clusters)]):
             for c in symmetry:
                 if k_range is None or (c.k is None or (c.k <k_range[1] and c.k > k_range[0])):
-                    ax.add_patch(c.to_circle(fill=True, color=color, alpha=0.5))
+                    if symmetry is None or (c.symmetry in symmetry):
+                        ax.add_patch(c.to_circle(fill=True, color=color, alpha=0.5))
         from matplotlib.lines import Line2D
         leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
                       markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
