@@ -279,15 +279,19 @@ class Symmetry1D(Signal1D):
             ax.plot(rad, s, label=l)
         ax.legend(loc='upper right')
 
-    def get_k_range_distribution(self):
-        k_range = [[cluster.k for cluster in symmetry]for symmetry in self.clusters]
+    def get_k_range_distribution(self, min_cluster_size=None):
+        if min_cluster_size is None:
+            k_range = [[cluster.k for cluster in symmetry]for symmetry in self.clusters]
+        else:
+            k_range = [[cluster.k for cluster in symmetry if cluster.r>min_cluster_size] for symmetry in self.clusters]
         return k_range
 
     def plot_k_range_distribution(self,
+                                  min_cluster_size=None,
                                   ax=None):
         if ax is None:
             fig, ax = plt.subplots()
-        k_range = self.get_k_range_distribution()
+        k_range = self.get_k_range_distribution(min_cluster_size)
         s_extent = self.axes_manager.signal_extent
         histogram_k = np.array([np.histogram(ks,
                                              np.shape(self)[-1],
