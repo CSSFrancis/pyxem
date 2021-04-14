@@ -280,10 +280,10 @@ class Symmetry1D(Signal1D):
             if not normalize:
                 ax.plot(rad, s, label=l)
             else:
-                max_val = np.max(s)
+                max_val = np.sum(s)
                 if max_val == 0:
                     max_val = 1
-                ax.plot(rad, s/max_val, label=l)
+                ax.plot(rad, np.array(s)/max_val, label=l)
         ax.legend(loc='upper right')
 
     def get_k_range_distribution(self, min_cluster_size=None):
@@ -311,7 +311,7 @@ class Symmetry1D(Signal1D):
             if not normalize:
                 ax.plot(k[1][0:-1], k[0], label=l)
             else:
-                max_val = np.max(k[0])
+                max_val = np.sum(k[0])
                 if max_val == 0:
                     max_val = 1
                 ax.plot(k[1][0:-1], k[0]/max_val, label=l)
