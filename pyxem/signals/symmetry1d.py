@@ -266,7 +266,8 @@ class Symmetry1D(Signal1D):
         return radii
 
     def plot_cluster_size_distribution(self,
-                                       ax=None):
+                                       ax=None,
+                                       normalize=False):
         if ax is None:
             fig, ax = plt.subplots()
         size = self.get_cluster_size_distribution()
@@ -276,7 +277,13 @@ class Symmetry1D(Signal1D):
         ax.set_xlabel("Cluster Size, nm", fontsize=14)
         ax.set_ylabel("Number of Clusters", fontsize=14)
         for s, l in zip(num, leg):
-            ax.plot(rad, s, label=l)
+            if not normalize:
+                ax.plot(rad, s, label=l)
+            else:
+                max_val = np.max(s)
+                if max_val == 0:
+                    max_val = 1
+                ax.plot(rad, s/max_val, label=l)
         ax.legend(loc='upper right')
 
     def get_k_range_distribution(self, min_cluster_size=None):
@@ -288,7 +295,8 @@ class Symmetry1D(Signal1D):
 
     def plot_k_range_distribution(self,
                                   min_cluster_size=None,
-                                  ax=None):
+                                  ax=None,
+                                  normalize=False):
         if ax is None:
             fig, ax = plt.subplots()
         k_range = self.get_k_range_distribution(min_cluster_size)
@@ -300,7 +308,13 @@ class Symmetry1D(Signal1D):
         ax.set_xlabel("k, nm$^{-1}$", fontsize=14)
         ax.set_ylabel("Number of Clusters", fontsize=14)
         for k, l in zip(histogram_k, leg):
-            ax.plot(k[1][0:-1], k[0], label=l)
+            if not normalize:
+                ax.plot(k[1][0:-1], k[0], label=l)
+            else:
+                max_val = np.max(k[0])
+                if max_val == 0:
+                    max_val = 1
+                ax.plot(k[1][0:-1], k[0]/max_val, label=l)
         ax.legend(loc='upper right')
 
     def plot_d_range_distribution(self,
