@@ -281,6 +281,7 @@ class Symmetry1D(Signal1D):
                 ax.plot(rad, s, label=l)
             else:
                 max_val = np.sum(s)
+                ax.set_ylabel("Fraction of Clusters", fontsize=14)
                 if max_val == 0:
                     max_val = 1
                 ax.plot(rad, np.array(s)/max_val, label=l)
@@ -311,6 +312,7 @@ class Symmetry1D(Signal1D):
             if not normalize:
                 ax.plot(k[1][0:-1], k[0], label=l)
             else:
+                ax.set_ylabel("Fraction of Clusters", fontsize=14)
                 max_val = np.sum(k[0])
                 if max_val == 0:
                     max_val = 1
@@ -354,6 +356,9 @@ class Symmetry1D(Signal1D):
         ax.bar(range(len(self.clusters)),
                [len(c) for c in self.clusters],
                tick_label=[sym for sym in self.symmetries])
+
+        ax.set_xlabel("Symmetry,n-Fold", fontsize=14)
+        ax.set_ylabel("Number of Clusters", fontsize=14)
 
 
 
