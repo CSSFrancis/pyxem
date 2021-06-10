@@ -88,7 +88,7 @@ class PolarDiffraction2D(Signal2D):
         if normalize:
             normalize_axes = 1
         else:
-            normalize_axes=None
+            normalize_axes = None
         correlation = self.map(
             _correlation,
             axis=1,

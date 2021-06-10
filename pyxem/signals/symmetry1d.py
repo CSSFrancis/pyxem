@@ -299,8 +299,10 @@ class Symmetry1D(Signal1D):
             ax.plot(k[1][0:-1], k[0], label=l)
         ax.legend(loc='upper right')
 
-
-    def plot_cluster_stats(self, k_range=True, size=True, spatial=True):
+    def plot_cluster_stats(self,
+                           k_range=True,
+                           size=True,
+                           spatial=True):
         fig = plt.figure(constrained_layout=True)
         gs = fig.add_gridspec(3, 2)
         ax1 = fig.add_subplot(gs[:2, :2])
@@ -317,6 +319,5 @@ class Symmetry1D(Signal1D):
         ax.bar(range(len(self.clusters)),
                [len(c) for c in self.clusters],
                tick_label=[sym for sym in self.symmetries])
-
 
 

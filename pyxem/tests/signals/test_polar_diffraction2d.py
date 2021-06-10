@@ -166,6 +166,17 @@ class TestCorrelations:
         pd.axes_manager.signal_axes[1].name = "k"
         return pd
 
+    @pytest.fixture
+    def ones_hundred(self):
+        ones = np.ones((2, 3, 10, 20))
+        ones[:, :, 0:20:2, :] = 100
+        pd = PolarDiffraction2D(data=ones)
+        pd.axes_manager.signal_axes[0].scale = 0.5
+        pd.axes_manager.signal_axes[0].name = "theta"
+        pd.axes_manager.signal_axes[1].scale = 2
+        pd.axes_manager.signal_axes[1].name = "k"
+        return pd
+
     def test_correlation_signal(self, flat_pattern):
         ac = flat_pattern.get_angular_correlation()
         assert isinstance(ac, Correlation2D)
@@ -205,6 +216,12 @@ class TestCorrelations:
         ap = flat_pattern.get_angular_power(mask=mask)
         print(ap)
         assert isinstance(ap, Power2D)
+
+    def test_masking_angular_power_ones(self, ones_hundred):
+        mask = np.zeros((10, 20))
+        mask[2:4, :] = 1
+        ap = ones_hundred.get_angular_correlation(mask=mask)
+        print(ap)
 
     def test_axes_transfer_power(self, flat_pattern):
         ac = flat_pattern.get_angular_power()

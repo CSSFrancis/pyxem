@@ -99,6 +99,9 @@ class TestCorrelations:
         result[1::2, :] = -0.96078816
         result[0::2, :] = 0.96078816
         np.testing.assert_array_almost_equal(c, result)
+        c = _correlation(ones_hundred, axis=1, normalize_axes=1, mask=m)
+        result = np.zeros((10, 20))
+        np.testing.assert_array_almost_equal(c, result)
 
     def test_correlations_mask2(self, ones_array):
         m = np.zeros((10, 20))
