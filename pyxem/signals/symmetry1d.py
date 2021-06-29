@@ -212,16 +212,18 @@ class Symmetry1D(Signal1D):
         image_cube.sigma = sigma_list[:, 0]
         return image_cube
 
-    def plot_clusters(self, ax=None, k_range=None):
+    def plot_clusters(self, ax=None, k_range=None, symmetries=None):
         if ax is None:
             fig, ax = plt.subplots()
         extent = self.axes_manager.navigation_extent
-        ax.set_xlim(extent[2]-5, extent[3]+5)
-        ax.set_ylim(extent[4]-5, extent[5]+5)
+        ax.set_xlim(extent[2], extent[3])
+        ax.set_ylim(extent[4], extent[5])
+
         for symmetry, color in zip(self.clusters, colors[:len(self.clusters)]):
             for c in symmetry:
                 if k_range is None or (c.k is None or (c.k <k_range[1] and c.k > k_range[0])):
-                    ax.add_patch(c.to_circle(fill=True, color=color, alpha=0.5))
+                    if symmetries is None or (c.symmetry in symmetries):
+                        ax.add_patch(c.to_circle(fill=True, color=color, alpha=0.5))
         from matplotlib.lines import Line2D
         leg = [Line2D([0], [0], marker='o', color=colors[i], label=str(sym) + " fold symmetry",
                       markerfacecolor=colors[i], markersize=15) for i, sym in enumerate(self.symmetries)]
@@ -246,7 +248,6 @@ class Symmetry1D(Signal1D):
                 return self._deepcopy_with_new_data(data=sci_gaussian_filter(self.data,
                                                                              sigma))
     def laplacian(self, sigma, inplace=False):
-        s = self.transpose(navigation_axes=(0,))
         if inplace:
             if self._lazy:
                 self.data = [lazy_gaussian_laplace(d, sigma) * np.mean(sigma)for d in self.data]
@@ -254,7 +255,7 @@ class Symmetry1D(Signal1D):
                 self.data = [sci_gaussian_laplace(d, sigma) * np.mean(sigma) for d in self.data]
         else:
             if self._lazy:
-                return self._deepcopy_with_new_data(data=[lazy_gaussian_laplace(d, sigma)*np.mean(sigma)
+                return self._deepcopy_with_new_data(data=[lazy_gaussian_laplace(d, sigma)*np.mean(sigma)**2
                                                           for d in self.data])
             else:
                 return self._deepcopy_with_new_data(data=[sci_gaussian_laplace(d, sigma) * np.mean(sigma) ** 2
@@ -265,39 +266,77 @@ class Symmetry1D(Signal1D):
         return radii
 
     def plot_cluster_size_distribution(self,
-                                       nbins=5,
-                                       ax=None):
+                                       ax=None,
+                                       normalize=False):
         if ax is None:
             fig, ax = plt.subplots()
         size = self.get_cluster_size_distribution()
-        leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
-        s_extent = (min(self.sigma) * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale,
-                    max(self.sigma) * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale)
-        histogram_s = np.array([np.histogram(s,
-                                             nbins,
-                                             s_extent) for s in size])
-        for s, l in zip(histogram_s, leg):
-            ax.plot(s[1][0:-1], s[0], label=l)
+        rad = self.sigma * np.sqrt(2) * self.axes_manager.navigation_axes[2].scale
+        leg = [str(sym) + " fold symmetry" for sym in self.symmetries]
+        num = [[s.count(sig) for sig in rad] for s in size]
+        ax.set_xlabel("Cluster Size, nm", fontsize=14)
+        ax.set_ylabel("Number of Clusters", fontsize=14)
+        for s, l in zip(num, leg):
+            if not normalize:
+                ax.plot(rad, s, label=l)
+            else:
+                max_val = np.sum(s)
+                ax.set_ylabel("Fraction of Clusters", fontsize=14)
+                if max_val == 0:
+                    max_val = 1
+                ax.plot(rad, np.array(s)/max_val, label=l)
         ax.legend(loc='upper right')
 
-    def get_k_range_distribution(self):
-        k_range = [[cluster.k for cluster in symmetry]for symmetry in self.clusters]
+    def get_k_range_distribution(self, min_cluster_size=None):
+        if min_cluster_size is None:
+            k_range = [[cluster.k for cluster in symmetry]for symmetry in self.clusters]
+        else:
+            k_range = [[cluster.k for cluster in symmetry if cluster.r>min_cluster_size] for symmetry in self.clusters]
         return k_range
 
     def plot_k_range_distribution(self,
-                                  nbins=5,
+                                  min_cluster_size=None,
+                                  ax=None,
+                                  normalize=False):
+        if ax is None:
+            fig, ax = plt.subplots()
+        k_range = self.get_k_range_distribution(min_cluster_size)
+        s_extent = self.axes_manager.signal_extent
+        histogram_k = np.array([np.histogram(ks,
+                                             np.shape(self)[-1],
+                                             s_extent) for ks in k_range])
+        leg = [str(sym) + " fold symmetry" for sym in self.symmetries]
+        ax.set_xlabel("k, nm$^{-1}$", fontsize=14)
+        ax.set_ylabel("Number of Clusters", fontsize=14)
+        for k, l in zip(histogram_k, leg):
+            if not normalize:
+                ax.plot(k[1][0:-1], k[0], label=l)
+            else:
+                ax.set_ylabel("Fraction of Clusters", fontsize=14)
+                max_val = np.sum(k[0])
+                if max_val == 0:
+                    max_val = 1
+                ax.plot(k[1][0:-1], k[0]/max_val, label=l)
+        ax.legend(loc='upper right')
+
+    def plot_d_range_distribution(self,
                                   ax=None):
         if ax is None:
             fig, ax = plt.subplots()
         k_range = self.get_k_range_distribution()
         s_extent = self.axes_manager.signal_extent
         histogram_k = np.array([np.histogram(ks,
-                                             nbins,
+                                             np.shape(self)[-1],
                                              s_extent) for ks in k_range])
-        leg = [str(sym)+" fold symmetry" for sym in self.symmetries]
+        leg = [str(sym) + " fold symmetry" for sym in self.symmetries]
+        ax.set_xlabel("d-spacing, nm", fontsize=14)
+        ax.set_ylabel("Number of Clusters", fontsize=14)
+
         for k, l in zip(histogram_k, leg):
-            ax.plot(k[1][0:-1], k[0], label=l)
-        ax.legend(loc='upper right')
+            d = k[1][0:-1] ** -1
+            ax.plot(d, k[0], label=l)
+        ax.legend(loc='upper left')
+        return ax
 
     def plot_cluster_stats(self,
                            k_range=True,
@@ -313,11 +352,21 @@ class Symmetry1D(Signal1D):
         ax3 = fig.add_subplot(gs[2:, 1])
         ax3.set_title('K Distribution')
 
-    def plot_cluster_numbers(self,ax=None):
+    def plot_cluster_numbers(self,
+                             ax=None,
+                             horizontal=False):
         if ax is None:
             fig, ax = plt.subplots()
-        ax.bar(range(len(self.clusters)),
-               [len(c) for c in self.clusters],
-               tick_label=[sym for sym in self.symmetries])
+        if horizontal:
+            ax.barh(range(len(self.clusters)),
+                   [len(c) for c in self.clusters],
+                   tick_label=[sym for sym in self.symmetries])
+        else:
+            ax.bar(range(len(self.clusters)),
+                   [len(c) for c in self.clusters],
+                   tick_label=[sym for sym in self.symmetries])
+
+        ax.set_xlabel("Symmetry,n-Fold", fontsize=14)
+        ax.set_ylabel("Number of Clusters", fontsize=14)
 
 

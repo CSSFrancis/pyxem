@@ -197,9 +197,9 @@ class PolarDiffraction2D(Signal2D):
         """
         # if both min and max sigma are scalar, function returns only one sigma
         if np.isscalar(max_sigma):
-            max_sigma = np.full(image.ndim, max_sigma, dtype=float)
+            max_sigma = np.full(self.data.ndim, max_sigma, dtype=float)
         if np.isscalar(min_sigma):
-            min_sigma = np.full(image.ndim, min_sigma, dtype=float)
+            min_sigma = np.full(self.data.ndim, min_sigma, dtype=float)
         min_sigma = np.asarray(min_sigma, dtype=float)
         max_sigma = np.asarray(max_sigma, dtype=float)
         if log_scale:

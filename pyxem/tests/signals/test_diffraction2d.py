@@ -21,6 +21,7 @@ import numpy as np
 import dask.array as da
 import hyperspy.api as hs
 from matplotlib import pyplot as plt
+from skimage.draw import circle_perimeter_aa
 
 from pyxem.signals.diffraction2d import Diffraction2D, LazyDiffraction2D
 from pyxem.signals.polar_diffraction2d import PolarDiffraction2D
@@ -197,6 +198,18 @@ class TestAzimuthalIntegral2d:
         ones_diff.axes_manager.signal_axes[0].name = "kx"
         ones_diff.axes_manager.signal_axes[1].name = "ky"
         ones_diff.unit = "2th_deg"
+        return ones_di
+
+    @pytest.fixture
+    def ring(self):
+        ones_diff = Diffraction2D(data=np.ones(shape=(100, 100)))
+        rr, cc, val = circle_perimeter_aa(r=50, c=50, radius=30, shape=(100,100))
+        ones_diff.data[rr, cc] = val*100
+        ones_diff.axes_manager.signal_axes[0].scale = 0.1
+        ones_diff.axes_manager.signal_axes[1].scale = 0.1
+        ones_diff.axes_manager.signal_axes[0].name = "kx"
+        ones_diff.axes_manager.signal_axes[1].name = "ky"
+        ones_diff.unit = "k_nm^-1"
         return ones_diff
 
     def test_2d_azimuthal_integral(self, ones):
@@ -227,6 +240,12 @@ class TestAzimuthalIntegral2d:
             npt=10, npt_azim=20, radial_range=[0.0, 1.0], method="splitpixel",
         )
         assert np.allclose(az1.axes_manager.signal_axes[1].scale, 0.1)
+
+    def test_scale_continuity(self,ring):
+        ring.set_ai(wavelength=2.5e-12)
+        polar = ring.get_azimuthal_integral2d(npt=50)
+        peak = np.argmax(polar.sum(axis=0)).data * polar.axes_manager[1].scale
+        np.testing.assert_almost_equal(peak[0], 3.0,decimal=1)
 
     def test_2d_azimuthal_integral_inplace(self, ones):
         ones.set_ai()
