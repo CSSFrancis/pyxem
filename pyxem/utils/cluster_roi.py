@@ -42,11 +42,11 @@ class Cluster(CircleROI):
                          cy=indexes[cluster_indexes[1]],
                          r=radius,
                          **kwargs)
-        self.cluster_indexes=cluster_indexes
-        self.speckle_indexes= speckle_indexes
+        self.cluster_indexes =cluster_indexes
+        self.speckle_indexes = speckle_indexes
         self.indexes = indexes
         self.symmetry = None
-        self.corerlation = None
+        self.correlation = None
 
     def __str__(self):
         return ("Position: < "+ indexes +" >" +
@@ -121,8 +121,13 @@ class Cluster(CircleROI):
             cor.axes_manager[0].scale = mean.axes_manager[0].scale
             cor.axes_manager[0].unit = mean.axes_manager[0].unit
             cor.axes_manager[0].name = mean.axes_manager[0].name
+        self.correlation = cor
 
-
+    def get_symmetry(self):
+        pass
+    
+    def get_intensities(self):
+        pass
 
     def plot(self, **kwargs):
         markers = [hs.markers.vertical_line(j * 6.28 / self.symmetry) for j in range(self.symmetry)]
@@ -143,7 +148,8 @@ class Clusters(list):
     def __str__(self):
         return ("Number of Clusters: <" + len(self) + " >")
 
-    def to_markers(self, navigation_shape,
+    def to_markers(self,
+                   navigation_shape,
                    **kwargs):
         """This takes the object and turns it into a matplotlib.Circle object
         """
@@ -164,11 +170,15 @@ class Clusters(list):
                   shape,
                   ):
         data = np.zeros(shape, dtype=bool)
-        data = np.zeros(shape)
         for c in self:
             rr, cc = circle(c.ky, c.kx, 4, shape=shape[-2:])
             data[int(c.cx), int(c.cy), rr, cc] = True
         data = sci_gaussian_filter(data, (1, 1, 0, 0))
         return hs.signals.Signal2D(data)
 
-    def
+    def get_correlations(self,
+                         signal,
+                         mask):
+        for cluster in self:
+            cluster.get_correlation(signal=signal,
+                                    mask=mask)

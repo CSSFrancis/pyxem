@@ -83,5 +83,14 @@ class ClusterGenerator:
         self.sigma = sigma_list
         return
 
-    def plot
+    def plot_symmetries(self):
+        pass
+
+    def plot_cluster_radius(self):
+        pass
+
+    def plot_k_distribution(self):
+        pass
+
+    def plot_
 
