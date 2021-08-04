@@ -1,10 +1,7 @@
 from scipy.ndimage import gaussian_laplace as sci_gaussian_laplace
-from scipy.ndimage import gaussian_filter as sci_gaussian_filter
 
 import numpy as np
-from dask_image.ndfilters import gaussian_laplace as lazy_gaussian_laplace
-from dask_image.ndfilters import gaussian_filter as lazy_gaussian_filter
-from hyperspy._signals.signal2d import Signal2D, LazySignal2D
+from hyperspy._signals.signal2d import Signal2D
 
 class ClusterGenerator:
     """A workflow for finding clusters in diffraction patterns.
@@ -86,4 +83,5 @@ class ClusterGenerator:
         self.sigma = sigma_list
         return
 
+    def plot
 

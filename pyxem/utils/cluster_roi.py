@@ -1,7 +1,12 @@
 from hyperspy.roi import CircleROI
-    from matplotlib.pyplot import Circle
+from matplotlib.pyplot import Circle
 import hyperspy.api as hs
 from skimage.draw import circle
+from pyxem.utils.correlation_utils import _cross_correlate_masked
+from scipy.ndimage import gaussian_filter as sci_gaussian_filter
+import numpy as np
+
+from hyperspy.signals import Signal1D, Signal2D
 
 
 class Cluster(CircleROI):
@@ -13,14 +18,10 @@ class Cluster(CircleROI):
     """
 
     def __init__(self,
-                 x=None,
-                 y=None,
-                 time=None,
+                 indexes,
+                 cluster_indexes=[0,1],
+                 speckle_indexes=[2,3],
                  radius=None,
-                 kx=None,
-                 ky=None,
-                 symmetry=None,
-                 correlation=None,
                  **kwargs):
         """ Initializes some cluster. The coordinates x and y are the real space
         coordinates defining the circle of interest
@@ -37,21 +38,20 @@ class Cluster(CircleROI):
         correlation: Array-like
             The saved angular correlation for the center of the cluster at some k.
         """
-        super().__init__(cx=x, cy=y, r=radius, **kwargs)
-        self.kx = kx
-        self.ky = ky
-        self.time = time
-        self.symmetry = symmetry
-        if correlation is not None:
-            self.correlation = correlation.inav[x, y].isig[:, k]
-            self.correlation.axes_manager.signal_axes[0].offset = 0
-        else:
-            self.correlation = None
+        super().__init__(cx=indexes[cluster_indexes[0]],
+                         cy=indexes[cluster_indexes[1]],
+                         r=radius,
+                         **kwargs)
+        self.cluster_indexes=cluster_indexes
+        self.speckle_indexes= speckle_indexes
+        self.indexes = indexes
+        self.symmetry = None
+        self.corerlation = None
 
     def __str__(self):
-        return ("Position: <" + str(self.cx) + ", " +
-                str(self.cy) + ">  kx: " + str(self.kx) + "ky" + str(self.ky) +
-                " radius: " + str(self.r) + " Symmetry: " + str(self.symmetry))
+        return ("Position: < "+ indexes +" >" +
+                " radius: " + str(self.r) +
+                " Symmetry: " + str(self.symmetry))
 
     def to_circle(self,
                   linewidth=2,
@@ -71,19 +71,58 @@ class Cluster(CircleROI):
 
     def get_mean(self,
                  signal):
-        return self(signal).nansum()
+        return self(signal, axes=self.cluster_indexes).nansum()
 
     def get_kernel(self,
+                   signal,
                    radius,
-                   signal):
+                   ):
         shape = tuple(reversed(signal.axes_manager.signal_shape))
         mask = np.zeros(shape, dtype=bool)
-        rr, cc = circle(self.ky, self.kx, radius, shape)
-        print(rr, cc)
+        rr, cc = circle(self.indexes[self.speckle_indexes[1]],
+                        self.indexes[self.speckle_indexes[0]],
+                        radius,
+                        shape)
         mask[rr, cc] = True
-        data = signal.data
+        data = signal.data # might just pass the reference
         data[~mask] = 0
         return data
+
+    def get_correlation(self,
+                        signal,
+                        radius,
+                        mask=None,
+                        summed=True,
+                        ):
+        mean = self.get_mean(signal)
+        kernel =  self.get_kernel(signal=signal, radius=radius)
+        if mask is None:
+            mask = np.zeros(kernel.shape,
+                            dtype=bool)
+        mask2 = np.zeros(kernel.shape,
+                         dtype=bool)
+        cor= _cross_correlate_masked(z1=mean.data,
+                                     z2=kernel,
+                                     mask1=mask,
+                                     mask2=mask2,
+                                     axis=1,
+                                     )
+        if summed:
+            cor=cor.sum(axis=0)
+            cor = Signal1D(cor)
+            cor.axes_manager[0].scale=len(cor.data)/(np.pi*2)
+            cor.axes_manager[0].unit = "Radians"
+            cor.axes_manager[0].name ="Correlation, $\phi$ "
+        else:
+            cor = Signal2D(cor)
+            cor.axes_manager[1].scale = len(cor.data) / (np.pi * 2)
+            cor.axes_manager[1].unit = "Radians"
+            cor.axes_manager[1].name = "Correlation, $\phi$ "
+            cor.axes_manager[0].scale = mean.axes_manager[0].scale
+            cor.axes_manager[0].unit = mean.axes_manager[0].unit
+            cor.axes_manager[0].name = mean.axes_manager[0].name
+
+
 
     def plot(self, **kwargs):
         markers = [hs.markers.vertical_line(j * 6.28 / self.symmetry) for j in range(self.symmetry)]
@@ -131,3 +170,5 @@ class Clusters(list):
             data[int(c.cx), int(c.cy), rr, cc] = True
         data = sci_gaussian_filter(data, (1, 1, 0, 0))
         return hs.signals.Signal2D(data)
+
+    def
