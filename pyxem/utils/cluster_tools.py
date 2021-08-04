@@ -538,10 +538,17 @@ def find_peaks(signal,
     # clusters returned as (sigma, indexes[1...-1)
     max_b1 = signal.axes_manager[0].size - 1
     max_b2 = signal.axes_manager[1].size - 1
-
-    cluster_list = [Cluster(indexes=c[1:]) for c in clusters
+    axes = signal.axes_manager.as_dictionary()
+    scales = [axes[key]["scale"] for key in axes]
+    offset = [axes[key]["offset"] for key in axes]
+    real_positions = np.add(np.multiply(np.add(clusters, 1), scales), offset)
+    cluster_list = [Cluster(real_indexes=real[1:],
+                            pixel_indexes=c[1:],
+                            radius=(real[0])*np.sqrt(2)) for c, real in zip(clusters, real_positions)
                     if (c[0] > 0 and trim_edges) and
                     (0 < c[1] < max_b1 and 0 < c[2] < max_b2 and trim_border)]
+    cluster_list = (Clusters(cluster_list))
+    print(cluster_list)
     return cluster_list
 
 
@@ -551,7 +558,6 @@ def peak_finding(data, **kwargs):
     The underlying function finds the local max by finding point where
     a dilution doesn't change.
     """
-    print("data shape", np.shape(data))
     local_maxima = peak_local_max(data,
                                   footprint=np.ones((3,) * (data.ndim)),
                                   **kwargs)

@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
-
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from skimage.draw import disk
@@ -54,12 +54,42 @@ class TestCalibrationGenerator:
         data.axes_manager[3].unit = "Rad"
         return ClusterGenerator(data)
 
+    @pytest.fixture
+    def clusters(self, generator):
+        generator.get_space_scale_rep()
+        generator.get_clusters()
+        return generator
+
     def test_get_ssr(self,
                      generator):
         generator.get_space_scale_rep()
         assert generator.space_scale_rep is not None
         generator.space_scale_rep.axes_manager
-        print(generator.space_scale_rep)
+        print(generator.space_scale_rep.axes_manager)
+        assert generator.space_scale_rep.axes_manager[2].name is "Sigma"
+        assert generator.space_scale_rep.axes_manager[2].scale == 9/5
+
+    def test_get_clusters(self,
+                     generator):
+        generator.get_space_scale_rep()
+        generator.get_clusters()
+        assert generator.clusters is not None
+        print(generator.cluster)
+
+    def test_get_cor(self,
+                     clusters):
+        clusters.get_correlations()
+
+    def test_get_sym(self,
+                     clusters):
+        clusters.get_correlations()
+        clusters.get_symmetries()
+        print(clusters.clusters.symmetries)
+
+    def test_get_mean(self,
+                     clusters):
+        mean = clusters.clusters[0].get_mean(clusters.signal)
+
 
 
 

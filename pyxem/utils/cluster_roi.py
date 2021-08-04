@@ -1,14 +1,14 @@
-from abc import ABC
+from fractions import Fraction as frac
 
-from hyperspy.roi import CircleROI
 from matplotlib.pyplot import Circle
-import hyperspy.api as hs
-from skimage.draw import circle
-from pyxem.utils.correlation_utils import _cross_correlate_masked
+from skimage.draw import disk
 from scipy.ndimage import gaussian_filter as sci_gaussian_filter
 import numpy as np
 
+import hyperspy.api as hs
+from hyperspy.roi import CircleROI
 from hyperspy.signals import Signal1D, Signal2D
+from pyxem.utils.correlation_utils import _cross_correlate_masked, get_interpolation_matrix
 
 
 class Cluster(CircleROI):
@@ -17,12 +17,16 @@ class Cluster(CircleROI):
     shapes than circles but this is a useful tool to getting cluster
     information from different signals by allowing the user to easily
     slice all forms of some dataset.
+
+    All of the units for the ClusterROI are in pixels rather than in real
+    units to make things easier...
     """
 
     def __init__(self,
-                 indexes,
-                 cluster_indexes=[0,1],
-                 speckle_indexes=[2,3],
+                 real_indexes,
+                 pixel_indexes,
+                 cluster_indexes=[0, 1],
+                 speckle_indexes=[2, 3],
                  radius=None,
                  **kwargs):
         """ Initializes some cluster. The coordinates x and y are the real space
@@ -40,19 +44,21 @@ class Cluster(CircleROI):
         correlation: Array-like
             The saved angular correlation for the center of the cluster at some k.
         """
-        super().__init__(cx=indexes[cluster_indexes[0]],
-                         cy=indexes[cluster_indexes[1]],
+        radius = radius/2
+        super().__init__(cx=real_indexes[cluster_indexes[0]],
+                         cy=real_indexes[cluster_indexes[1]],
                          r=radius,
                          **kwargs)
-        self.cluster_indexes =cluster_indexes
+        self.cluster_indexes = cluster_indexes
         self.speckle_indexes = speckle_indexes
-        self.indexes = indexes
+        self.real_indexes = real_indexes
+        self.pixel_indexes = pixel_indexes
         self.symmetry = None
         self.correlation = None
         self.intensities = None
 
     def __str__(self):
-        return ("Position: < "+ self.indexes +" >" +
+        return ("Position: < "+ str(self.real_indexes) +" >" +
                 " radius: " + str(self.r) +
                 " Symmetry: " + str(self.symmetry))
 
@@ -82,13 +88,15 @@ class Cluster(CircleROI):
                    ):
         shape = tuple(reversed(signal.axes_manager.signal_shape))
         mask = np.zeros(shape, dtype=bool)
-        rr, cc = circle(self.indexes[self.speckle_indexes[1]],
-                        self.indexes[self.speckle_indexes[0]],
-                        radius,
-                        shape)
+        rr, cc = disk((self.pixel_indexes[self.speckle_indexes[0]],
+                       self.pixel_indexes[self.speckle_indexes[1]]),
+                      radius=radius,
+                      shape=shape)
         mask[rr, cc] = True
-        data = signal.data  # might just pass the reference
+        data = np.copy(signal.data.data)
         data[~mask] = 0
+        # Not sure why this is necessary... Need to double Check
+        data = np.flip(data, axis=1)
         return data
 
     def get_correlation(self,
@@ -98,7 +106,7 @@ class Cluster(CircleROI):
                         summed=True,
                         ):
         mean = self.get_mean(signal)
-        kernel = self.get_kernel(signal=signal, radius=radius)
+        kernel = self.get_kernel(signal=mean, radius=radius)
         if mask is None:
             mask = np.zeros(kernel.shape,
                             dtype=bool)
@@ -113,12 +121,12 @@ class Cluster(CircleROI):
         if summed:
             cor = cor.sum(axis=0)
             cor = Signal1D(cor)
-            cor.axes_manager[0].scale = len(cor.data)/(np.pi*2)
+            cor.axes_manager[0].scale = (np.pi*2)/len(cor.data)
             cor.axes_manager[0].unit = "Radians"
             cor.axes_manager[0].name = "Correlation, $\phi$ "
         else:
             cor = Signal2D(cor)
-            cor.axes_manager[1].scale = len(cor.data) / (np.pi * 2)
+            cor.axes_manager[1].scale = (np.pi * 2)/len(cor.data)
             cor.axes_manager[1].unit = "Radians"
             cor.axes_manager[1].name = "Correlation, $\phi$ "
             cor.axes_manager[0].scale = mean.axes_manager[0].scale
@@ -126,8 +134,34 @@ class Cluster(CircleROI):
             cor.axes_manager[0].name = mean.axes_manager[0].name
         self.correlation = cor
 
-    def get_symmetry(self):
-        pass
+    def get_symmetry(self,
+                     symmetries=(1, 2, 4, 6, 8, 10),
+                     include_duplicates=False,
+                     angular_range=0,
+                     method="sum"):
+        if method is "average":
+            normalize = True
+            method = "sum"
+        else:
+            normalize=False
+        angles = [set(frac(j, i) for j in range(0, i)) for i in symmetries]
+        if not include_duplicates:
+            already_used = set()
+            new_angles = []
+            for a in angles:
+                new_angles.append(a.difference(already_used))
+                already_used = already_used.union(a)
+            angles = new_angles
+        num_angles = [len(a) for a in angles]
+        interp = np.array([get_interpolation_matrix(a,
+                                           angular_range,
+                                           num_points=len(self.correlation.data),
+                                           method=method)
+                  for a in angles])
+        symmetries = np.matmul(self.correlation.data, np.transpose(interp))
+        if normalize:
+            np.divide(symmetries, num_angles)
+        self.symmetry=symmetries
     
     def get_intensities(self):
         pass
@@ -149,7 +183,7 @@ class Clusters(list):
         super().__init__(cluster_list)
 
     def __str__(self):
-        return "Number of Clusters: <" + len(self) + " >"
+        return "<Collection of:" + str(len(self)) + " Clusters>"
 
     def to_markers(self,
                    navigation_shape,
@@ -175,20 +209,29 @@ class Clusters(list):
         # add in symmetry plotting
         data = np.zeros(shape, dtype=bool)
         for c in self:
-            rr, cc = circle(c.ky, c.kx, 4, shape=shape[-2:])
-            data[int(c.cx), int(c.cy), rr, cc] = True
+            kx, ky = c.pixel_indexes[c.speckle_indexes]
+            rr, cc = disk((ky, kx), 4, shape=shape[-2:])
+            cx, cy = c.pixel_indexes[c.real_indexes]
+            data[int(cx), int(cy), rr, cc] = True
         data = sci_gaussian_filter(data, (1, 1, 0, 0))
         return hs.signals.Signal2D(data)
 
     def get_correlations(self,
                          signal,
-                         mask):
+                         radius=3,
+                         mask=None):
         for cluster in self:
             cluster.get_correlation(signal=signal,
+                                    radius=radius,
                                     mask=mask)
 
-    def get_symmetries(self, mask):
-        return [cluster.symmetry for cluster, m in zip(self, mask) if m]
+    def get_symmetries(self, **kwargs):
+        for cluster in self:
+            cluster.get_symmetry(**kwargs)
+
+    @property
+    def symmetries(self):
+        return [c.symmetry for c in self]
 
     def get_radius(self, mask):
         return [cluster.r for cluster, m in zip(self, mask) if m]

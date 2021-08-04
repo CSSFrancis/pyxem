@@ -349,3 +349,57 @@ def _cross_correlate_masked(z1,
 
     return out.real
 
+def wrap_set_float(list, bottom, top, value):
+    """This function sets values in a list assuming that
+    the list is circular and allows for float bottom and float top
+    which are equal to the residual times that value.
+    """
+    ceiling_bottom = int(np.ceil(bottom))
+    residual_bottom = ceiling_bottom-bottom
+    floor_top = int(np.floor(top))
+    residual_top = top-floor_top
+    if floor_top > len(list) - 1:
+        list[ceiling_bottom:] = value
+        new_floor_top = floor_top % len(list)
+        list[new_floor_top] = value
+        list[new_floor_top+1] = value*residual_top
+    elif ceiling_bottom < 0:
+        list[:floor_top] = value
+        list[ceiling_bottom:] = value
+        list[ceiling_bottom-1] = value*residual_bottom
+    else:
+        list[ceiling_bottom:floor_top+1] = value
+        list[ceiling_bottom-1] = value*residual_bottom
+        if floor_top + 1 > len(list) - 1:
+            list[0] = value*residual_top
+        else:
+            list[floor_top+1] = value*residual_top
+    return list
+
+
+def get_interpolation_matrix(angles, angular_range, num_points, method="sum"):
+    if method is "sum":
+        angular_ranges = [(angle - angular_range / (2*np.pi), angle + angular_range / (2*np.pi)) for angle in angles]
+        angular_ranges = np.multiply(angular_ranges, num_points)
+        angular_ranges = np.subtract(angular_ranges, 0.5)
+        interpolation_matrix = np.zeros(num_points)
+        for i, angle in enumerate(angular_ranges):
+            wrap_set_float(interpolation_matrix, top=angle[1], bottom=angle[0], value=1)
+        return interpolation_matrix
+    else:
+        angular_ranges = [(angle - angular_range / (2*np.pi), angle + angular_range / (2*np.pi)) for angle in angles]
+        angular_ranges = np.multiply(angular_ranges, num_points)
+        interpolation_matrix = np.zeros((len(angles),num_points))
+        for i, angle in enumerate(angular_ranges):
+            wrap_set_float(interpolation_matrix[i,:], top=angle[1], bottom=angle[0], value=1)
+        return interpolation_matrix
+
+def symmetry_stem(signal, interpolation, method="sum"):
+    if method is "sum":
+        return np.matmul(signal, np.transpose(interpolation))
+    if method is "max":
+        val = np.transpose([np.amax([np.matmul(signal, np.transpose(i))for i in interp], axis=0)
+               for interp in interpolation])
+    if method is "first":
+        val = np.transpose([np.matmul(signal, np.transpose(interp[0])) for interp in interpolation])
+    return val

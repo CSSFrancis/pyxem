@@ -80,8 +80,22 @@ class ClusterGenerator:
                      for s in sigma_list]
         gl_images = Signal2D(data=gl_images)
         gl_images.axes_manager.navigation_axes[-1].name = "Sigma"
-        gl_images.axes_manager.navigation_axes[-1].scale = (max_sigma[0] + 1 - min_sigma[0]) / num_sigma
+        gl_images.axes_manager.navigation_axes[-1].scale = (max_sigma[0] - min_sigma[0]) / num_sigma
         gl_images.axes_manager.navigation_axes[-1].offset = min_sigma[0]
+
+        for ax1, ax2 in zip(gl_images.axes_manager.navigation_axes[:-1],
+                            self.signal.axes_manager.navigation_axes):
+            ax1.scale = ax2.scale
+            ax1.unit = ax2.unit
+            ax1.offset = ax2.offset
+            ax1.name = ax2.name
+        for ax1, ax2 in zip(gl_images.axes_manager.signal_axes[:-1],
+                            self.signal.axes_manager.signal_axes):
+            ax1.scale = ax2.scale
+            ax1.unit = ax2.unit
+            ax1.offset = ax2.offset
+            ax1.name = ax2.name
+
         self.space_scale_rep = gl_images
         self.sigma = sigma_list
         return
@@ -95,6 +109,16 @@ class ClusterGenerator:
         self.clusters = find_peaks(signal=self.space_scale_rep,
                                    **kwargs)
 
+    def get_correlations(self,
+                         radius=3,
+                         mask=None):
+        self.clusters.get_correlations(self.signal,
+                                       radius=radius,
+                                       mask=mask)
+
+    def get_symmetries(self, **kwargs):
+        self.clusters.get_symmetries(**kwargs)
+
     def plot_symmetries(self, mask, ax=None,fig_size=None, **kwargs):
         symmetries = self.clusters.get_symmetries(mask=mask)
         if ax is not None:
@@ -102,7 +126,7 @@ class ClusterGenerator:
         ax.bar(symmetries, **kwargs)
         return
 
-    def plot_cluster_radius(self):
+    def plot_cluster_radius(self, mask=None):
         symmetries = self.clusters.get_symmetries(mask=mask)
         if ax is not None:
             ax, f = plt.subplot(1, 1, fig_size)
