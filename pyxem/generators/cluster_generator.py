@@ -1,7 +1,10 @@
+import matplotlib.pyplot as plt
+import numpy as np
 from scipy.ndimage import gaussian_laplace as sci_gaussian_laplace
 
-import numpy as np
 from hyperspy._signals.signal2d import Signal2D
+
+from pyxem.utils.cluster_tools import find_peaks
 
 class ClusterGenerator:
     """A workflow for finding clusters in diffraction patterns.
@@ -22,11 +25,11 @@ class ClusterGenerator:
         self.space_scale_rep = None
         self.clusters = None
         self.signal_mask = mask
-        self.sigma =
+        self.sigma = None
 
     def get_space_scale_rep(self,
-                            min_sigma=(1,1,1,1),
-                            max_sigma=(10,10,1,1),
+                            min_sigma=(1, 1, 1, 1),
+                            max_sigma=(10, 10, 1, 1),
                             num_sigma=5,
                             log_scale=False,
                             **kwargs,
@@ -83,14 +86,31 @@ class ClusterGenerator:
         self.sigma = sigma_list
         return
 
-    def plot_symmetries(self):
-        pass
+    def get_clusters(self,
+                     **kwargs):
+        if self.space_scale_rep is None:
+            print("The space scale representation must first be intialized."
+                  "Please run the `get_space_scale_rep` function. ")
+            return
+        self.clusters = find_peaks(signal=self.space_scale_rep,
+                                   **kwargs)
+
+    def plot_symmetries(self, mask, ax=None,fig_size=None, **kwargs):
+        symmetries = self.clusters.get_symmetries(mask=mask)
+        if ax is not None:
+            ax, f = plt.subplot(1, 1, fig_size)
+        ax.bar(symmetries, **kwargs)
+        return
 
     def plot_cluster_radius(self):
-        pass
+        symmetries = self.clusters.get_symmetries(mask=mask)
+        if ax is not None:
+            ax, f = plt.subplot(1, 1, fig_size)
+        ax.bar(symmetries, **kwargs)
 
     def plot_k_distribution(self):
         pass
 
-    def plot_
+    def refine_clusters(self):
+        pass
 

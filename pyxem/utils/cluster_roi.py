@@ -1,3 +1,5 @@
+from abc import ABC
+
 from hyperspy.roi import CircleROI
 from matplotlib.pyplot import Circle
 import hyperspy.api as hs
@@ -47,9 +49,10 @@ class Cluster(CircleROI):
         self.indexes = indexes
         self.symmetry = None
         self.correlation = None
+        self.intensities = None
 
     def __str__(self):
-        return ("Position: < "+ indexes +" >" +
+        return ("Position: < "+ self.indexes +" >" +
                 " radius: " + str(self.r) +
                 " Symmetry: " + str(self.symmetry))
 
@@ -84,7 +87,7 @@ class Cluster(CircleROI):
                         radius,
                         shape)
         mask[rr, cc] = True
-        data = signal.data # might just pass the reference
+        data = signal.data  # might just pass the reference
         data[~mask] = 0
         return data
 
@@ -95,24 +98,24 @@ class Cluster(CircleROI):
                         summed=True,
                         ):
         mean = self.get_mean(signal)
-        kernel =  self.get_kernel(signal=signal, radius=radius)
+        kernel = self.get_kernel(signal=signal, radius=radius)
         if mask is None:
             mask = np.zeros(kernel.shape,
                             dtype=bool)
         mask2 = np.zeros(kernel.shape,
                          dtype=bool)
-        cor= _cross_correlate_masked(z1=mean.data,
-                                     z2=kernel,
-                                     mask1=mask,
-                                     mask2=mask2,
-                                     axis=1,
-                                     )
+        cor = _cross_correlate_masked(z1=mean.data,
+                                      z2=kernel,
+                                      mask1=mask,
+                                      mask2=mask2,
+                                      axis=1,
+                                      )
         if summed:
-            cor=cor.sum(axis=0)
+            cor = cor.sum(axis=0)
             cor = Signal1D(cor)
-            cor.axes_manager[0].scale=len(cor.data)/(np.pi*2)
+            cor.axes_manager[0].scale = len(cor.data)/(np.pi*2)
             cor.axes_manager[0].unit = "Radians"
-            cor.axes_manager[0].name ="Correlation, $\phi$ "
+            cor.axes_manager[0].name = "Correlation, $\phi$ "
         else:
             cor = Signal2D(cor)
             cor.axes_manager[1].scale = len(cor.data) / (np.pi * 2)
@@ -146,7 +149,7 @@ class Clusters(list):
         super().__init__(cluster_list)
 
     def __str__(self):
-        return ("Number of Clusters: <" + len(self) + " >")
+        return "Number of Clusters: <" + len(self) + " >"
 
     def to_markers(self,
                    navigation_shape,
@@ -169,6 +172,7 @@ class Clusters(list):
     def to_signal(self,
                   shape,
                   ):
+        # add in symmetry plotting
         data = np.zeros(shape, dtype=bool)
         for c in self:
             rr, cc = circle(c.ky, c.kx, 4, shape=shape[-2:])
@@ -182,3 +186,15 @@ class Clusters(list):
         for cluster in self:
             cluster.get_correlation(signal=signal,
                                     mask=mask)
+
+    def get_symmetries(self, mask):
+        return [cluster.symmetry for cluster, m in zip(self, mask) if m]
+
+    def get_radius(self, mask):
+        return [cluster.r for cluster, m in zip(self, mask) if m]
+
+    def get_index(self, index, mask):
+        return [cluster.index[index] for cluster, m in zip(self, mask) if m]
+
+    def get_intensities(self, mask):
+        return [cluster.intensities for cluster, m in zip(self, mask) if m]

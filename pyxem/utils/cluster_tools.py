@@ -15,11 +15,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
-
 import numpy as np
+
 from sklearn import cluster
+from skimage.feature.peak import peak_local_max
 from hyperspy.misc.utils import isiterable
+
+
 import pyxem.utils.marker_tools as mt
+from pyxem.utils.cluster_roi import Cluster,Clusters
 
 
 def _find_nearest(array, value):
@@ -518,3 +522,42 @@ def _sorted_cluster_dict_to_marker_list(
         )
         marker_list.extend(temp_markers)
     return marker_list
+
+
+def find_peaks(signal,
+               trim_edges=True,
+               trim_border=True,
+               **kwargs):
+    """
+    This method takes a library of SymmetrySTEM Objects and finds peaks
+    in the library.  This method might be moved to a different SymmetrySTEMLibrary Class
+    which better handles the different Sigma applied to the dataset.
+     """
+    clusters = peak_finding(signal.data,
+                            **kwargs)
+    # clusters returned as (sigma, indexes[1...-1)
+    max_b1 = signal.axes_manager[0].size - 1
+    max_b2 = signal.axes_manager[1].size - 1
+
+    cluster_list = [Cluster(indexes=c[1:]) for c in clusters
+                    if (c[0] > 0 and trim_edges) and
+                    (0 < c[1] < max_b1 and 0 < c[2] < max_b2 and trim_border)]
+    return cluster_list
+
+
+def peak_finding(data, **kwargs):
+    """This method helps to format the output from the blob methods
+    in skimage for a more hyperspy like format using hs.markers.
+    The underlying function finds the local max by finding point where
+    a dilution doesn't change.
+    """
+    print("data shape", np.shape(data))
+    local_maxima = peak_local_max(data,
+                                  footprint=np.ones((3,) * (data.ndim)),
+                                  **kwargs)
+    # Catch no peaks
+    if local_maxima.size == 0:
+        return np.empty((0, 4))
+        # Convert local_maxima to float64
+    lm = local_maxima.astype(np.float64)
+    return lm
