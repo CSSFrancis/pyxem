@@ -239,7 +239,7 @@ class Clusters(list):
                   shape=None,
                   ):
         if (shape is None) and (self.obj is not None):
-            shape = np.shape(self.obj.signal.data)
+            shape = np.shape(self.obj.signal.data[-2:])
         data = np.zeros(shape, dtype=bool)
         for c in self:
             kx = c.pixel_indexes[c.speckle_indexes[0]]
@@ -249,7 +249,21 @@ class Clusters(list):
             cy = c.pixel_indexes[c.cluster_indexes[1]]
             data[int(cx-1):int(cx+1), int(cy-1):int(cy+1), rr, cc] = True
         #data = sci_gaussian_filter(data, (1, 1, 0, 0))
-        return hs.signals.Signal2D(data)
+        s  = hs.signals.Signal2D(data)
+        if self.obj is not None:
+            for ax1, ax2 in zip(s.axes_manager.navigation_axes,
+                                self.obj.signal.axes_manager.navigation_axes):
+                ax1.scale = ax2.scale
+                # ax1.units = ax2.units
+                ax1.offset = ax2.offset
+                ax1.name = ax2.name
+            for ax1, ax2 in zip(s.axes_manager.signal_axes,
+                                self.obj.signal.axes_manager.signal_axes):
+                ax1.scale = ax2.scale
+                # ax1.units = ax2.units
+                ax1.offset = ax2.offset
+                ax1.name = ax2.name
+        return
 
     def get_correlations(self,
                          signal=None,
