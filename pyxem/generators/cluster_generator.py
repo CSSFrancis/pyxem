@@ -87,13 +87,13 @@ class ClusterGenerator:
         for ax1, ax2 in zip(gl_images.axes_manager.navigation_axes[:-1],
                             self.signal.axes_manager.navigation_axes):
             ax1.scale = ax2.scale
-            ax1.unit = ax2.unit
+            #ax1.units = ax2.units
             ax1.offset = ax2.offset
             ax1.name = ax2.name
         for ax1, ax2 in zip(gl_images.axes_manager.signal_axes[:-1],
                             self.signal.axes_manager.signal_axes):
             ax1.scale = ax2.scale
-            ax1.unit = ax2.unit
+            #ax1.units = ax2.units
             ax1.offset = ax2.offset
             ax1.name = ax2.name
 
