@@ -51,7 +51,7 @@ class ClusterGenerator:
             log_scale: bool
                 If the step size for the min --> max sigma should be in a log scale
             kwargs: dict
-                Aby additional parmaters passed to the laplaican of Gaussian Function
+                Aby additional parameters passed to the laplaican of Gaussian Function
             For more information https://en.wikipedia.org/wiki/Scale_space.
         """
         # if both min and max sigma are scalar, function returns only one sigma
@@ -113,7 +113,7 @@ class ClusterGenerator:
     def get_correlations(self,
                          radius=3,
                          mask=None):
-        self.clusters.get_correlations(self.signal,
+        self.clusters.get_correlations(self.space_scale_rep,
                                        radius=radius,
                                        mask=mask)
 

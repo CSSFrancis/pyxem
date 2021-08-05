@@ -25,8 +25,8 @@ class Cluster(CircleROI):
     def __init__(self,
                  real_indexes,
                  pixel_indexes,
-                 cluster_indexes=[0, 1],
-                 speckle_indexes=[2, 3],
+                 cluster_indexes=[1, 2],
+                 speckle_indexes=[3, 4],
                  radius=None,
                  **kwargs):
         """ Initializes some cluster. The coordinates x and y are the real space
@@ -58,7 +58,7 @@ class Cluster(CircleROI):
         self.intensities = None
 
     def __str__(self):
-        return ("Position: < "+ str(self.real_indexes) +" >" +
+        return ("Position: < " + str(self.real_indexes) +" >" +
                 " radius: " + str(self.r) +
                 " Symmetry: " + str(self.symmetry))
 
@@ -80,7 +80,8 @@ class Cluster(CircleROI):
 
     def get_mean(self,
                  signal):
-        return self(signal, axes=self.cluster_indexes).nansum()
+        ind = np.flip(np.array(self.pixel_indexes[:3], dtype=int))
+        return signal.inav[ind]
 
     def get_kernel(self,
                    signal,
@@ -96,8 +97,8 @@ class Cluster(CircleROI):
         data = np.copy(signal.data.data)
         data[~mask] = 0
         # Not sure why this is necessary... Need to double Check
-        data = np.flip(data, axis=1)
-        return data
+        #data = np.flip(data, axis=1)
+        return data, mask
 
     def get_correlation(self,
                         signal,
@@ -106,7 +107,7 @@ class Cluster(CircleROI):
                         summed=True,
                         ):
         mean = self.get_mean(signal)
-        kernel = self.get_kernel(signal=mean, radius=radius)
+        kernel, mask2 = self.get_kernel(signal=mean, radius=radius)
         if mask is None:
             mask = np.zeros(kernel.shape,
                             dtype=bool)
@@ -166,7 +167,8 @@ class Cluster(CircleROI):
     def get_intensities(self):
         pass
 
-    def plot(self, **kwargs):
+    def plot(self,
+             **kwargs):
         markers = [hs.markers.vertical_line(j * 6.28 / self.symmetry) for j in range(self.symmetry)]
         self.correlation.add_marker(markers, permanent=True, plot_marker=True)
 
@@ -211,7 +213,7 @@ class Clusters(list):
         for c in self:
             kx = c.pixel_indexes[c.speckle_indexes[0]]
             ky = c.pixel_indexes[c.speckle_indexes[1]]
-            rr, cc = disk((kx, ky), 3)
+            rr, cc = disk((kx, ky), 3, shape=shape)
             cx = c.pixel_indexes[c.cluster_indexes[0]]
             cy = c.pixel_indexes[c.cluster_indexes[1]]
             data[int(cx-1):int(cx+1), int(cy-1):int(cy+1), rr, cc] = True

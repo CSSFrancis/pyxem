@@ -23,7 +23,7 @@ from hyperspy.misc.utils import isiterable
 
 
 import pyxem.utils.marker_tools as mt
-from pyxem.utils.cluster_roi import Cluster,Clusters
+from pyxem.utils.cluster_roi import Cluster, Clusters
 
 
 def _find_nearest(array, value):
@@ -542,8 +542,8 @@ def find_peaks(signal,
     scales = [axes[key]["scale"] for key in axes]
     offset = [axes[key]["offset"] for key in axes]
     real_positions = np.add(np.multiply(np.add(clusters, 1), scales), offset)
-    cluster_list = [Cluster(real_indexes=real[1:],
-                            pixel_indexes=c[1:],
+    cluster_list = [Cluster(real_indexes=real,
+                            pixel_indexes=c,
                             radius=(real[0])*np.sqrt(2)) for c, real in zip(clusters, real_positions)
                     if (c[0] > 0 and trim_edges) and
                     (0 < c[1] < max_b1 and 0 < c[2] < max_b2 and trim_border)]
