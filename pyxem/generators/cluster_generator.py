@@ -6,6 +6,7 @@ from hyperspy._signals.signal2d import Signal2D
 
 from pyxem.utils.cluster_tools import find_peaks
 
+
 class ClusterGenerator:
     """A workflow for finding clusters in diffraction patterns.
 
@@ -119,7 +120,11 @@ class ClusterGenerator:
     def get_symmetries(self, **kwargs):
         self.clusters.get_symmetries(**kwargs)
 
-    def plot_symmetries(self, mask, ax=None,fig_size=None, **kwargs):
+    def plot_symmetries(self,
+                        mask,
+                        ax=None,
+                        fig_size=None,
+                        **kwargs):
         symmetries = self.clusters.get_symmetries(mask=mask)
         if ax is not None:
             ax, f = plt.subplot(1, 1, fig_size)

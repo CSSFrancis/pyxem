@@ -209,11 +209,13 @@ class Clusters(list):
         # add in symmetry plotting
         data = np.zeros(shape, dtype=bool)
         for c in self:
-            kx, ky = c.pixel_indexes[c.speckle_indexes]
-            rr, cc = disk((ky, kx), 4, shape=shape[-2:])
-            cx, cy = c.pixel_indexes[c.real_indexes]
-            data[int(cx), int(cy), rr, cc] = True
-        data = sci_gaussian_filter(data, (1, 1, 0, 0))
+            kx = c.pixel_indexes[c.speckle_indexes[0]]
+            ky = c.pixel_indexes[c.speckle_indexes[1]]
+            rr, cc = disk((kx, ky), 3)
+            cx = c.pixel_indexes[c.cluster_indexes[0]]
+            cy = c.pixel_indexes[c.cluster_indexes[1]]
+            data[int(cx-1):int(cx+1), int(cy-1):int(cy+1), rr, cc] = True
+        #data = sci_gaussian_filter(data, (1, 1, 0, 0))
         return hs.signals.Signal2D(data)
 
     def get_correlations(self,
