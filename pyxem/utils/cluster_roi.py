@@ -263,7 +263,7 @@ class Clusters(list):
                 # ax1.units = ax2.units
                 ax1.offset = ax2.offset
                 ax1.name = ax2.name
-        return
+        return s
 
     def get_correlations(self,
                          signal=None,
