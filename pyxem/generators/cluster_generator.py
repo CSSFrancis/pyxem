@@ -5,6 +5,7 @@ from scipy.ndimage import gaussian_laplace as sci_gaussian_laplace
 from hyperspy._signals.signal2d import Signal2D
 
 from pyxem.utils.cluster_tools import find_peaks
+from pyxem.utils.cluster_roi import Clusters
 
 
 class ClusterGenerator:
@@ -90,7 +91,7 @@ class ClusterGenerator:
             #ax1.units = ax2.units
             ax1.offset = ax2.offset
             ax1.name = ax2.name
-        for ax1, ax2 in zip(gl_images.axes_manager.signal_axes[:-1],
+        for ax1, ax2 in zip(gl_images.axes_manager.signal_axes,
                             self.signal.axes_manager.signal_axes):
             ax1.scale = ax2.scale
             #ax1.units = ax2.units
@@ -107,18 +108,9 @@ class ClusterGenerator:
             print("The space scale representation must first be intialized."
                   "Please run the `get_space_scale_rep` function. ")
             return
-        self.clusters = find_peaks(signal=self.space_scale_rep,
-                                   **kwargs)
+        self.clusters = Clusters(find_peaks(signal=self.space_scale_rep,
+                                   **kwargs, obj=self), obj=self)
 
-    def get_correlations(self,
-                         radius=3,
-                         mask=None):
-        self.clusters.get_correlations(self.space_scale_rep,
-                                       radius=radius,
-                                       mask=mask)
-
-    def get_symmetries(self, **kwargs):
-        self.clusters.get_symmetries(**kwargs)
 
     def plot_symmetries(self,
                         mask,

@@ -527,7 +527,9 @@ def _sorted_cluster_dict_to_marker_list(
 def find_peaks(signal,
                trim_edges=True,
                trim_border=True,
-               **kwargs):
+               obj=None,
+               **kwargs,
+               ):
     """
     This method takes a library of SymmetrySTEM Objects and finds peaks
     in the library.  This method might be moved to a different SymmetrySTEMLibrary Class
@@ -544,11 +546,10 @@ def find_peaks(signal,
     real_positions = np.add(np.multiply(np.add(clusters, 1), scales), offset)
     cluster_list = [Cluster(real_indexes=real,
                             pixel_indexes=c,
-                            radius=(real[0])*np.sqrt(2)) for c, real in zip(clusters, real_positions)
+                            radius=(real[0])*np.sqrt(2),
+                            obj=obj) for c, real in zip(clusters, real_positions)
                     if (c[0] > 0 and trim_edges) and
                     (0 < c[1] < max_b1 and 0 < c[2] < max_b2 and trim_border)]
-    cluster_list = (Clusters(cluster_list))
-    print(cluster_list)
     return cluster_list
 
 

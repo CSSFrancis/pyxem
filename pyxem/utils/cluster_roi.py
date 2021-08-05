@@ -4,6 +4,7 @@ from matplotlib.pyplot import Circle
 from skimage.draw import disk
 from scipy.ndimage import gaussian_filter as sci_gaussian_filter
 import numpy as np
+from dask import delayed
 
 import hyperspy.api as hs
 from hyperspy.roi import CircleROI
@@ -28,6 +29,7 @@ class Cluster(CircleROI):
                  cluster_indexes=[1, 2],
                  speckle_indexes=[3, 4],
                  radius=None,
+                 obj=None,
                  **kwargs):
         """ Initializes some cluster. The coordinates x and y are the real space
         coordinates defining the circle of interest
@@ -56,6 +58,7 @@ class Cluster(CircleROI):
         self.symmetry = None
         self.correlation = None
         self.intensities = None
+        self.obj = obj
 
     def __str__(self):
         return ("Position: < " + str(self.real_indexes) +" >" +
@@ -78,10 +81,27 @@ class Cluster(CircleROI):
                       alpha=alpha,
                       **kwargs)
 
+    @property
+    def mean(self):
+        if self.obj is None:
+            print("Set a cluster generator object")
+        ind = np.flip(np.array(self.pixel_indexes[:3], dtype=int))
+        mean = self.obj.space_scale_rep.inav[ind]
+        point = hs.plot.markers.point(self.real_indexes[-1],
+                                      self.real_indexes[-2],
+                                      color="blue",
+                                      size=100)
+        mean.add_marker(point,
+                        permanent=True,
+                        render_figure=False,
+                        plot_marker=False)
+        return mean
+
     def get_mean(self,
                  signal):
         ind = np.flip(np.array(self.pixel_indexes[:3], dtype=int))
-        return signal.inav[ind]
+        mean = signal.inav[ind]
+        return mean
 
     def get_kernel(self,
                    signal,
@@ -179,19 +199,29 @@ class Clusters(list):
     """
 
     def __init__(self,
-                 cluster_list):
+                 cluster_list,
+                 obj=None):
         """ Initializes a cluster based on a list of clusters.
         """
         super().__init__(cluster_list)
+        self.obj = obj
 
     def __str__(self):
         return "<Collection of:" + str(len(self)) + " Clusters>"
 
+    @property
+    def symmetries(self):
+        return [c.symmetry for c in self]
+
+
+
     def to_markers(self,
-                   navigation_shape,
+                   navigation_shape=None,
                    **kwargs):
         """This takes the object and turns it into a matplotlib.Circle object
         """
+        if (navigation_shape is None) and (self.obj is not None):
+            navigation_shape = self.obj.signal.axes_manager.navigation_shape
         xindexes = np.zeros(navigation_shape)
         yindexes = np.zeros(navigation_shape)
 
@@ -206,9 +236,10 @@ class Clusters(list):
         return markers, nav_markers
 
     def to_signal(self,
-                  shape,
+                  shape=None,
                   ):
-        # add in symmetry plotting
+        if (shape is None) and (self.obj is not None):
+            shape = np.shape(self.obj.signal.data)
         data = np.zeros(shape, dtype=bool)
         for c in self:
             kx = c.pixel_indexes[c.speckle_indexes[0]]
@@ -221,21 +252,32 @@ class Clusters(list):
         return hs.signals.Signal2D(data)
 
     def get_correlations(self,
-                         signal,
+                         signal=None,
                          radius=3,
                          mask=None):
+        if signal is None and self.obj is not None:
+            signal = self.obj.space_scale_rep
+        else:
+            print("Either a signal or a cluster generator obj must be intialized")
         for cluster in self:
             cluster.get_correlation(signal=signal,
                                     radius=radius,
                                     mask=mask)
 
-    def get_symmetries(self, **kwargs):
+    def get_symmetries(self,
+                       **kwargs):
         for cluster in self:
             cluster.get_symmetry(**kwargs)
 
-    @property
-    def symmetries(self):
-        return [c.symmetry for c in self]
+    def get_means(self,
+                  signal=None,
+                  **kwargs):
+        if signal is None and self.obj is not None:
+            signal = self.obj.space_scale_rep
+        for cluster in self:
+            cluster.get_mean(signal=signal)
+
+
 
     def get_radius(self, mask):
         return [cluster.r for cluster, m in zip(self, mask) if m]
