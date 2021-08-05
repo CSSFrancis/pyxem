@@ -249,7 +249,7 @@ class Clusters(list):
             cy = c.pixel_indexes[c.cluster_indexes[1]]
             data[int(cx-1):int(cx+1), int(cy-1):int(cy+1), rr, cc] = True
         #data = sci_gaussian_filter(data, (1, 1, 0, 0))
-        s  = hs.signals.Signal2D(data)
+        s = hs.signals.Signal2D(data)
         if self.obj is not None:
             for ax1, ax2 in zip(s.axes_manager.navigation_axes,
                                 self.obj.signal.axes_manager.navigation_axes):

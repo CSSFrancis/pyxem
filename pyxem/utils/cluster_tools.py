@@ -525,7 +525,7 @@ def _sorted_cluster_dict_to_marker_list(
 
 
 def find_peaks(signal,
-               trim_edges=True,
+               trim_edges=False,
                trim_border=True,
                obj=None,
                **kwargs,
@@ -548,8 +548,8 @@ def find_peaks(signal,
                             pixel_indexes=c,
                             radius=(real[0])*np.sqrt(2),
                             obj=obj) for c, real in zip(clusters, real_positions)
-                    if (c[0] > 0 and trim_edges) and
-                    (0 < c[1] < max_b1 and 0 < c[2] < max_b2 and trim_border)]
+                    if not (c[0] == 0 and trim_edges) and
+                     not (not(0 < c[1] < max_b1 and 0 < c[2] < max_b2) and trim_border)]
     return cluster_list
 
 
