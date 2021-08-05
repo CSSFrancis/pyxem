@@ -78,7 +78,7 @@ class ClusterGenerator:
             sigma_list = scale * (max_sigma - min_sigma) + min_sigma
         # computing gaussian laplace
         # average s**2 provides scale invariance
-        gl_images = [-sci_gaussian_laplace(self.signal.data, s, **kwargs) * s[0] ** 2
+        gl_images = [-sci_gaussian_laplace(self.signal.data, s, **kwargs) * np.mean(s) ** 2
                      for s in sigma_list]
         gl_images = Signal2D(data=gl_images)
         gl_images.axes_manager.navigation_axes[-1].name = "Sigma"
@@ -109,7 +109,7 @@ class ClusterGenerator:
                   "Please run the `get_space_scale_rep` function. ")
             return
         self.clusters = Clusters(find_peaks(signal=self.space_scale_rep,
-                                   **kwargs, obj=self), obj=self)
+                                 **kwargs, obj=self), obj=self)
 
 
     def plot_symmetries(self,
