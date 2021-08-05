@@ -239,12 +239,12 @@ class Clusters(list):
                   shape=None,
                   ):
         if (shape is None) and (self.obj is not None):
-            shape = np.shape(self.obj.signal.data[-2:])
+            shape = np.shape(self.obj.signal.data)
         data = np.zeros(shape, dtype=bool)
         for c in self:
             kx = c.pixel_indexes[c.speckle_indexes[0]]
             ky = c.pixel_indexes[c.speckle_indexes[1]]
-            rr, cc = disk((kx, ky), 3, shape=shape)
+            rr, cc = disk((kx, ky), 3, shape=shape[-2:])
             cx = c.pixel_indexes[c.cluster_indexes[0]]
             cy = c.pixel_indexes[c.cluster_indexes[1]]
             data[int(cx-1):int(cx+1), int(cy-1):int(cy+1), rr, cc] = True
