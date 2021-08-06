@@ -403,3 +403,53 @@ def symmetry_stem(signal, interpolation, method="sum"):
     if method is "first":
         val = np.transpose([np.matmul(signal, np.transpose(interp[0])) for interp in interpolation])
     return val
+
+def _autocorrelation_masked(z,
+                            mask,
+                            axis=(-1,),
+                            pad_axis=None,
+                            mode="full",
+                            overlap_ratio=0.3):
+    """
+    Masked normalized cross-correlation between arrays.
+    Parameters
+    ----------
+    z : ndarray
+        The array to Correlate
+    mask : ndarray
+        Mask of `z`. The mask should evaluate to `True`
+        (or 1) on valid pixels. `mask` should have the same shape as `z`.
+    axis : tuple of ints, optional
+        Axes along which to compute the cross-correlation.
+    overlap_ratio : float, optional
+        Minimum allowed overlap ratio between images. The correlation for
+        translations corresponding with an overlap ratio lower than this
+        threshold will be ignored. A lower `overlap_ratio` leads to smaller
+        maximum translation, while a higher `overlap_ratio` leads to greater
+        robustness against spurious matches due to small overlap between
+        masked images.
+    Returns
+    -------
+    out : ndarray
+        Masked normalized cross-correlation.
+    Raises
+    ------
+    ValueError : if correlation `mode` is not valid, or array dimensions along
+        non-transformation axes are not equal.
+    References
+    ----------
+    .. [1] Dirk Padfield. Masked Object Registration in the Fourier Domain.
+           IEEE Transactions on Image Processing, vol. 21(5),
+           pp. 2706-2718 (2012). :DOI:`10.1109/TIP.2011.2181402`
+    .. [2] D. Padfield. "Masked FFT registration". In Proc. Computer Vision and
+           Pattern Recognition, pp. 2918-2925 (2010).
+           :DOI:`10.1109/CVPR.2010.5540032`
+    """
+    return _cross_correlate_masked(z1=z,
+                                   z2=z,
+                                   mask1=mask,
+                                   mask2=mask,
+                                   mode=mode,
+                                   axis=axis,
+                                   pad_axis=pad_axis,
+                                   overlap_ratio=overlap_ratio)
