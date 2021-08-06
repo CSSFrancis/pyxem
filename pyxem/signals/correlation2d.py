@@ -21,8 +21,9 @@
 from hyperspy.signals import Signal2D
 from hyperspy._signals.lazy import LazySignal
 
-from pyxem.utils.correlation_utils import corr_to_power
+from pyxem.utils.correlation_utils import corr_to_power, get_interpolation_matrix, symmetry_stem
 from pyxem.signals.common_diffraction import CommonDiffraction
+
 
 
 class Correlation2D(Signal2D, CommonDiffraction):
@@ -105,6 +106,58 @@ class Correlation2D(Signal2D, CommonDiffraction):
         fourier_axis.offset = 0.5
         fourier_axis.scale = 1
         return power
+
+    def get_symmetry_stem(self,
+                          symmetries=[1, 2,3, 4,5, 6,7, 8,9, 10],
+                          angular_range=0,
+                          method="average",
+                          include_duplicates=False,
+                          normalize=True,
+                          **kwargs):
+        """ This function is for finding and extracting information about clusters
+        based on the angular symmetries. This a pretty catch all method which has
+        a couple of different operating principles.
+        If k_range=None the function uses a 3 dimensional version of blob finding and attempts to
+        find blobs in the 3 dimensional space, x,y,k for each symmetry.
+        Parameters
+        ------------
+        symmetries: list
+            The symmetries to calculate
+        method: str
+            One of max or average
+        include_duplicates: bool
+            Include duplicates like 2 and 4
+        :return:
+        """
+        angles = [set(frac(j, i) for j in range(0, i))for i in symmetries]
+        if not include_duplicates:
+            already_used = set()
+            new_angles = []
+            for a in angles:
+                new_angles.append(a.difference(already_used))
+                already_used = already_used.union(a)
+            angles = new_angles
+        num_angles = [len(a) for a in angles]
+        interp = [get_interpolation_matrix(a,
+                                           angular_range,
+                                           num_points=self.axes_manager.signal_axes[0].size,
+                                           method=method)
+                  for a in angles]
+        signals = self.map(symmetry_stem,
+                           interpolation=interp,
+                           show_progressbar=True,
+                           inplace=False,
+                           method=method)
+        if normalize & (method is not "max" or method is not "first"):
+            signals = np.divide(signals, num_angles)
+        # 3-D signal (x,y,k) for each symmetry
+        signals = signals.transpose(navigation_axes=(2, 0, 1))
+        signals.set_signal_type("symmetry")
+        signals.symmetries = symmetries
+        signals.axes_manager.navigation_axes[0].scale = 1
+        signals.axes_manager.navigation_axes[0].name = "Symmetry"
+        signals.axes_manager.navigation_axes[0].offset = 0
+        return signals
 
 
 class LazyCorrelation2D(LazySignal, Correlation2D):

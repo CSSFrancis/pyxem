@@ -2156,7 +2156,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         t_axis.name = "Radians"
         if azimuth_range is None:
             t_axis.scale = np.pi * 2 / npt_azim
-            t_axis.offset = -np.pi
         else:
             t_axis.scale = (azimuth_range[1] - azimuth_range[0]) / npt
             t_axis.offset = azimuth_range[0]
