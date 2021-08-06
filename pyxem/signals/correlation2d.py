@@ -23,6 +23,9 @@ from hyperspy._signals.lazy import LazySignal
 
 from pyxem.utils.correlation_utils import corr_to_power, get_interpolation_matrix, symmetry_stem
 from pyxem.signals.common_diffraction import CommonDiffraction
+from fractions import Fraction as frac
+from hyperspy.api import stack
+import numpy as np
 
 
 
@@ -152,8 +155,8 @@ class Correlation2D(Signal2D, CommonDiffraction):
             signals = np.divide(signals, num_angles)
         # 3-D signal (x,y,k) for each symmetry
         signals = signals.transpose(navigation_axes=(2, 0, 1))
-        signals.set_signal_type("symmetry")
-        signals.symmetries = symmetries
+        #signals.set_signal_type("symmetry")
+        #signals.symmetries = symmetries
         signals.axes_manager.navigation_axes[0].scale = 1
         signals.axes_manager.navigation_axes[0].name = "Symmetry"
         signals.axes_manager.navigation_axes[0].offset = 0
