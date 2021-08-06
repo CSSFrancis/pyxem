@@ -541,10 +541,10 @@ def find_peaks(signal,
     axes = signal.axes_manager.as_dictionary()
     scales = [axes[key]["scale"] for key in axes]
     offset = [axes[key]["offset"] for key in axes]
-    real_positions = np.add(np.multiply(np.add(clusters, 1), scales), offset)
-
     if mask is not None:
         clusters = [c for c in clusters if not mask[int(c[-2]), int(c[-1])]]
+    real_positions = np.add(np.multiply(np.add(clusters, 1), scales), offset)
+
     cluster_list = [Cluster(real_indexes=real,
                             pixel_indexes=c,
                             radius=(real[0])*np.sqrt(2),
