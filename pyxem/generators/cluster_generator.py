@@ -103,13 +103,17 @@ class ClusterGenerator:
         return
 
     def get_clusters(self,
+                     mask=None,
                      **kwargs):
         if self.space_scale_rep is None:
             print("The space scale representation must first be intialized."
                   "Please run the `get_space_scale_rep` function. ")
             return
         self.clusters = Clusters(find_peaks(signal=self.space_scale_rep,
-                                 **kwargs, obj=self), obj=self)
+                                            mask=mask,
+                                            **kwargs,
+                                            obj=self),
+                                 obj=self)
 
 
     def plot_symmetries(self,

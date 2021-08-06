@@ -526,7 +526,7 @@ def _sorted_cluster_dict_to_marker_list(
 
 def find_peaks(signal,
                trim_edges=False,
-               trim_border=True,
+               mask=None,
                obj=None,
                **kwargs,
                ):
@@ -538,18 +538,19 @@ def find_peaks(signal,
     clusters = peak_finding(signal.data,
                             **kwargs)
     # clusters returned as (sigma, indexes[1...-1)
-    max_b1 = signal.axes_manager[0].size - 1
-    max_b2 = signal.axes_manager[1].size - 1
     axes = signal.axes_manager.as_dictionary()
     scales = [axes[key]["scale"] for key in axes]
     offset = [axes[key]["offset"] for key in axes]
     real_positions = np.add(np.multiply(np.add(clusters, 1), scales), offset)
+
+    if mask is not None:
+        clusters = [c for c in clusters if not mask[int(c[-2]), int(c[-1])]]
     cluster_list = [Cluster(real_indexes=real,
                             pixel_indexes=c,
                             radius=(real[0])*np.sqrt(2),
                             obj=obj) for c, real in zip(clusters, real_positions)
-                    if not (c[0] == 0 and trim_edges) and
-                     not (not(0 < c[1] < max_b1 and 0 < c[2] < max_b2) and trim_border)]
+                    if not (c[0] == 0 and trim_edges)]
+
     return cluster_list
 
 
