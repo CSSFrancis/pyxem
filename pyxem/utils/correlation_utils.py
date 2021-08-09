@@ -379,7 +379,7 @@ def wrap_set_float(list, bottom, top, value):
 
 def get_interpolation_matrix(angles, angular_range, num_points, method="sum"):
     if method is "sum":
-        angular_ranges = [(angle - angular_range / (2*np.pi), angle + angular_range / (2*np.pi)) for angle in angles]
+        angular_ranges = [((angle - angular_range) / (2*np.pi), (angle + angular_range) / (2*np.pi)) for angle in angles]
         angular_ranges = np.multiply(angular_ranges, num_points)
         angular_ranges = np.subtract(angular_ranges, 0.5)
         interpolation_matrix = np.zeros(num_points)
@@ -387,7 +387,7 @@ def get_interpolation_matrix(angles, angular_range, num_points, method="sum"):
             wrap_set_float(interpolation_matrix, top=angle[1], bottom=angle[0], value=1)
         return interpolation_matrix
     else:
-        angular_ranges = [(angle - angular_range / (2*np.pi), angle + angular_range / (2*np.pi)) for angle in angles]
+        angular_ranges = [((angle - angular_range) / (2*np.pi), (angle + angular_range) / (2*np.pi)) for angle in angles]
         angular_ranges = np.multiply(angular_ranges, num_points)
         interpolation_matrix = np.zeros((len(angles), num_points))
         for i, angle in enumerate(angular_ranges):
@@ -399,7 +399,7 @@ def symmetry_stem(signal, interpolation, method="sum"):
         return np.matmul(signal, np.transpose(interpolation))
     elif method is "max":
         val = np.transpose([np.amax([np.matmul(signal, np.transpose(i))for i in interp], axis=0)
-               for interp in interpolation])
+                            for interp in interpolation])
     elif method is "first":
         val = np.transpose([np.matmul(signal, np.transpose(interp[0])) for interp in interpolation])
     elif method is "firstlast":
