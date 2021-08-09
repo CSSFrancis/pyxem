@@ -378,6 +378,7 @@ def wrap_set_float(list, bottom, top, value):
 
 
 def get_interpolation_matrix(angles, angular_range, num_points, method="sum"):
+    angles = sorted([a*np.pi*2 for a in angles])
     if method is "sum":
         angular_ranges = [((angle - angular_range) / (2*np.pi), (angle + angular_range) / (2*np.pi)) for angle in angles]
         angular_ranges = np.multiply(angular_ranges, num_points)
@@ -391,7 +392,7 @@ def get_interpolation_matrix(angles, angular_range, num_points, method="sum"):
         angular_ranges = np.multiply(angular_ranges, num_points)
         interpolation_matrix = np.zeros((len(angles), num_points))
         for i, angle in enumerate(angular_ranges):
-            wrap_set_float(interpolation_matrix[i,:], top=angle[1], bottom=angle[0], value=1)
+            wrap_set_float(interpolation_matrix[i, :], top=angle[1], bottom=angle[0], value=1)
         return interpolation_matrix
 
 def symmetry_stem(signal, interpolation, method="sum"):
