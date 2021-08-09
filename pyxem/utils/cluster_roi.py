@@ -9,7 +9,7 @@ from dask import delayed
 import hyperspy.api as hs
 from hyperspy.roi import CircleROI
 from hyperspy.signals import Signal1D, Signal2D
-from pyxem.utils.correlation_utils import _cross_correlate_masked, get_interpolation_matrix
+from pyxem.utils.correlation_utils import _cross_correlate_masked, get_interpolation_matrix, symmetry_stem
 
 
 class Cluster(CircleROI):
@@ -164,7 +164,7 @@ class Cluster(CircleROI):
             normalize = True
             method = "sum"
         else:
-            normalize=False
+            normalize = False
         angles = [set(frac(j, i) for j in range(0, i)) for i in symmetries]
         if not include_duplicates:
             already_used = set()
@@ -178,11 +178,13 @@ class Cluster(CircleROI):
                                            angular_range,
                                            num_points=len(self.correlation.data),
                                            method=method)
-                  for a in angles])
-        symmetries = np.matmul(self.correlation.data, np.transpose(interp))
+                           for a in angles])
+        symmetries = symmetry_stem(self.correlation.data,
+                                   interpolation=interp,
+                                   method=method)
         if normalize:
             np.divide(symmetries, num_angles)
-        self.symmetry=symmetries
+        self.symmetry = symmetries
     
     def get_intensities(self):
         pass
@@ -290,7 +292,6 @@ class Clusters(list):
             signal = self.obj.space_scale_rep
         for cluster in self:
             cluster.get_mean(signal=signal)
-
 
 
     def get_radius(self, mask):
