@@ -397,11 +397,17 @@ def get_interpolation_matrix(angles, angular_range, num_points, method="sum"):
 def symmetry_stem(signal, interpolation, method="sum"):
     if method is "sum":
         return np.matmul(signal, np.transpose(interpolation))
-    if method is "max":
+    elif method is "max":
         val = np.transpose([np.amax([np.matmul(signal, np.transpose(i))for i in interp], axis=0)
                for interp in interpolation])
-    if method is "first":
+    elif method is "first":
         val = np.transpose([np.matmul(signal, np.transpose(interp[0])) for interp in interpolation])
+    elif method is "firstlast":
+        val = np.transpose([np.amax([np.matmul(signal, np.transpose(i))for i in [interp[0], interp[-1]]], axis=0)
+                            for interp in interpolation])
+    else:
+        print(method, " is not one of sum, max, first and first-last")
+        return
     return val
 
 def _autocorrelation_masked(z,

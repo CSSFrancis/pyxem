@@ -56,6 +56,7 @@ class Cluster(CircleROI):
         self.real_indexes = real_indexes
         self.pixel_indexes = pixel_indexes
         self.symmetry = None
+        self.max_sym =None
         self.correlation = None
         self.intensities = None
         self.obj = obj
@@ -185,7 +186,12 @@ class Cluster(CircleROI):
         if normalize:
             np.divide(symmetries, num_angles)
         self.symmetry = symmetries
-    
+
+    def get_max_symmetry(self,
+                         syms=(1,2,4,6,10),
+                         ):
+        self.max_sym = syms[np.argmax(self.symmetry[1:]) + 1]
+
     def get_intensities(self):
         pass
 
