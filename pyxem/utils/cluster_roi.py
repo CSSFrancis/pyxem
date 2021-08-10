@@ -139,6 +139,7 @@ class Cluster(CircleROI):
                                       mask1=mask,
                                       mask2=mask2,
                                       axis=1,
+                                      pad_axis=None,
                                       )
         if summed:
             cor = cor.sum(axis=0)
