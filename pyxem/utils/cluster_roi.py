@@ -126,6 +126,7 @@ class Cluster(CircleROI):
                         radius,
                         mask=None,
                         summed=True,
+                        **kwargs,
                         ):
         mean = self.get_mean(signal)
         kernel, mask2 = self.get_kernel(signal=mean, radius=radius)
@@ -140,6 +141,7 @@ class Cluster(CircleROI):
                                       mask2=mask2,
                                       axis=1,
                                       pad_axis=None,
+                                      **kwargs,
                                       )
         if summed:
             cor = cor.sum(axis=0)
@@ -150,10 +152,10 @@ class Cluster(CircleROI):
         else:
             cor = Signal2D(cor)
             cor.axes_manager[1].scale = (np.pi * 2)/len(cor.data)
-            cor.axes_manager[1].unit = "Radians"
+            #cor.axes_manager[1].unit = "Radians"
             cor.axes_manager[1].name = "Correlation, $\phi$ "
             cor.axes_manager[0].scale = mean.axes_manager[0].scale
-            cor.axes_manager[0].unit = mean.axes_manager[0].unit
+            #cor.axes_manager[0].unit = mean.axes_manager[0].unit
             cor.axes_manager[0].name = mean.axes_manager[0].name
         self.correlation = cor
 

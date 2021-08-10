@@ -195,7 +195,7 @@ def _cross_correlate_masked(z1,
         z1 : ndarray
             The stationary array for the correlation
         z2 : ndarray
-            The moving array for the correaltion
+            The moving array for the correlation
         mask1 : ndarray
             Mask of `z1`. The mask should evaluate to `True`
             (or 1) on valid pixels. `mask` should have the same shape as `z`.
