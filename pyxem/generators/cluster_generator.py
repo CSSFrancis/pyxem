@@ -115,7 +115,6 @@ class ClusterGenerator:
                                             obj=self),
                                  obj=self)
 
-
     def plot_symmetries(self,
                         mask,
                         ax=None,
@@ -126,12 +125,6 @@ class ClusterGenerator:
             ax, f = plt.subplot(1, 1, fig_size)
         ax.bar(symmetries, **kwargs)
         return
-
-    def plot_cluster_radius(self, mask=None):
-        symmetries = self.clusters.get_symmetries(mask=mask)
-        if ax is not None:
-            ax, f = plt.subplot(1, 1, fig_size)
-        ax.bar(symmetries, **kwargs)
 
     def plot_k_distribution(self):
         pass

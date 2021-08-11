@@ -1,5 +1,6 @@
 from fractions import Fraction as frac
 
+import matplotlib.pyplot as plt
 from matplotlib.pyplot import Circle
 from skimage.draw import disk
 from scipy.ndimage import gaussian_filter as sci_gaussian_filter
@@ -104,6 +105,30 @@ class Cluster(CircleROI):
         mean = signal.inav[ind]
         return mean
 
+    def get_extent(self, radius=3, test_region=5):
+        if self.obj is None:
+            print("Set a cluster generator object")
+        sl = self.obj.signal.inav[self.real_indexes[2] - test_region:self.real_indexes[2] + test_region,
+                                 self.real_indexes[1] - test_region:self.real_indexes[1] + test_region]
+        mask = self.get_kernel_mask(radius=radius)
+        return np.tensordot(sl, mask)
+
+
+    def get_kernel_mask(self,
+                        radius=3):
+        if self.obj is None:
+            print("Set a cluster generator object")
+            return
+        shape = tuple(reversed(self.obj.signal.axes_manager.signal_shape))
+        mask = np.zeros(shape, dtype=bool)
+        rr, cc = disk((self.pixel_indexes[self.speckle_indexes[0]],
+                       self.pixel_indexes[self.speckle_indexes[1]]),
+                      radius=radius,
+                      shape=shape)
+        mask[rr, cc] = True
+        return mask
+
+
     def get_kernel(self,
                    signal,
                    radius,
@@ -194,6 +219,7 @@ class Cluster(CircleROI):
                          syms=(1,2,4,6,10),
                          ):
         self.max_sym = syms[np.argmax(self.symmetry[1:]) + 1]
+        self.intensities =[self.symmetry[0],np.max(self.symmetry[1:])]
 
     def get_intensities(self):
         pass
@@ -224,7 +250,9 @@ class Clusters(list):
     def symmetries(self):
         return [c.symmetry for c in self]
 
-
+    @property
+    def max_symmetries(self):
+        return [c.max_sym for c in self]
 
     def to_markers(self,
                    navigation_shape=None,
@@ -290,24 +318,44 @@ class Clusters(list):
                                     mask=mask)
 
     def get_symmetries(self,
-                       **kwargs):
+                       symetries=(1,2,4,6,10),
+                       **kwargs,
+                       ):
         for cluster in self:
-            cluster.get_symmetry(**kwargs)
+            cluster.get_symmetry(symmetries=symetries, **kwargs)
+        for cluster in self:
+            cluster.get_max_symmetry(syms=symetries)
+
+    def get_max_sym_indexes(self, symmetries=(1, 2, 4, 6, 10)):
+        syms = np.array([c.max_sym for c in self])
+        return [np.where(syms == s) for s in symmetries]
 
     def get_means(self,
                   signal=None,
-                  **kwargs):
+                  ):
         if signal is None and self.obj is not None:
             signal = self.obj.space_scale_rep
         for cluster in self:
             cluster.get_mean(signal=signal)
-
-
-    def get_radius(self, mask):
-        return [cluster.r for cluster, m in zip(self, mask) if m]
 
     def get_index(self, index, mask):
         return [cluster.index[index] for cluster, m in zip(self, mask) if m]
 
     def get_intensities(self, mask):
         return [cluster.intensities for cluster, m in zip(self, mask) if m]
+
+    def plot_intensities(self, symmetries=(2, 4, 6, 10),figsize=(10,13), **kwargs):
+        ind = self.get_max_sym_indexes(symmetries)
+        intensities = np.array([cluster.intensities for cluster in self])
+        int0 = [intensities[i, 0] for i in ind]
+        int1 = [intensities[i, 1] for i in ind]
+        f, axs = plt.subplots(len(symmetries), 2, figsize=figsize)
+        for i0, i1, ax in zip(int0, int1,  axs):
+            ax[0].hist(i0[0], **kwargs)
+            ax[0].set(xlabel="Correlation Intensity", ylabel="Number of Clusters")
+            ax[1].hist(i1[0], **kwargs)
+            ax[1].set(xlabel="Correlation Intensity", ylabel="Number of Clusters")
+
+
+
+
