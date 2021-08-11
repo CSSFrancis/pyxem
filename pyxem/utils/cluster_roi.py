@@ -318,13 +318,13 @@ class Clusters(list):
                                     mask=mask)
 
     def get_symmetries(self,
-                       symetries=(1,2,4,6,10),
+                       symmetries=(1,2,4,6,10),
                        **kwargs,
                        ):
         for cluster in self:
-            cluster.get_symmetry(symmetries=symetries, **kwargs)
+            cluster.get_symmetry(symmetries=symmetries, **kwargs)
         for cluster in self:
-            cluster.get_max_symmetry(syms=symetries)
+            cluster.get_max_symmetry(syms=symmetries)
 
     def get_max_sym_indexes(self, symmetries=(1, 2, 4, 6, 10)):
         syms = np.array([c.max_sym for c in self])
