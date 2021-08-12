@@ -369,7 +369,7 @@ class Clusters(list):
                     symmetries=(2, 4, 6, 10),
                     figsize=(10,13),
                     test_region=5,
-                    out_shape = (12,12)
+                    out_shape = (12,12),
                     **kwargs):
         ind = self.get_max_sym_indexes(symmetries)
         clusters_sym = [self[i] for i in ind]
