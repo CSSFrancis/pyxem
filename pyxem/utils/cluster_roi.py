@@ -254,6 +254,26 @@ class Clusters(list):
     def max_symmetries(self):
         return [c.max_sym for c in self]
 
+    def trim_clusters(self, max_self_cor=True, ratio_trim=1.5):
+        if max_self_cor and ratio_trim is not None:
+            clus = [c for c in self if np.argmax(c.symmetry)==0 and
+                    (c.intensities[0]/np.max(c.intensities[1:])<ratio_trim)]
+            self.clear
+            self.extend(clus)
+
+        elif max_self_cor:
+            clus = [c for c in gen.clusters if np.argmax(c.symmetry) == 0]
+            self.clear
+            self.extend(clus)
+        elif ratio_trim is not None:
+            clus = [c for c in gen.clusters if (c.intensities[0] / np.max(c.intensities[1:]) < ratio_trim)]
+            self.clear
+            self.extend(clus)
+        else:
+            "Nothing done"
+            return
+
+
     def to_markers(self,
                    navigation_shape=None,
                    **kwargs):
@@ -382,7 +402,7 @@ class Clusters(list):
         f, axs = plt.subplots(int(np.ceil(len(symmetries)/2)), 2, figsize=figsize)
         axs = np.ndarray.flatten(axs)
         for m, ax in zip(mean, axs):
-            ax[0].imshow(m, **kwargs)
+            ax.imshow(m, **kwargs)
 
 
 
