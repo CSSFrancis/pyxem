@@ -258,16 +258,16 @@ class Clusters(list):
         if max_self_cor and ratio_trim is not None:
             clus = [c for c in self if np.argmax(c.symmetry)==0 and
                     (c.intensities[0]/np.max(c.intensities[1:])<ratio_trim)]
-            self.clear
+            self.clear()
             self.extend(clus)
 
         elif max_self_cor:
             clus = [c for c in gen.clusters if np.argmax(c.symmetry) == 0]
-            self.clear
+            self.clear()
             self.extend(clus)
         elif ratio_trim is not None:
             clus = [c for c in gen.clusters if (c.intensities[0] / np.max(c.intensities[1:]) < ratio_trim)]
-            self.clear
+            self.clear()
             self.extend(clus)
         else:
             "Nothing done"
@@ -392,17 +392,28 @@ class Clusters(list):
                     symmetries=(2, 4, 6, 10),
                     figsize=(10,13),
                     test_region=5,
-                    out_shape = (12,12),
-                    **kwargs):
+                    out_shape=(12,12),
+                    slice=None,
+                    **kwargs,
+                    ):
         ind = self.get_max_sym_indexes(symmetries)
         extents = np.array([c.get_extent(test_region=test_region) for c in self])
         sym_ext = [extents[i] for i in ind]
         sym_ext = [[e for e in s if e.shape == out_shape] for s in sym_ext]
         mean = [np.mean(e, axis=0) for e in sym_ext]
-        f, axs = plt.subplots(int(np.ceil(len(symmetries)/2)), 2, figsize=figsize)
-        axs = np.ndarray.flatten(axs)
-        for m, ax in zip(mean, axs):
-            ax.imshow(m, **kwargs)
+
+        if slice is None:
+            f, axs = plt.subplots(int(np.ceil(len(symmetries)/2)), 2, figsize=figsize)
+            axs = np.ndarray.flatten(axs)
+            for m, ax in zip(mean, axs):
+                ax.imshow(m, **kwargs)
+        else:
+            deviation = [np.std(e, axis=0) for e in sym_ext]
+            f, axs = plt.subplots(1, 2, figsize=figsize)
+            for m,s in zip(mean, symmetries):
+                axs[0].plot(mean[:,slice], label=str(s)+"-fold Symmetry", **kwargs)
+                axs[1].plot(std[:, slice], label=str(s) + "-fold Symmetry", **kwargs)
+            plt.legend()
 
 
 
