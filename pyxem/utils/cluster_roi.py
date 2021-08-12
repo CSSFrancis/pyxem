@@ -164,7 +164,7 @@ class Cluster(CircleROI):
                                       z2=kernel,
                                       mask1=mask,
                                       mask2=mask2,
-                                      axis=1,
+                                      axs=1,
                                       pad_axis=None,
                                       **kwargs,
                                       )
@@ -365,7 +365,7 @@ class Clusters(list):
         k = [intensities[i] for i in ind]
         f, axs = plt.subplots(len(symmetries), 1, figsize=figsize)
         for k1, ax in zip(k, axs):
-            ax.hist(k1[0], **kwargs)
+            ax.hist(k1, **kwargs)
             ax.set(xlabel="k, nm$^-1$", ylabel="Number of Clusters")
 
     def plot_extent(self,
@@ -375,7 +375,7 @@ class Clusters(list):
                     out_shape = (12,12),
                     **kwargs):
         ind = self.get_max_sym_indexes(symmetries)
-        extents = np.array([c.get_extent(test_region=test_region) for c in gen.clusters])
+        extents = np.array([c.get_extent(test_region=test_region) for c in self])
         sym_ext = [extents[i] for i in ind]
         sym_ext = [[e for e in s if e.shape == out_shape] for s in sym_ext]
         mean = [np.mean(e, axis=0) for e in sym_ext]

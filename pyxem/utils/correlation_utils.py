@@ -185,7 +185,7 @@ def _cross_correlate_masked(z1,
                             mask1,
                             mask2,
                             mode="full",
-                            axis=(0, 1),
+                            axs=(0, 1),
                             pad_axis=(-1),
                             overlap_ratio=0.3):
     """
@@ -238,8 +238,8 @@ def _cross_correlate_masked(z1,
                Pattern Recognition, pp. 2918-2925 (2010).
                :DOI:`10.1109/CVPR.2010.5540032`
         """
-    if isinstance(axis, int):
-        axis = (axis,)
+    if isinstance(axs, int):
+        axs = (axs,)
     if isinstance(pad_axis, int):
         pad_axis = (pad_axis,)
     if mode not in {'full', 'same'}:
@@ -257,32 +257,32 @@ def _cross_correlate_masked(z1,
     # we slice back to`final_shape` using `final_slice`.
     if pad_axis is not None:
         final_shape = list(z1.shape)
-        for ax in axis:
+        for ax in axs:
             if ax in pad_axis:
                 final_shape[ax] = (fixed_image.shape[ax] +
                                      moving_image.shape[ax] - 1)
         final_shape = tuple(final_shape)
         final_slice = tuple([slice(0, int(sz)) for sz in final_shape])
         # Extent transform axes to the next fast length (i.e. multiple of 3, 5, or 7)
-        fast_shape = tuple([next_fast_len(final_shape[ax]) if ax in pad_axis else final_shape[ax] for ax in axis])
+        fast_shape = tuple([next_fast_len(final_shape[ax]) if ax in pad_axis else final_shape[ax] for ax in axs])
         # We use numpy.fft or the new scipy.fft because they allow leaving the
         # transform axes unchanged which was not possible with scipy.fftpack's
         # fftn/ifftn in older versions of SciPy.
         # E.g. arr shape (2, 3, 7), transform along axes (0, 1) with shape (4, 4)
         # results in arr_fft shape (4, 4, 7)
-        fft = partial(fftmodule.fftn, s=fast_shape, axes=axis)
-        ifft = partial(fftmodule.ifftn, s=fast_shape, axes=axis)
+        fft = partial(fftmodule.fftn, s=fast_shape, axes=axs)
+        ifft = partial(fftmodule.ifftn, s=fast_shape, axes=axs)
     else:
-        fft = partial(fftmodule.fftn, axes=axis)
-        ifft = partial(fftmodule.ifftn, axes=axis)
+        fft = partial(fftmodule.fftn, axes=axs)
+        ifft = partial(fftmodule.ifftn, axes=axs)
 
     fixed_image[np.logical_not(fixed_mask)] = 0.0
     moving_image[np.logical_not(moving_mask)] = 0.0
 
     # N-dimensional analog to rotation by 180deg is flip over all relevant axes.
     # See [1] for discussion.
-    rotated_moving_image = _flip(moving_image, axes=axis)
-    rotated_moving_mask = _flip(moving_mask, axes=axis)
+    rotated_moving_image = _flip(moving_image, axes=axs)
+    rotated_moving_mask = _flip(moving_mask, axes=axs)
 
     fixed_fft = fft(fixed_image)
     rotated_moving_fft = fft(rotated_moving_image)
@@ -326,7 +326,7 @@ def _cross_correlate_masked(z1,
     if mode == 'same':
         _centering = partial(_centered,
                              newshape=fixed_image.shape,
-                             axes=axis)
+                             axes=axs)
         denom = _centering(denom)
         numerator = _centering(numerator)
         number_overlap_masked_px = _centering(number_overlap_masked_px)
@@ -334,7 +334,7 @@ def _cross_correlate_masked(z1,
     # Pixels where `denom` is very small will introduce large
     # numbers after division. To get around this problem,
     # we zero-out problematic pixels.
-    tol = 1e3 * eps * np.max(np.abs(denom), axis=axis, keepdims=True)
+    tol = 1e3 * eps * np.max(np.abs(denom), axis=axs, keepdims=True)
     nonzero_indices = denom > tol
 
     out = np.zeros_like(denom)
@@ -343,7 +343,7 @@ def _cross_correlate_masked(z1,
 
     # Apply overlap ratio threshold
     number_px_threshold = overlap_ratio * np.max(number_overlap_masked_px,
-                                                 axis=axis,
+                                                 axis=axs,
                                                  keepdims=True)
     out[number_overlap_masked_px < number_px_threshold] = 0.0
 
