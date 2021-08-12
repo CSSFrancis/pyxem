@@ -254,10 +254,10 @@ class Clusters(list):
     def max_symmetries(self):
         return [c.max_sym for c in self]
 
-    def trim_clusters(self, max_self_cor=True, ratio_trim=1.5):
+    def trim_clusters(self, max_self_cor=True, ratio_trim=0.5):
         if max_self_cor and ratio_trim is not None:
             clus = [c for c in self if np.argmax(c.symmetry)==0 and
-                    (c.intensities[0]/np.max(c.intensities[1:])<ratio_trim)]
+                    (np.max(c.intensities[1:])/c.intensities[0])>ratio_trim]
             self.clear()
             self.extend(clus)
 
@@ -410,7 +410,7 @@ class Clusters(list):
         else:
             deviation = [np.std(e, axis=0) for e in sym_ext]
             f, axs = plt.subplots(1, 2, figsize=figsize)
-            for m,s,st in zip(mean, symmetries,std):
+            for m,s,st in zip(mean, symmetries,deviation):
                 axs[0].plot(m[:,slice], label=str(s)+"-fold Symmetry", **kwargs)
                 axs[1].plot(st[:, slice], label=str(s) + "-fold Symmetry", **kwargs)
             plt.legend()
