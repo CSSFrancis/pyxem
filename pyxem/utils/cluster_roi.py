@@ -356,6 +356,32 @@ class Clusters(list):
             ax[1].hist(i1[0], **kwargs)
             ax[1].set(xlabel="Correlation Intensity", ylabel="Number of Clusters")
 
+    def plot_k_range(self, symmetries=(2, 4, 6, 10), figsize=(10,13), test_region=5, **kwargs):
+        ind = self.get_max_sym_indexes(symmetries)
+        intensities = np.array([cluster.real_indexes[-2] for cluster in self])
+        k = [intensities[i] for i in ind]
+        f, axs = plt.subplots(len(symmetries), 1, figsize=figsize)
+        for k1, ax in zip(k, axs):
+            ax[0].hist(k1[0], **kwargs)
+            ax[0].set(xlabel="k, nm$^-1$", ylabel="Number of Clusters")
+
+    def plot_extent(self,
+                    symmetries=(2, 4, 6, 10),
+                    figsize=(10,13),
+                    test_region=5,
+                    out_shape = (12,12)
+                    **kwargs):
+        ind = self.get_max_sym_indexes(symmetries)
+        clusters_sym = [self[i] for i in ind]
+        extents = np.array([c.get_extent(test_region=test_region) for c in gen.clusters])
+        sym_ext = [extents[i] for i in ind]
+        sym_ext = [[e for e in s if e.shape == out_shape] for s in sym_ext]
+        mean = [np.mean(e, axis=0) for e in sym_ext]
+        f, axs = plt.subplots(int(np.ceil(len(symmetries)/2)), 2, figsize=figsize)
+        axs = np.ndarray.flatten(axs)
+        for m, ax in zip(mean, axs):
+            ax[0].imshow(m, **kwargs)
+
 
 
 
