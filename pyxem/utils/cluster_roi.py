@@ -410,9 +410,9 @@ class Clusters(list):
         else:
             deviation = [np.std(e, axis=0) for e in sym_ext]
             f, axs = plt.subplots(1, 2, figsize=figsize)
-            for m,s in zip(mean, symmetries):
-                axs[0].plot(mean[:,slice], label=str(s)+"-fold Symmetry", **kwargs)
-                axs[1].plot(std[:, slice], label=str(s) + "-fold Symmetry", **kwargs)
+            for m,s,st in zip(mean, symmetries,std):
+                axs[0].plot(m[:,slice], label=str(s)+"-fold Symmetry", **kwargs)
+                axs[1].plot(st[:, slice], label=str(s) + "-fold Symmetry", **kwargs)
             plt.legend()
 
 
