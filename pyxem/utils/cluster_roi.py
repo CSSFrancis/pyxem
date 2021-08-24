@@ -105,7 +105,7 @@ class Cluster(CircleROI):
         mean = signal.inav[ind]
         return mean
 
-    def get_slice(self, sl_extent=0.5, radial_extent=None):
+    def get_slice(self, sl_extent=0.5):
         """Gets a slice from the signal around the center of the cluster
 
         Parameters
@@ -118,8 +118,6 @@ class Cluster(CircleROI):
             print("Set a cluster generator object")
         sl = self.obj.signal.inav[self.real_indexes[2] - sl_extent:self.real_indexes[2] + sl_extent,
                                  self.real_indexes[1] - sl_extent:self.real_indexes[1] + sl_extent]
-        if radial_extent is not None:
-            sl = sl.isig[self.real_indexes[4]-radial_extent:self.real_indexes[4]+radial_extent]
         return sl
 
     def get_extent(self, radius=3, test_region=5):
@@ -170,7 +168,7 @@ class Cluster(CircleROI):
                         **kwargs,
                         ):
         if auto:
-            sl = self.get_slice(sl_extent=extent, radial_extent=radius)
+            sl = self.get_slice(sl_extent=extent)
             print(sl)
             cor = sl.get_angular_correlation(mask=mask).mean(axis=(0, 1))
         else:
