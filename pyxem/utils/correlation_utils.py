@@ -412,7 +412,7 @@ def symmetry_stem(signal, interpolation, method="sum"):
     return val
 
 def _autocorrelation_masked(z,
-                            mask,
+                            mask=None,
                             axs=(-1,),
                             pad_axis=None,
                             mode="full",
@@ -452,6 +452,8 @@ def _autocorrelation_masked(z,
            Pattern Recognition, pp. 2918-2925 (2010).
            :DOI:`10.1109/CVPR.2010.5540032`
     """
+    if mask is None:
+        mask = np.zeros(shape=z.shape, dtype=bool)
     return _cross_correlate_masked(z1=z,
                                    z2=z,
                                    mask1=mask,

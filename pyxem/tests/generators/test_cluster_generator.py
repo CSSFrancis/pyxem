@@ -22,7 +22,8 @@ from skimage.draw import disk
 from pyxem.generators.cluster_generator import ClusterGenerator
 from pyxem.signals.polar_diffraction2d import PolarDiffraction2D
 
-class TestCalibrationGenerator:
+
+class TestClusterGenerator:
     @pytest.fixture
     def generator(self):
         data = np.random.random((25, 25, 20, 80))
@@ -74,16 +75,17 @@ class TestCalibrationGenerator:
         generator.get_space_scale_rep()
         generator.get_clusters()
         assert generator.clusters is not None
-        print(generator.cluster)
+        print(generator.clusters)
 
     def test_get_cor(self,
                      clusters):
-        clusters.get_correlations()
+        clusters.clusters.get_correlations()
 
     def test_get_sym(self,
                      clusters):
-        clusters.get_correlations()
-        clusters.get_symmetries()
+        clusters.clusters.get_correlations()
+        clusters.clusters.get_symmetries()
+        print(clusters.clusters[0].correlation.data)
         print(clusters.clusters.symmetries)
 
     def test_get_mean(self,

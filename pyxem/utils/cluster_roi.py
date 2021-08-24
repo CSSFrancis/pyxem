@@ -105,11 +105,25 @@ class Cluster(CircleROI):
         mean = signal.inav[ind]
         return mean
 
-    def get_extent(self, radius=3, test_region=5):
+    def get_slice(self, sl_extent=0.5, radial_extent=None):
+        """Gets a slice from the signal around the center of the cluster
+
+        Parameters
+        ---------------
+        sl_extent: float
+            The extent of the area in real space to slice. This should be based on your probe size,
+            Size of clusters and the size of the spacing between probes.
+        """
         if self.obj is None:
             print("Set a cluster generator object")
-        sl = self.obj.signal.inav[self.real_indexes[2] - test_region:self.real_indexes[2] + test_region,
-                                 self.real_indexes[1] - test_region:self.real_indexes[1] + test_region]
+        sl = self.obj.signal.inav[self.real_indexes[2] - sl_extent:self.real_indexes[2] + sl_extent,
+                                 self.real_indexes[1] - sl_extent:self.real_indexes[1] + sl_extent]
+        if radial_extent is not None:
+            sl = sl.isig[self.real_indexes[4]-radial_extent:self.real_indexes[4]+radial_extent]
+        return sl
+
+    def get_extent(self, radius=3, test_region=5):
+        sl = self.get_slice(sl_extent=test_region)
         mask = self.get_kernel_mask(radius=radius)
         return np.tensordot(sl, mask)
 
@@ -148,26 +162,33 @@ class Cluster(CircleROI):
 
     def get_correlation(self,
                         signal,
-                        radius,
+                        radius=2,
+                        extent=0.2,
                         mask=None,
                         summed=True,
+                        auto=True,
                         **kwargs,
                         ):
-        mean = self.get_mean(signal)
-        kernel, mask2 = self.get_kernel(signal=mean, radius=radius)
-        if mask is None:
-            mask = np.zeros(kernel.shape,
-                            dtype=bool)
-        mask2 = np.zeros(kernel.shape,
-                         dtype=bool)
-        cor = _cross_correlate_masked(z1=mean.data,
-                                      z2=kernel,
-                                      mask1=mask,
-                                      mask2=mask2,
-                                      axs=1,
-                                      pad_axis=None,
-                                      **kwargs,
-                                      )
+        if auto:
+            sl = self.get_slice(sl_extent=extent, radial_extent=radius)
+            print(sl)
+            cor = sl.get_angular_correlation(mask=mask).mean(axis=(0, 1))
+        else:
+            mean = self.get_mean(signal)
+            kernel, mask2 = self.get_kernel(signal=mean, radius=radius)
+            if mask is None:
+                mask = np.zeros(kernel.shape,
+                                dtype=bool)
+            mask2 = np.zeros(kernel.shape,
+                             dtype=bool)
+            cor = _cross_correlate_masked(z1=mean.data,
+                                          z2=kernel,
+                                          mask1=mask,
+                                          mask2=mask2,
+                                          axs=1,
+                                          pad_axis=None,
+                                          **kwargs,
+                                          )
         if summed:
             cor = cor.sum(axis=0)
             cor = Signal1D(cor)
