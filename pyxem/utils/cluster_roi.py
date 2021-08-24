@@ -171,6 +171,7 @@ class Cluster(CircleROI):
             sl = self.get_slice(sl_extent=extent)
             print(sl)
             cor = sl.get_angular_correlation(mask=mask).mean(axis=(0, 1))
+            cor = cor.sum(axis=1)
         else:
             mean = self.get_mean(signal)
             kernel, mask2 = self.get_kernel(signal=mean, radius=radius)
@@ -187,20 +188,20 @@ class Cluster(CircleROI):
                                           pad_axis=None,
                                           **kwargs,
                                           )
-        if summed:
-            cor = cor.sum(axis=0)
-            cor = Signal1D(cor)
-            cor.axes_manager[0].scale = (np.pi*2)/len(cor.data)
-            cor.axes_manager[0].unit = "Radians"
-            cor.axes_manager[0].name = "Correlation, $\phi$ "
-        else:
-            cor = Signal2D(cor)
-            cor.axes_manager[1].scale = (np.pi * 2)/len(cor.data)
-            #cor.axes_manager[1].unit = "Radians"
-            cor.axes_manager[1].name = "Correlation, $\phi$ "
-            cor.axes_manager[0].scale = mean.axes_manager[0].scale
-            #cor.axes_manager[0].unit = mean.axes_manager[0].unit
-            cor.axes_manager[0].name = mean.axes_manager[0].name
+            if summed:
+                cor = cor.sum(axis=0)
+                cor = Signal1D(cor)
+                cor.axes_manager[0].scale = (np.pi*2)/len(cor.data)
+                cor.axes_manager[0].unit = "Radians"
+                cor.axes_manager[0].name = "Correlation, $\phi$ "
+            else:
+                cor = Signal2D(cor)
+                cor.axes_manager[1].scale = (np.pi * 2)/len(cor.data)
+                #cor.axes_manager[1].unit = "Radians"
+                cor.axes_manager[1].name = "Correlation, $\phi$ "
+                cor.axes_manager[0].scale = mean.axes_manager[0].scale
+                #cor.axes_manager[0].unit = mean.axes_manager[0].unit
+                cor.axes_manager[0].name = mean.axes_manager[0].name
         self.correlation = cor
 
     def get_symmetry(self,
