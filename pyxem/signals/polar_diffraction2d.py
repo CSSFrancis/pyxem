@@ -76,7 +76,7 @@ class PolarDiffraction2D(Signal2D):
         """
         correlation = self.map(
             _autocorrelation_masked,
-            axis=-1,
+            axs=-1,
             mask=mask,
             inplace=inplace,
             **kwargs

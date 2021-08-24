@@ -413,7 +413,7 @@ def symmetry_stem(signal, interpolation, method="sum"):
 
 def _autocorrelation_masked(z,
                             mask,
-                            axis=(-1,),
+                            axs=(-1,),
                             pad_axis=None,
                             mode="full",
                             overlap_ratio=0.3):
@@ -457,6 +457,6 @@ def _autocorrelation_masked(z,
                                    mask1=mask,
                                    mask2=mask,
                                    mode=mode,
-                                   axis=axis,
+                                   axs=axs,
                                    pad_axis=pad_axis,
                                    overlap_ratio=overlap_ratio)
