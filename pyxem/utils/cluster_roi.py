@@ -182,7 +182,7 @@ class Cluster(CircleROI):
                          mask1=mask,
                          mask2=mask2,
                          axs=1,
-                         pad_axis=1,
+                         pad_axis=None,
                          inplace=False,
                          **kwargs).mean(axis=(0, 1))
             cor = cor.sum(axis=1)
@@ -198,7 +198,8 @@ class Cluster(CircleROI):
                          mask1=mask,
                          mask2=mask2,
                          axs=1,
-                         pad_axis=1,inplace=False,
+                         pad_axis=None,
+                         inplace=False,
                          **kwargs).mean(axis=(0, 1))
             cor = cor.sum(axis=1)
 
