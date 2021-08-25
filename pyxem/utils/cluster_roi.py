@@ -125,7 +125,6 @@ class Cluster(CircleROI):
         mask = self.get_kernel_mask(radius=radius)
         return np.tensordot(sl, mask)
 
-
     def get_kernel_mask(self,
                         radius=3):
         if self.obj is None:
@@ -164,14 +163,44 @@ class Cluster(CircleROI):
                         extent=0.2,
                         mask=None,
                         summed=True,
-                        auto=True,
+                        method = "auto",
                         **kwargs,
                         ):
-        if auto:
+        if method is "auto":
             sl = self.get_slice(sl_extent=extent)
             print(sl)
             cor = sl.get_angular_correlation(mask=mask).mean(axis=(0, 1))
             cor = cor.sum(axis=1)
+        elif method is "cross":
+            sl = self.get_slice(sl_extent=extent)
+            mean = self.get_mean(signal)
+            kernel, kern_mask = self.get_kernel(signal=mean, radius=radius)
+            mask2 = np.zeros(kernel.shape,
+                             dtype=bool)
+            cor = sl.map(_cross_correlate_masked,
+                         z2=kernel,
+                         mask1=mask1,
+                         mask2=mask2,
+                         axs=1,
+                         pad_axis=1,
+                         **kwargs).mean(axis=(0, 1))
+            cor = cor.sum(axis=0)
+
+        elif method is "cross_kernel":
+            sl = self.get_slice(sl_extent=extent)
+            mean = self.get_mean(signal)
+            kernel, kern_mask = self.get_kernel(signal=mean, radius=radius)
+            mask2 = np.zeros(kernel.shape,
+                             dtype=bool)
+            cor = sl.map(_cross_correlate_masked,
+                         z2=kern_mask,
+                         mask1=mask1,
+                         mask2=mask2,
+                         axs=1,
+                         pad_axis=1,
+                         **kwargs).mean(axis=(0, 1))
+            cor = cor.sum(axis=0)
+
         else:
             mean = self.get_mean(signal)
             kernel, mask2 = self.get_kernel(signal=mean, radius=radius)
