@@ -179,7 +179,7 @@ class Cluster(CircleROI):
                              dtype=bool)
             cor = sl.map(_cross_correlate_masked,
                          z2=kernel,
-                         mask1=mask1,
+                         mask1=mask,
                          mask2=mask2,
                          axs=1,
                          pad_axis=1,
@@ -194,7 +194,7 @@ class Cluster(CircleROI):
                              dtype=bool)
             cor = sl.map(_cross_correlate_masked,
                          z2=kern_mask,
-                         mask1=mask1,
+                         mask1=mask,
                          mask2=mask2,
                          axs=1,
                          pad_axis=1,
