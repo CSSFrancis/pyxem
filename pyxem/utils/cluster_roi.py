@@ -183,8 +183,9 @@ class Cluster(CircleROI):
                          mask2=mask2,
                          axs=1,
                          pad_axis=1,
+                         inplace=False,
                          **kwargs).mean(axis=(0, 1))
-            cor = cor.sum(axis=0)
+            cor = cor.sum(axis=1)
 
         elif method is "cross_kernel":
             sl = self.get_slice(sl_extent=extent)
@@ -197,9 +198,9 @@ class Cluster(CircleROI):
                          mask1=mask,
                          mask2=mask2,
                          axs=1,
-                         pad_axis=1,
+                         pad_axis=1,inplace=False,
                          **kwargs).mean(axis=(0, 1))
-            cor = cor.sum(axis=0)
+            cor = cor.sum(axis=1)
 
         else:
             mean = self.get_mean(signal)
