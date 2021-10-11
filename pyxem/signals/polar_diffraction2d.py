@@ -173,6 +173,7 @@ class PolarDiffraction2D(Signal2D):
         return correlation
 
 
+
 class LazyPolarDiffraction2D(LazySignal, PolarDiffraction2D):
 
     pass

@@ -27,8 +27,8 @@ class Cluster(CircleROI):
     def __init__(self,
                  real_indexes,
                  pixel_indexes,
-                 cluster_indexes=[1, 2],
-                 speckle_indexes=[3, 4],
+                 cluster_indexes=[0, 1],
+                 speckle_indexes=[2, 3],
                  radius=None,
                  obj=None,
                  **kwargs):
@@ -87,7 +87,7 @@ class Cluster(CircleROI):
     def mean(self):
         if self.obj is None:
             print("Set a cluster generator object")
-        ind = np.flip(np.array(self.pixel_indexes[:3], dtype=int))
+        ind = np.flip(np.array(self.pixel_indexes[:2], dtype=int))
         mean = self.obj.space_scale_rep.inav[ind]
         point = hs.plot.markers.point(self.real_indexes[-1],
                                       self.real_indexes[-2],
@@ -101,7 +101,7 @@ class Cluster(CircleROI):
 
     def get_mean(self,
                  signal):
-        ind = np.flip(np.array(self.pixel_indexes[:3], dtype=int))
+        ind = np.flip(np.array(self.pixel_indexes[:2], dtype=int))
         mean = signal.inav[ind]
         return mean
 
@@ -116,8 +116,8 @@ class Cluster(CircleROI):
         """
         if self.obj is None:
             print("Set a cluster generator object")
-        sl = self.obj.signal.inav[self.real_indexes[2] - sl_extent:self.real_indexes[2] + sl_extent,
-                                 self.real_indexes[1] - sl_extent:self.real_indexes[1] + sl_extent]
+        sl = self.obj.signal.inav[self.real_indexes[1] - sl_extent:self.real_indexes[1] + sl_extent,
+                                 self.real_indexes[0] - sl_extent:self.real_indexes[0] + sl_extent]
         return sl
 
     def get_extent(self, radius=3, test_region=5):
@@ -311,13 +311,12 @@ class Clusters(list):
                     (np.max(c.intensities[1:])/c.intensities[0])>ratio_trim]
             self.clear()
             self.extend(clus)
-
         elif max_self_cor:
-            clus = [c for c in gen.clusters if np.argmax(c.symmetry) == 0]
+            clus = [cl for cl in self.clusters if (np.argmax(c.symmetry) == 0)]
             self.clear()
             self.extend(clus)
         elif ratio_trim is not None:
-            clus = [c for c in gen.clusters if (c.intensities[0] / np.max(c.intensities[1:]) < ratio_trim)]
+            clus = [c for c in self.clusters if (c.intensities[0] / np.max(c.intensities[1:]) < ratio_trim)]
             self.clear()
             self.extend(clus)
         else:

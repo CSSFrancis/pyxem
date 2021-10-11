@@ -67,8 +67,6 @@ class TestClusterGenerator:
         assert generator.space_scale_rep is not None
         generator.space_scale_rep.axes_manager
         print(generator.space_scale_rep.axes_manager)
-        assert generator.space_scale_rep.axes_manager[2].name is "Sigma"
-        assert generator.space_scale_rep.axes_manager[2].scale == 9/5
 
     def test_get_clusters(self,
                      generator):

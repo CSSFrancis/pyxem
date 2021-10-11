@@ -30,10 +30,7 @@ class ClusterGenerator:
         self.sigma = None
 
     def get_space_scale_rep(self,
-                            min_sigma=(1, 1, 1, 1),
-                            max_sigma=(10, 10, 1, 1),
-                            num_sigma=5,
-                            log_scale=False,
+                            sigma=(1, 1, 1, 1),
                             **kwargs,
                             ):
         """ This method returns a space scale representation of the data. This is a
@@ -56,50 +53,15 @@ class ClusterGenerator:
             For more information https://en.wikipedia.org/wiki/Scale_space.
         """
         # if both min and max sigma are scalar, function returns only one sigma
-        if np.isscalar(max_sigma):
-            max_sigma = np.full(self.signal.data.ndim,
-                                max_sigma,
+        if np.isscalar(sigma):
+            sigma = np.full(self.signal.data.ndim,
                                 dtype=float)
-        if np.isscalar(min_sigma):
-            min_sigma = np.full(self.signal.data.ndim,
-                                min_sigma,
-                                dtype=float)
-        min_sigma = np.asarray(min_sigma, dtype=float)
-        max_sigma = np.asarray(max_sigma, dtype=float)
-        if log_scale:
-            # for anisotropic data, we use the "highest resolution/variance" axis
-            standard_axis = np.argmax(min_sigma)
-            start = np.log10(min_sigma[standard_axis])
-            stop = np.log10(max_sigma[standard_axis])
-            scale = np.logspace(start, stop, num_sigma)[:, np.newaxis]
-            sigma_list = scale * min_sigma / np.max(min_sigma)
-        else:
-            scale = np.linspace(0, 1, num_sigma)[:, np.newaxis]
-            sigma_list = scale * (max_sigma - min_sigma) + min_sigma
         # computing gaussian laplace
-        # average s**2 provides scale invariance
-        gl_images = [-sci_gaussian_laplace(self.signal.data, s, **kwargs) * np.mean(s) ** 2
-                     for s in sigma_list]
-        gl_images = Signal2D(data=gl_images)
-        gl_images.axes_manager.navigation_axes[-1].name = "Sigma"
-        gl_images.axes_manager.navigation_axes[-1].scale = (max_sigma[0] - min_sigma[0]) / num_sigma
-        gl_images.axes_manager.navigation_axes[-1].offset = min_sigma[0]
-
-        for ax1, ax2 in zip(gl_images.axes_manager.navigation_axes[:-1],
-                            self.signal.axes_manager.navigation_axes):
-            ax1.scale = ax2.scale
-            #ax1.units = ax2.units
-            ax1.offset = ax2.offset
-            ax1.name = ax2.name
-        for ax1, ax2 in zip(gl_images.axes_manager.signal_axes,
-                            self.signal.axes_manager.signal_axes):
-            ax1.scale = ax2.scale
-            #ax1.units = ax2.units
-            ax1.offset = ax2.offset
-            ax1.name = ax2.name
-
-        self.space_scale_rep = gl_images
-        self.sigma = sigma_list
+        lap = self.signal._deepcopy_with_new_data(data=-sci_gaussian_laplace(self.signal.data,
+                                                                             sigma,
+                                                                             **kwargs))
+        self.space_scale_rep = lap
+        self.sigma = sigma
         return
 
     def get_clusters(self,
