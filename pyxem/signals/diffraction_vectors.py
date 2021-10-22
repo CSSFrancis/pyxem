@@ -117,7 +117,29 @@ def generate_marker_inputs_from_peaks(peaks):
     y = xy_cords[1]
 
     return x, y
+class DiffractionVectorsND(BaseSignal):
+    """Crystallographic mapping results containing diffraction vectors in n dimensions.
 
+        Attributes
+        ----------
+        cartesian : np.array()
+            Array of -vectors describing Cartesian coordinates associated with
+            each diffraction vector.
+        hkls : np.array()
+            Array of Miller indices associated with each diffraction vector
+            following indexation.
+        """
+
+    def __init__(self,
+                 calibration=None,
+
+                 *args,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cartesian = None
+        self.hkls = None
+        self.detector_shape = None
+        self.pixel_calibration = None
 
 class DiffractionVectors(BaseSignal):
     """Crystallographic mapping results containing the best matching crystal

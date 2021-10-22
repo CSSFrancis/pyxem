@@ -61,6 +61,7 @@ class Cluster(CircleROI):
         self.correlation = None
         self.intensities = None
         self.obj = obj
+        self.extent = None
 
     def __str__(self):
         return ("Position: < " + str(self.real_indexes) +" >" +
