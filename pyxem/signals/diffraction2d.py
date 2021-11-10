@@ -611,7 +611,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
     """ Direct beam and peak finding tools """
 
-    def get_direct_beam_position(self, method, lazy_result=None, **kwargs):
+    def get_direct_beam_position(self, method, lazy_result=None,rechunk=True, **kwargs):
         """Estimate the direct beam position in each experimentally acquired
         electron diffraction pattern.
 
@@ -646,7 +646,11 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         method_function = select_method_from_method_dict(method, method_dict, **kwargs)
 
-        dask_array = _get_dask_array(self)
+        if rechunk or not self._lazy:
+            dask_array = _get_dask_array(self)
+
+        else:
+            dask_array = self.data
 
         drop_axis = (len(self.axes_manager.shape) - 2, len(self.axes_manager.shape) - 1)
         new_axis = self.axes_manager.navigation_dimension
