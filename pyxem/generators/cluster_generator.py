@@ -1,18 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import gaussian_laplace as sci_gaussian_laplace
-
-from hyperspy._signals.signal2d import Signal2D
+from dask.array.overlap import overlap, trim_internal
+from dask.graph_manipulation import clone
+from dask.array import concatenate
 
 from pyxem.utils.cluster_tools import find_peaks
 from pyxem.utils.cluster_roi import Clusters
 
 
-class ClusterGenerator:
-    """A workflow for finding clusters in diffraction patterns.
+class PeakGenerator:
+    """A workflow for finding peaks in diffraction patterns.
 
     This method is designed to work on many different signals and for identifying
-     local clusters
+    important features in a dataset.
     """
     def __init__(self,
                  signal,
@@ -24,13 +25,22 @@ class ClusterGenerator:
             Some ndimensional signal which is to be analyzed.
         """
         self.signal = signal
-        self.space_scale_rep = None
-        self.clusters = None
         self.signal_mask = mask
+        self.space_scale_rep = None
+        self.lazy_space_scale_rep = None
+        self.clusters = None
         self.sigma = None
+        self.lazy = self.signal._lazy
 
-    def get_space_scale_rep(self,
+    def __str__(self):
+        if self.lazy:
+            return "<Lazy Peak Generator-- Peaks:" + str(len(self.clusters)) + "; Signal" + str(self.signal)
+        else:
+            return "<Peak Generator-- Peaks:" + str(len(self.clusters)) + "; Signal" + str(self.signal)
+
+    def get_gaussian_laplace(self,
                             sigma=(1, 1, 1, 1),
+                            beam_size=None,
                             **kwargs,
                             ):
         """ This method returns a space scale representation of the data. This is a
@@ -57,9 +67,19 @@ class ClusterGenerator:
             sigma = np.full(self.signal.data.ndim,
                                 dtype=float)
         # computing gaussian laplace
-        lap = self.signal._deepcopy_with_new_data(data=-sci_gaussian_laplace(self.signal.data,
-                                                                             sigma,
-                                                                             **kwargs))
+        if self.signal._lazy:
+            overlap_dist = sigma*2
+            overlap_dist = (overlap_dist[0], overlap_dist[1], 0, 0)
+            overlapped = overlap(self.signal.data, overlap_dist, None)
+            clones = concatenate([clone(b, omit=overlapped) for b in overlapped.blocks])
+            lazy_lap = clones.map_blocks(sci_gaussian_laplace, sigma=sigma, dtype=self.signal.dtype)
+            self.lazy_space_scale_rep = lazy_lap
+            lap = trim_internal(lazy_lap, overlap_dist)
+            self.signal._deepcopy_with_new_data(data=lap)
+        else:
+            lap = self.signal._deepcopy_with_new_data(data=-sci_gaussian_laplace(self.signal.data,
+                                                                                 sigma,
+                                                                                 **kwargs))
         self.space_scale_rep = lap
         self.sigma = sigma
         return
@@ -76,21 +96,3 @@ class ClusterGenerator:
                                             **kwargs,
                                             obj=self),
                                  obj=self)
-
-    def plot_symmetries(self,
-                        mask,
-                        ax=None,
-                        fig_size=None,
-                        **kwargs):
-        symmetries = self.clusters.get_symmetries(mask=mask)
-        if ax is not None:
-            ax, f = plt.subplot(1, 1, fig_size)
-        ax.bar(symmetries, **kwargs)
-        return
-
-    def plot_k_distribution(self):
-        pass
-
-    def refine_clusters(self):
-        pass
-

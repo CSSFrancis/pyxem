@@ -3,14 +3,47 @@ from fractions import Fraction as frac
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import Circle
 from skimage.draw import disk
-from scipy.ndimage import gaussian_filter as sci_gaussian_filter
+from scipy.spatial import distance_matrix
 import numpy as np
-from dask import delayed
 
 import hyperspy.api as hs
 from hyperspy.roi import CircleROI
 from hyperspy.signals import Signal1D, Signal2D
 from pyxem.utils.correlation_utils import _cross_correlate_masked, get_interpolation_matrix, symmetry_stem
+
+class DiffractionFeature:
+
+    def __init__(self,
+                 vector,
+                 signal_extent=None,
+                 navigation_extent=None,
+                 obj=None):
+        """ Initalizes the Diffraction Feature Object.
+        """
+        self.vector = vector
+        self.signal_extent
+        self.navigation_extent = navigation_extent
+        self.obj = obj
+        self.chunk_index=None
+
+    @property
+    def real_position(self):
+        if self.obj is not None:
+            return [a.index2value(i) for a, i in zip(self.obj.axes_manager, self.vector)]
+        else:
+            return
+
+
+
+class DiffractionFeatures(list):
+
+    def group_features(self, max_distance=1, ):
+        navigation_positions = [c.vector[0:2] for c in self]
+        distance = distance_matrix(navigation_positions, navigation_positions)
+        num_inside = np.sum([distance < max_distance], axis=0)
+        nearest = np.transpose(np.argsort(distance, axis=0))
+        nearest = [nearest[1:num] for n, num in zip(nearest, num_inside)]
+
 
 
 class Cluster(CircleROI):
