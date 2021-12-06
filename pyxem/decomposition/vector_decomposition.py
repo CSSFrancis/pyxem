@@ -72,7 +72,7 @@ class VectorDecomposition2D(FancySlicing):
         copied.data = Vectors(new_data)
         return copied
 
-    def cluster(self, method, **kwargs):
+    def label_vectors(self, method, **kwargs):
         """Using a pre-defined or custom method.  The vectors
         are assigned a label which is used to group the different
         vector.
@@ -80,7 +80,12 @@ class VectorDecomposition2D(FancySlicing):
         :param method:
         :return:
         """
+
         return
+
+    def refine_labels(self, method):
+        return
+
 
     def __call__(self, *args, **kwargs):
         """Slice some signal target using a set of vectors.

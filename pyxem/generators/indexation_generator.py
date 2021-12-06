@@ -245,7 +245,7 @@ class AcceleratedIndexationGenerator:
         Internally, this code is compiled to LLVM machine code, so stack traces are often hard to follow on failure. As such it is
         important to be careful with your parameters selection.
         """
-        result =  index_dataset_with_template_rotation(self.signal,
+        result = index_dataset_with_template_rotation(self.signal,
                                                     self.library,
                                                     phases=include_phases,
                                                     n_best=n_largest,

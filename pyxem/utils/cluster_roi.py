@@ -37,12 +37,14 @@ class DiffractionFeature:
 
 class DiffractionFeatures(list):
 
-    def group_features(self, max_distance=1, ):
+    def group_features(self, max_distance=1, symetries=(2,4,6,10),):
         navigation_positions = [c.vector[0:2] for c in self]
         distance = distance_matrix(navigation_positions, navigation_positions)
         num_inside = np.sum([distance < max_distance], axis=0)
         nearest = np.transpose(np.argsort(distance, axis=0))
         nearest = [nearest[1:num] for n, num in zip(nearest, num_inside)]
+        grouped_clusters = [[self[n] for n in near] for near in nearest]
+
 
 
 
@@ -151,7 +153,7 @@ class Cluster(CircleROI):
         if self.obj is None:
             print("Set a cluster generator object")
         sl = self.obj.signal.inav[self.real_indexes[1] - sl_extent:self.real_indexes[1] + sl_extent,
-                                 self.real_indexes[0] - sl_extent:self.real_indexes[0] + sl_extent]
+                                  self.real_indexes[0] - sl_extent:self.real_indexes[0] + sl_extent]
         return sl
 
     def get_extent(self, radius=3, test_region=5):
@@ -202,7 +204,6 @@ class Cluster(CircleROI):
                         ):
         if method is "auto":
             sl = self.get_slice(sl_extent=extent)
-            print(sl)
             cor = sl.get_angular_correlation(mask=mask).mean(axis=(0, 1))
             cor = cor.sum(axis=1)
         elif method is "cross":
@@ -289,9 +290,9 @@ class Cluster(CircleROI):
             angles = new_angles
         num_angles = [len(a) for a in angles]
         interp = np.array([get_interpolation_matrix(a,
-                                           angular_range,
-                                           num_points=len(self.correlation.data),
-                                           method=method)
+                                                    angular_range,
+                                                    num_points=len(self.correlation.data),
+                                                    method=method)
                            for a in angles])
         symmetries = symmetry_stem(self.correlation.data,
                                    interpolation=interp,
@@ -301,10 +302,10 @@ class Cluster(CircleROI):
         self.symmetry = symmetries
 
     def get_max_symmetry(self,
-                         syms=(1,2,4,6,10),
+                         symmetries=(1, 2, 4, 6, 10),
                          ):
-        self.max_sym = syms[np.argmax(self.symmetry[1:]) + 1]
-        self.intensities =[self.symmetry[0],np.max(self.symmetry[1:])]
+        self.max_sym = symmetries[np.argmax(self.symmetry[1:]) + 1]
+        self.intensities = [self.symmetry[0], np.max(self.symmetry[1:])]
 
     def get_intensities(self):
         pass
@@ -339,18 +340,20 @@ class Clusters(list):
     def max_symmetries(self):
         return [c.max_sym for c in self]
 
-    def trim_clusters(self, max_self_cor=True, ratio_trim=0.5):
+    def trim_clusters(self, max_self_cor=True, ratio_trim=0.2):
+        """Trims any clusters which have a mask cluster
+        """
         if max_self_cor and ratio_trim is not None:
-            clus = [c for c in self if np.argmax(c.symmetry)==0 and
-                    (np.max(c.intensities[1:])/c.intensities[0])>ratio_trim]
+            clus = [c for c in self if np.argmax(c.symmetry) == 0 and
+                    (np.max(c.intensities[1:])/c.intensities[0]) > ratio_trim]
             self.clear()
             self.extend(clus)
         elif max_self_cor:
-            clus = [cl for cl in self.clusters if (np.argmax(c.symmetry) == 0)]
+            clus = [c for c in self if (np.argmax(c.symmetry) == 0)]
             self.clear()
             self.extend(clus)
         elif ratio_trim is not None:
-            clus = [c for c in self.clusters if (c.intensities[0] / np.max(c.intensities[1:]) < ratio_trim)]
+            clus = [c for c in self if (c.intensities[0] / np.max(c.intensities[1:]) < ratio_trim)]
             self.clear()
             self.extend(clus)
         else:
@@ -411,7 +414,8 @@ class Clusters(list):
     def get_correlations(self,
                          signal=None,
                          radius=3,
-                         mask=None):
+                         mask=None,
+                         **kwargs):
         if signal is None and self.obj is not None:
             signal = self.obj.space_scale_rep
         else:
@@ -419,16 +423,22 @@ class Clusters(list):
         for cluster in self:
             cluster.get_correlation(signal=signal,
                                     radius=radius,
-                                    mask=mask)
+                                    mask=mask,
+                                    **kwargs)
 
     def get_symmetries(self,
-                       symmetries=(1,2,4,6,10),
+                       symmetries=(1, 2, 4, 6, 10),
+                       advanced=True,
                        **kwargs,
                        ):
         for cluster in self:
             cluster.get_symmetry(symmetries=symmetries, **kwargs)
         for cluster in self:
             cluster.get_max_symmetry(syms=symmetries)
+
+        if advanced:
+            for cluster in self:
+                self.get_extent
 
     def get_max_sym_indexes(self, symmetries=(1, 2, 4, 6, 10)):
         syms = np.array([c.max_sym for c in self])
@@ -495,7 +505,7 @@ class Clusters(list):
             deviation = [np.std(e, axis=0) for e in sym_ext]
             f, axs = plt.subplots(1, 2, figsize=figsize)
             for m,s,st in zip(mean, symmetries,deviation):
-                axs[0].plot(m[:,slice], label=str(s)+"-fold Symmetry", **kwargs)
+                axs[0].plot(m[:, slice], label=str(s)+"-fold Symmetry", **kwargs)
                 axs[1].plot(st[:, slice], label=str(s) + "-fold Symmetry", **kwargs)
             plt.legend()
 

@@ -407,7 +407,7 @@ def symmetry_stem(signal, interpolation, method="sum"):
         val = np.transpose([np.amax([np.matmul(signal, np.transpose(i))for i in [interp[0], interp[-1]]], axis=0)
                             for interp in interpolation])
     else:
-        print(method, " is not one of sum, max, first and first-last")
+        print(method, " is not one of sum, max, first and first last")
         return
     return val
 
