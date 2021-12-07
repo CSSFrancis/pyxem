@@ -2,6 +2,7 @@ import numpy as np
 from hyperspy.axes import AxesManager
 import copy
 from hyperspy.misc.slicing import SpecialSlicers, FancySlicing
+import matplotlib.pyplot as plt
 
 
 class Vectors:
@@ -59,16 +60,28 @@ class VectorDecomposition2D(FancySlicing):
         self.inav = SpecialSlicers(self, isNavigation=True)
         self.labels = None
         if axes is None:
-            print(range(np.shape(vectors)[1]))
-            axes = [{"size":1} for a in range(np.shape(vectors)[1])]
-        print(axes)
+            axes = [{"size": 1} for a in range(np.shape(vectors)[1])]
         self.axes_manager = AxesManager(axes)
         if self.axes_manager.signal_dimension != 2:
             self.axes_manager.set_signal_dimension(2)
 
+    def __repr__(self):
+        return str("<Collection of: " + str(len(self.data.array))
+                   + "vectors>")
+
+    @property
+    def vectors(self):
+        return self.data.array
+
+    @property
+    def real_space_vectors(self):
+        scales = [a.scale for a in self.axes_manager._axes]
+        offsets = [a.offset for a in self.axes_manager._axes]
+        print(offsets)
+        return np.add(offsets, np.multiply(self.data.array, scales))
+
     def _deepcopy_with_new_data(self, new_data, **kwargs):
         copied = copy.deepcopy(self)
-        print(new_data)
         copied.data = Vectors(new_data)
         return copied
 
@@ -86,7 +99,6 @@ class VectorDecomposition2D(FancySlicing):
     def refine_labels(self, method):
         return
 
-
     def __call__(self, *args, **kwargs):
         """Slice some signal target using a set of vectors.
 
@@ -95,8 +107,10 @@ class VectorDecomposition2D(FancySlicing):
 
     def get_label(self, label):
         return
+
     def plot_label(self, label):
         return
+
     def plot(self):
         """Plots the paired navigation and signal components
         """
@@ -108,9 +122,22 @@ class VectorDecomposition2D(FancySlicing):
         """
         return
 
-    def plot_signal(self, lazy=False, **kwargs):
-        """Plots the reconstructed signal """
-        self.to_signal(lazy=lazy).plot(**kwargs)
+    def plot_navigation(self):
+        nav_indexes = self.axes_manager.navigation_indices_in_array
+        navigation = self.data.array[:, nav_indexes]
+        plt.figure()
+        plt.scatter(navigation[:, 0], navigation[:, 1])
+        return
+
+    def plot_signal(self):
+        sig_indexes = self.axes_manager.signal_indices_in_array
+        signal = self.data.array[:, sig_indexes]
+        plt.figure()
+        plt.scatter(signal[:, 0], signal[:, 1])
+        return
+
+    def add_to_signal(self):
+        return
 
     def sum(self, axis):
         """Sum of the data along some axis. If the data is vectorized then this gives the number of

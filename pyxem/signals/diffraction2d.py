@@ -21,7 +21,7 @@
 import numpy as np
 from skimage import filters
 from skimage.morphology import square
-from scipy.ndimage import rotate
+from scipy.ndimage import rotate, gaussian_laplace
 from skimage import morphology
 import dask.array as da
 from dask.diagnostics import ProgressBar
@@ -52,6 +52,10 @@ from pyxem.utils.pyfai_utils import (
     _get_radial_extent,
     _get_setup,
 )
+
+from pyxem.decomposition.diffraction_vector import DiffractionVector
+
+from pyxem.decomposition.label import _find_peaks
 from pyxem.utils.expt_utils import (
     azimuthal_integrate1d,
     azimuthal_integrate2d,
@@ -136,6 +140,26 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             *args,
             **kwargs,
         )
+
+    def filter(self,
+               method="log",
+               sigma=2,
+               inplace=False,
+               **kwargs,
+               ):
+        if method is "log":
+            filtered = gaussian_laplace(self.data, sigma,**kwargs)
+        if inplace:
+            self.data= filtered
+        else:
+            return self._deepcopy_with_new_data(data=filtered)
+
+    def find_peaks(self, mask=None, **kwargs):
+        peaks = _find_peaks(data=self.data,
+                            mask=mask,
+                            **kwargs)
+        peaks = DiffractionVector(peaks)
+        return peaks
 
     def shift_diffraction(
         self,

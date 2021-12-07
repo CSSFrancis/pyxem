@@ -18,11 +18,35 @@
 
 import numpy as np
 import dask.array as da
+
+from dask.graph_manipulation import clone
 from skimage.feature import match_template, blob_dog, blob_log
 import scipy.ndimage as ndi
 from skimage import morphology
 from hyperspy.misc.utils import isiterable
 
+
+def map_overlap(data,
+                function,
+                depth,
+                level=0,
+                return_overlapped=False,
+                **kwargs):
+    overlapped = da.overlap.overlap(data, depth, None)
+    if level == 1:
+        clones = da.concatenate(
+            [da.clone(b, omit=overlapped) for b in overlapped.blocks])
+    elif level == 2:
+        clones = da.concatenate(
+            [da.concatenate([da.clone(b, omit=overlapped) for bl in b])for b
+             in overlapped.blocks])
+    else:
+        clones = overlapped
+    mapped = da.map_blocks(clones, function, **kwargs)
+    if return_overlapped:
+        return mapped
+    else:
+        return da.overlap.trim_interal(mapped, depth)
 
 def align_single_frame(image, shifts, **kwargs):
     temp_image = ndi.shift(image, shifts[::-1], **kwargs)

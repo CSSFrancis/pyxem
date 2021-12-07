@@ -1,15 +1,39 @@
 import numpy as np
 from scipy.spatial import distance_matrix
+from skimage.feature.peak import peak_local_max
 
-def spatial_cluster(vectors, max_distances=1, axes=(0,1),):
+
+def _find_peaks(data, mask=None,  **kwargs):
+    """This method helps to format the output from the blob methods
+    in skimage for a more hyperspy like format using hs.markers.
+    The underlying function finds the local max by finding point where
+    a dilution doesn't change.
+    """
+    local_maxima = peak_local_max(data,
+                                  footprint=np.ones((3,) * (data.ndim)),
+                                  **kwargs)
+    # Catch no peaks
+    if local_maxima.size == 0:
+        return np.empty((0, 4))
+        # Convert local_maxima to float64
+    lm = local_maxima.astype(np.float64)
+    if mask is not None:
+        lm = [c for c in lm if not mask[int(c[-2]), int(c[-1])]]
+    return lm
+
+
+def spatial_cluster(vectors,
+                    max_distances=1,
+                    axes=(0, 1),
+                    ):
     """ Cluster based on distance between vectors.  Only the axes in
     Axes are considered.
 
-    Pameters
-    --------
+    Parameters
+    ----------
     vectors: Array-like
-        The list of all of the vectors to be considered.  Each vector is compared to
-
+        The list of all of the vectors to be considered.  Each vector is
+         compared to
 
     """
     return
