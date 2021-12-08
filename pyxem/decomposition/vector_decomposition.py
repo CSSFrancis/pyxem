@@ -58,7 +58,8 @@ class VectorDecomposition2D(FancySlicing):
         self.data = Vectors(vectors)
         self.isig = SpecialSlicers(self, isNavigation=False)
         self.inav = SpecialSlicers(self, isNavigation=True)
-        self.labels = None
+        self.labels = []
+        self.extents = []
         if axes is None:
             axes = [{"size": 1} for a in range(np.shape(vectors)[1])]
         self.axes_manager = AxesManager(axes)
