@@ -18,13 +18,17 @@
 
 """Signal class for two-dimensional diffraction data in polar coordinates."""
 
+from scipy.ndimage import gaussian_laplace
+import numpy as np
+
 from hyperspy.signals import Signal2D
 from hyperspy._signals.lazy import LazySignal
 
 from pyxem.utils.correlation_utils import _correlation, _power, _pearson_correlation, _autocorrelation_masked
+from pyxem.signals import Diffraction2D
 
 
-class PolarDiffraction2D(Signal2D):
+class PolarDiffraction2D(Diffraction2D):
     _signal_type = "polar_diffraction"
 
     def __init__(self, *args, **kwargs):
@@ -171,6 +175,25 @@ class PolarDiffraction2D(Signal2D):
         rho_axis.units = 'rad'
         rho_axis.scale = self.axes_manager[-2].scale
         return correlation
+
+    def laplacian_of_gaussian(self,
+                              sigma=1,
+                              inplace=False,
+                              **kwargs):
+        """Calculates the laplacian of Gaussian in n-dimensions for the signal using the kernel
+        described
+        """
+        if np.isscalar(sigma):
+            sigma = np.full(self.signal.data.ndim,
+                            sigma,
+                            dtype=float)
+        if inplace:
+            self.data = gaussian_laplace(self.data, sigma=sigma, **kwargs)
+        else:
+            self._deepcopy_with_new_data(gaussian_laplace(self.data,
+                                                          sigma=sigma,
+                                                          **kwargs))
+
 
 
 

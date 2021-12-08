@@ -12,7 +12,7 @@ def get_vdf(data,
             radius=2,
             extent=None, ):
     shape = tuple(reversed(data.axes_manager.signal_shape))
-    rr, cc = disk((vector[-1], vector[2]),
+    rr, cc = disk(center=(vector[-2], vector[-3]),
                   radius=radius,
                   shape=shape)
     if extent is None:
