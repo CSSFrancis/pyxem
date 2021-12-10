@@ -65,19 +65,16 @@ class DiffractionVector(VectorDecomposition2D):
                     threshold=0.9,
                     inplace=False,
                     **kwargs):
-        extents = []
-        vectors = self.vectors
-        for i, v in enumerate(vectors):
+        if inplace:
+            vectors = self
+        else:
+            vectors = self._deepcopy_with_new_data(new_data=np.copy(
+                self.data.array))
+        for i, v in enumerate(vectors.vectors):
             center, vdf = get_vdf(data,
                                   v,
                                   threshold=threshold,
                                   **kwargs,)
-            extents.append(vdf)
-            vectors[i][:2] = center
-        if inplace:
-            self.extents = extents
-            self.vectors.array = vectors
-        else:
-            new = self._deepcopy_with_new_data(new_data=vectors)
-            new.extents = extents
-            return new
+            vectors.extents.append(vdf)
+            vectors.vectors[i][:2] = center
+        return vectors
