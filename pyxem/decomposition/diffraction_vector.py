@@ -78,6 +78,6 @@ class DiffractionVector(VectorDecomposition2D):
             self.extents = extents
             self.vectors.array = vectors
         else:
-            new = self._deepcopy_with_new_data(data=vectors)
+            new = self._deepcopy_with_new_data(new_data=vectors)
             new.extents = extents
             return new
