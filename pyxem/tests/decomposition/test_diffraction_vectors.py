@@ -57,3 +57,9 @@ class TestVectorDecomposition:
         print(peaks)
         print(len(peaks.labels))
 
+    def test_decomp(self, three_section):
+        filtered = three_section.filter()
+        peaks = filtered.find_peaks(threshold_rel=0.7)
+        new_peaks = peaks.get_extents(three_section, threshold=0.5)
+        print("new", new_peaks[0:2].vectors)
+

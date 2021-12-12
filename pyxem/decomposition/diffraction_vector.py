@@ -61,7 +61,6 @@ class DiffractionVector(VectorDecomposition2D):
 
     def get_extents(self,
                     data,
-                    trim_duplicates=True,
                     threshold=0.9,
                     inplace=False,
                     **kwargs):
@@ -75,29 +74,8 @@ class DiffractionVector(VectorDecomposition2D):
                                   v,
                                   threshold=threshold,
                                   **kwargs,)
-            vectors.extents.append(vdf)
-            vectors.vectors[i][:2] = center
+            vectors.extents[i] = vdf
+            if not any(np.isnan(center)):
+                vectors.vectors[i][:2] = center
         return vectors
 
-    def combine_vectors(self,
-                        distance,
-                        remove_duplicates=True,
-                        symmetries=None,
-                        ):
-        agg = AgglomerativeClustering(n_clusters=None,
-                                      distance_threshold=distance)
-        agg.fit(self.vectors[:, :2])
-        labels = agg.labels_
-        new_vectors = []
-        new_labels = []
-        for l in range(max(labels)):
-            grouped_vectors = self.vectors[labels == l]
-            if remove_duplicates:
-                dist_mat = distance_matrix(grouped_vectors,
-                                           grouped_vectors) < 5
-                grouped_vectors = grouped_vectors[
-                    np.sum(np.tril(dist_mat), axis=1) == 1]
-            for v in grouped_vectors:
-                new_vectors.append(v)
-                new_labels.append(l)
-        return new_vectors, labels

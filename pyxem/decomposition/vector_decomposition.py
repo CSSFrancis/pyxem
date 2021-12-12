@@ -58,8 +58,8 @@ class VectorDecomposition2D(FancySlicing):
         self.data = Vectors(vectors)
         self.isig = SpecialSlicers(self, isNavigation=False)
         self.inav = SpecialSlicers(self, isNavigation=True)
-        self.labels = []
-        self.extents = []
+        self.labels = np.empty(len(vectors))
+        self.extents = np.empty(len(vectors), dtype=np.object)
         if axes is None:
             axes = [{"size": 1} for a in range(np.shape(vectors)[1])]
         self.axes_manager = AxesManager(axes)
@@ -69,6 +69,15 @@ class VectorDecomposition2D(FancySlicing):
     def __repr__(self):
         return str("<Collection of: " + str(len(self.data.array))
                    + "vectors>")
+
+    def __getitem__(self, item):
+        new_data = self.data.array[item]
+        new_extents = self.extents[item]
+        new_labels = self.labels[item]
+        new = self._deepcopy_with_new_data(new_data=new_data)
+        new.labels = new_labels
+        new.extents = new_extents
+        return new
 
     @property
     def vectors(self):
