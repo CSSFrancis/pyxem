@@ -18,7 +18,7 @@ def _find_peaks(data, mask=None,  **kwargs):
         # Convert local_maxima to float64
     lm = local_maxima.astype(np.float64)
     if mask is not None:
-        lm = [c for c in lm if not mask[int(c[-2]), int(c[-1])]]
+        lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
     return lm
 
 
