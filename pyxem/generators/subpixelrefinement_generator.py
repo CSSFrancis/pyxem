@@ -74,9 +74,8 @@ def get_simulated_disc(square_size, disc_radius):
 
     ss = int(square_size)
     arr = np.zeros((ss, ss))
-    rr, cc = draw.circle(
-        int(ss / 2), int(ss / 2), radius=disc_radius, shape=arr.shape
-    )  # is the thin disc a good idea
+    rr, cc = draw.disk(center=(int(ss / 2), int(ss / 2)),
+                       radius=disc_radius, shape=arr.shape)  # is the thin disc a good idea
     arr[rr, cc] = 1
     return arr
 

@@ -77,7 +77,7 @@ setup(
     packages=find_packages(),
     extras_require=extra_feature_requirements,
     install_requires=[
-        "scikit-image >= 0.17.0",
+        "scikit-image >= 0.19.0",
         "matplotlib >= 3.1.1",  # 3.1.0 failed
         "scikit-learn >= 0.19",  # reason unknown
         "hyperspy >= 1.6.2",  # significant improvements

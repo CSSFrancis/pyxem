@@ -142,7 +142,9 @@ def separate_watershed(
     # erosion is done to avoid that markers are located at the edge
     # of the mask.
     if exclude_border > 0:
-        distance_mask = binary_erosion(distance, structure=disk(exclude_border))
+        distance_mask = binary_erosion(distance,
+                                       structure=disk(center=(0, 0),
+                                                      radius=exclude_border))
         distance = distance * distance_mask.astype("bool")
 
     # Find the coordinates of the local maxima of the distance transform.
@@ -195,7 +197,7 @@ def separate_watershed(
     # to local changes in pixel values around the marker.
     markers = label(local_maxi)[0]
     if marker_radius >= 1:
-        disk_mask = disk(marker_radius)
+        disk_mask = disk(center=(0, 0), radius=marker_radius)
         for mm in np.arange(1, np.max(markers) + 1):
             im = np.zeros_like(markers)
             im[np.where(markers == mm)] = markers[np.where(markers == mm)]
