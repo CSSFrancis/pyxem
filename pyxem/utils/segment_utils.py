@@ -27,8 +27,8 @@ from scipy.signal import convolve2d
 
 from skimage.feature import peak_local_max
 from skimage.filters import sobel, threshold_li
-from skimage.morphology import watershed, disk
-
+from skimage.draw import disk
+from skimage.segmentation import watershed
 from sklearn.cluster import DBSCAN
 
 
