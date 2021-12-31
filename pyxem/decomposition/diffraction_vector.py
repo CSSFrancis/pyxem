@@ -59,15 +59,14 @@ def get_vdf(data,
     return center, vdf
 
 
-def refine_reciporical_position(data, mask, vector, threshold=0.5,):
-    mean_image = np.mean(data[mask,:,:], axis=(0))
+def refine_reciporical_position(data, mask, vector, threshold=0.5):
+    mean_image = np.mean(data[mask, :, :], axis=(0))
     max_val = mean_image[int(vector[2]), int(vector[3])]
     abs_threshold = max_val*threshold
     threshold_image = mean_image > abs_threshold
     ex = flood(threshold_image, seed_point=(int(vector[2]), int(vector[3])))
     center = center_of_mass(ex)
     return center, ex
-
 
 
 def center_and_crop(image, center):
@@ -136,6 +135,7 @@ class DiffractionVector(VectorDecomposition2D):
                          data,
                          threshold=0.5,
                          inplace=False,
+                         crop=True,
                          ):
         """Refine the position of the diffraction vector the signal space
 
@@ -148,17 +148,29 @@ class DiffractionVector(VectorDecomposition2D):
             The relative threshold to use to determine the extent of some feature.
         inplace: bool
             Return a copy of the data or act on the dataset
+        crop: bool
+            Crop the vdf to only be the extent of the vector.  Saves on memory if you have a large
+            number of vectors.
         """
         if inplace:
             vectors = self
         else:
             vectors = self._deepcopy_with_new_data(new_data=np.copy(self.data.array))
         for i, (v, e) in enumerate(zip(vectors.vectors, vectors.extents)):
-            center, ex = refine_reciporical_position(data,
-                                                     e > 0,
-                                                     v,
-                                                     threshold=threshold)
-            if not any(np.isnan(center)):
+            if crop:
+                mask_shape = np.array(np.shape(e))
+                center = np.array(np.round(v[:2]), dtype=int)
+                bottoms = np.array(center - (mask_shape - 1) / 2, dtype=int)
+                tops = np.array(center + (mask_shape - 1) / 2, dtype=int)
+                slices = tuple([slice(b, t + 1) for t, b in zip(tops, bottoms)])
+                d = data[slices]
+            else:
+                d = data
+            if len(e) != 0:
+                center, ex = refine_reciporical_position(d,
+                                                         e > 0,
+                                                         v,
+                                                         threshold=threshold)
                 vectors.vectors[i][2:] = center
         return vectors
 
