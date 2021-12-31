@@ -69,14 +69,18 @@ def refine_reciporical_position(data, mask, vector, threshold=0.5,):
     return center, ex
 
 
+
 def center_and_crop(image, center):
     extent = np.argwhere(image > 0)
-    rounded_center = np.array(np.round(center), dtype=int)
-    max_values = np.max(extent, axis=0)-rounded_center
-    min_values = rounded_center-np.min(extent, axis=0)
-    max_extent = np.max([max_values, min_values])
-    slices = tuple([slice(c-max_extent, c+max_extent+1) for c in rounded_center])
-    return image[slices]
+    if len(extent) == 0:
+        return []
+    else:
+        rounded_center = np.array(np.round(center), dtype=int)
+        max_values = np.max(extent, axis=0)-rounded_center
+        min_values = rounded_center-np.min(extent, axis=0)
+        max_extent = np.max([max_values, min_values])
+        slices = tuple([slice(c-max_extent, c+max_extent+1) for c in rounded_center])
+        return image[slices]
 
 
 class DiffractionVector(VectorDecomposition2D):
