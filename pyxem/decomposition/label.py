@@ -82,6 +82,7 @@ def refine_labels(vectors,
     gc = [[cl for cl, g in zip(c, gr) if g] for c, gr in zip(grouped_clusters, include_cluster)]
     return
 
+
 def get_label_center(vectors, axes):
     return np.mean(vectors[axes])
 
@@ -89,6 +90,7 @@ def get_label_center(vectors, axes):
 def get_characteristic_angles(syms=(2,4,6,10)):
     fract = [i/sy * np.pi for sy in syms for i in range(sy) ]
     return list(set(fract))
+
 
 def get_angles(clusters):
     if len (clusters) ==0:
