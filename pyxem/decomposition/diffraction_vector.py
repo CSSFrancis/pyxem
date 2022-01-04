@@ -72,7 +72,7 @@ def refine_reciporical_position(data, mask, vector, threshold=0.5):
 def center_and_crop(image, center):
     extent = np.argwhere(image > 0)
     if len(extent) == 0:
-        return [], tuple([slice() for c in center])
+        return [], tuple([slice(None) for c in center])
     else:
         rounded_center = np.array(np.round(center), dtype=int)
         max_values = np.max(extent, axis=0)-rounded_center
