@@ -59,7 +59,9 @@ class VectorDecomposition2D(FancySlicing):
         self.isig = SpecialSlicers(self, isNavigation=False)
         self.inav = SpecialSlicers(self, isNavigation=True)
         self.labels = np.empty(len(vectors))
-        self.extents = np.empty(len(vectors), dtype=np.object)
+        self.extents = np.empty(len(vectors), dtype=object)
+        self.slices = np.empty(len(vectors), dtype=object)
+        self.cropped = False
         if axes is None:
             axes = [{"size": 1} for a in range(np.shape(vectors)[1])]
         self.axes_manager = AxesManager(axes)
@@ -74,9 +76,11 @@ class VectorDecomposition2D(FancySlicing):
         new_data = self.data.array[item]
         new_extents = self.extents[item]
         new_labels = self.labels[item]
+        new_slices = self.slices[item]
         new = self._deepcopy_with_new_data(new_data=new_data)
         new.labels = new_labels
         new.extents = new_extents
+        new.slices = new_slices
         return new
 
     @property
@@ -87,7 +91,6 @@ class VectorDecomposition2D(FancySlicing):
     def real_space_vectors(self):
         scales = [a.scale for a in self.axes_manager._axes]
         offsets = [a.offset for a in self.axes_manager._axes]
-        print(offsets)
         return np.add(offsets, np.multiply(self.data.array, scales))
 
     def _deepcopy_with_new_data(self, new_data, **kwargs):

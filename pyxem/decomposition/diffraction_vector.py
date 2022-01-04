@@ -79,7 +79,7 @@ def center_and_crop(image, center):
         min_values = rounded_center-np.min(extent, axis=0)
         max_extent = np.max([max_values, min_values])
         slices = tuple([slice(c-max_extent, c+max_extent+1) for c in rounded_center])
-        return image[slices]
+        return image[slices], slices
 
 
 class DiffractionVector(VectorDecomposition2D):
@@ -124,7 +124,10 @@ class DiffractionVector(VectorDecomposition2D):
                                   threshold=threshold,
                                   **kwargs,)
             if crop:
-                vdf = center_and_crop(vdf, center)
+                vdf, slices = center_and_crop(vdf, center)
+                vectors.slices[i] = slices
+                vectors.cropped = True
+
             vectors.extents[i] = vdf
             if not any(np.isnan(center)):
                 vectors.vectors[i][:2] = center
@@ -135,7 +138,6 @@ class DiffractionVector(VectorDecomposition2D):
                          data,
                          threshold=0.5,
                          inplace=False,
-                         crop=True,
                          ):
         """Refine the position of the diffraction vector the signal space
 
@@ -157,13 +159,8 @@ class DiffractionVector(VectorDecomposition2D):
         else:
             vectors = self._deepcopy_with_new_data(new_data=np.copy(self.data.array))
         for i, (v, e) in enumerate(zip(vectors.vectors, vectors.extents)):
-            if crop:
-                mask_shape = np.array(np.shape(e))
-                center = np.array(np.round(v[:2]), dtype=int)
-                bottoms = np.array(center - (mask_shape - 1) / 2, dtype=int)
-                tops = np.array(center + (mask_shape - 1) / 2, dtype=int)
-                slices = tuple([slice(b, t + 1) for t, b in zip(tops, bottoms)])
-                d = data[slices]
+            if self.cropped:
+                d = data[self.slices[i]]
             else:
                 d = data
             if len(e) != 0:

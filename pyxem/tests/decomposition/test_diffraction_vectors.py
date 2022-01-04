@@ -19,8 +19,10 @@
 import pytest
 import numpy as np
 from pyxem.decomposition.vector_decomposition import VectorDecomposition2D
+from pyxem.decomposition.diffraction_vector import DiffractionVector
 from pyxem.signals import Diffraction2D
 from skimage.draw import disk
+
 
 class TestVectorDecomposition:
     @pytest.fixture
@@ -62,4 +64,25 @@ class TestVectorDecomposition:
         peaks = filtered.find_peaks(threshold_rel=0.7)
         new_peaks = peaks.get_extents(three_section, threshold=0.5)
         print("new", new_peaks[0:2].vectors)
+
+
+class Test_Refinement:
+    @pytest.fixture
+    def circles(self):
+        rr1, cc1 = disk((10, 10), 3)
+        rr2, cc2 = disk((3, 47), 6, shape=(100, 50))
+        x = np.zeros((1, 1, 20, 20))
+        y = np.zeros((100, 50,1,1))
+        x[:, :, rr1, cc1] = 10
+        y[rr2, cc2, :, :] = 10
+        c = np.multiply(x,y)
+        d = Diffraction2D(c)
+        return d
+
+    def test_extent(self, circles):
+        v = DiffractionVector([[4, 46, 12, 11]])
+        e = v.get_extents(data=circles)
+        ref = e.refine_positions(data=circles.data)
+        np.testing.assert_equal(ref.vectors, [[3, 45, 10, 10]])
+
 
