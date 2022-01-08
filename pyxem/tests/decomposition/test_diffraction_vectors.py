@@ -22,6 +22,7 @@ from pyxem.decomposition.vector_decomposition import VectorDecomposition2D
 from pyxem.decomposition.diffraction_vector import DiffractionVector
 from pyxem.signals import Diffraction2D
 from skimage.draw import disk
+import hyperspy.api as hs
 
 
 class TestVectorDecomposition:
@@ -81,8 +82,26 @@ class Test_Refinement:
 
     def test_extent(self, circles):
         v = DiffractionVector([[4, 46, 12, 11]])
+        print(v)
         e = v.get_extents(data=circles)
+        print("extent", e.extents)
         ref = e.refine_positions(data=circles.data)
         np.testing.assert_equal(ref.vectors, [[3, 45, 10, 10]])
 
-
+    def test_save(self, circles, tmp_path):
+        v = DiffractionVector([[4, 46, 12, 11]])
+        print(v)
+        e = v.get_extents(data=circles)
+        print("extent", e.extents)
+        ref = e.refine_positions(data=circles.data)
+        fname = tmp_path / "test.zspy"
+        ref.axes_manager.signal_axes[0].index=0
+        ref.axes_manager.signal_axes[1].index =0
+        print(ref.axes_manager._axes)
+        for a in ref.axes_manager.signal_axes:
+            print(a)
+            a.convert_to_vector_axis()
+        #ref.axes_manager.signal_indices_in_array = None
+        ref.slices=None
+        ref.save(fname)
+        new_ref = hs.load(fname)
