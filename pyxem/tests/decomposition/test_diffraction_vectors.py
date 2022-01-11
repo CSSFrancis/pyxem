@@ -67,6 +67,7 @@ class TestVectorDecomposition:
         print("new", new_peaks[0:2].vectors)
 
 
+
 class Test_Refinement:
     @pytest.fixture
     def circles(self):

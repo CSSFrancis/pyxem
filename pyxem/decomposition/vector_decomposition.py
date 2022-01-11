@@ -74,6 +74,14 @@ class VectorDecomposition2D(BaseSignal):
             if self.axes_manager.signal_dimension != 2:
                 self.axes_manager.set_signal_dimension(2)
 
+    def deepcopy(self):
+        new = super().deepcopy()
+        new.metadata.Vectors["labels"] = self.labels
+        new.metadata.Vectors["extents"] = self.extents
+        new.metadata.Vectors["slices"] = self.slices
+        return new
+
+
     def __repr__(self):
         return str("<Collection of: " + str(len(self.data))
                    + "vectors>")

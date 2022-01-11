@@ -125,7 +125,7 @@ class DiffractionVector(VectorDecomposition2D):
         if inplace:
             vectors = self
         else:
-            vectors = self.copy()
+            vectors = self.deepcopy()
         for i, v in enumerate(vectors.vectors):
             center, vdf = get_vdf(data,
                                   v,
@@ -166,7 +166,7 @@ class DiffractionVector(VectorDecomposition2D):
             vectors = self
         else:
             print(self.metadata)
-            vectors = self.copy()
+            vectors = self.deepcopy()
 
         print(vectors.metadata)
         for i, (v, e) in enumerate(zip(vectors.vectors, vectors.extents)):
@@ -193,7 +193,7 @@ class DiffractionVector(VectorDecomposition2D):
         if inplace:
             vectors = self
         else:
-            vectors = self.copy()
+            vectors = self.deepcopy()
         agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
         agg.fit(vectors.vectors[:, :2])
         labels = agg.labels_
