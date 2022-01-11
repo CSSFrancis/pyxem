@@ -46,7 +46,7 @@ def get_vdf(data,
                                   (stop0 - start0, stop1 - start1))
         center = np.array([start0, start1]) + change
         maximum = vdf[int(center[0]), int(center[1])]
-        minimum = np.min(vdf)
+        minimum = np.sort(vdf)[15]
 
         difference = maximum - minimum
         thresh = minimum + threshold * difference
@@ -214,7 +214,7 @@ class DiffractionVector(VectorDecomposition2D):
                 new_labels.append(l)
                 new_extents.append(e)
 
-        vectors.data.array = np.array(new_vectors)
+        vectors.data = np.array(new_vectors)
         vectors.labels = np.array(new_labels)
         vectors.extents = np.array(new_extents)
 
