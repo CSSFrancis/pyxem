@@ -46,7 +46,7 @@ def get_vdf(data,
                                   (stop0 - start0, stop1 - start1))
         center = np.array([start0, start1]) + change
         maximum = vdf[int(center[0]), int(center[1])]
-        minimum = np.sort(vdf)[15]
+        minimum = np.mean(vdf)
 
         difference = maximum - minimum
         thresh = minimum + threshold * difference
