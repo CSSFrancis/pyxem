@@ -87,6 +87,7 @@ class Test_Refinement:
         e = v.get_extents(data=circles)
         print("extent", e.extents)
         ref = e.refine_positions(data=circles.data)
+        np.testing.assert_array_equal(e.data,v.data)
         np.testing.assert_equal(ref.vectors, [[3, 45, 10, 10]])
 
     def test_save(self, circles, tmp_path):

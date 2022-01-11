@@ -15,7 +15,6 @@ class Vectors:
         return self.array
 
     def __getitem__(self, items):
-        print(items)
         if isinstance(items, tuple):
             slices = [[s.start, s.stop] for s in items]
             for i, s in enumerate(slices):
@@ -62,7 +61,6 @@ class VectorDecomposition2D(BaseSignal):
             vectors = Vectors(np.array(data))
 
         super().__init__(data, **kwds)
-        print(self.data)
         self.metadata.add_node("Vectors")
         self.metadata.Vectors["labels"] = np.empty(len(vectors.array))
         self.metadata.Vectors["extents"] = np.empty(len(vectors.array), dtype=object)

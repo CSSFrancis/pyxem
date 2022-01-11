@@ -165,16 +165,13 @@ class DiffractionVector(VectorDecomposition2D):
         if inplace:
             vectors = self
         else:
-            print(self.metadata)
             vectors = self.deepcopy()
 
-        print(vectors.metadata)
         for i, (v, e) in enumerate(zip(vectors.vectors, vectors.extents)):
             if self.cropped:
                 d = data[self.slices[i]]
             else:
                 d = data
-            print(e)
             if len(e) != 0:
                 center, ex = refine_reciporical_position(d,
                                                          e > 0,
