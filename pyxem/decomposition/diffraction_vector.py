@@ -5,6 +5,7 @@ from skimage.morphology import flood
 from sklearn.cluster import AgglomerativeClustering
 from scipy.ndimage import center_of_mass
 from scipy.spatial import distance_matrix
+from skimage.morphology import convex_hull_image
 
 
 def get_vdf(data,
@@ -12,7 +13,9 @@ def get_vdf(data,
             threshold=None,
             radius=2,
             search=5,
+            fill=True,
             extent=None,
+            mask_center=True,
             ):
     shape = tuple(reversed(data.axes_manager.signal_shape))
     rr, cc = disk(center=(vector[-2], vector[-1]),
@@ -49,11 +52,17 @@ def get_vdf(data,
         thresh = minimum + threshold * difference
         mask = vdf > thresh
         mask = flood(mask, seed_point=(int(vector[0]), int(vector[1])))
+        if fill is True:
+            mask = convex_hull_image(mask)
+
         if np.sum(mask) > (np.product(vdf.shape) / 2):
             vdf = np.zeros(vdf.shape)
         else:
             vdf[np.logical_not(mask)] = 0
-        center = center_of_mass(vdf)
+        if mask_center:
+            center = center_of_mass(mask)
+        else:
+            center = center_of_mass(vdf)
     else:
         center = (vector[0], vector[1])
     return center, vdf
