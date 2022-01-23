@@ -11,7 +11,7 @@ class Vectors:
         self.array = array
         self.shape = array.shape
 
-    def __array__(self, dtype=None):
+    def __array__(self):
         return self.array
 
     def __getitem__(self, items):
@@ -57,7 +57,7 @@ class VectorDecomposition2D(BaseSignal):
             to the signal dimensions. Otherwise the signal component
             spans the navigation dimension.
         """
-        if not isinstance(data,Vectors):
+        if not isinstance(data, Vectors):
             vectors = Vectors(np.array(data))
 
         super().__init__(data, **kwds)

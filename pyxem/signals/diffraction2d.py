@@ -158,7 +158,9 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         peaks = _find_peaks(data=self.data,
                             mask=mask,
                             **kwargs)
-        peaks = DiffractionVector(peaks)
+        p = np.empty(1, dtype=object)
+        p[0] = peaks
+        peaks = DiffractionVector(p)
         return peaks
 
     def shift_diffraction(

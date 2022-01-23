@@ -7,6 +7,7 @@ from scipy.ndimage import center_of_mass
 from scipy.spatial import distance_matrix
 from skimage.morphology import convex_hull_image
 
+from hyperspy._signals.vector_signal import VectorSignal
 
 def get_vdf(data,
             vector,
@@ -18,6 +19,7 @@ def get_vdf(data,
             mask_center=True,
             ):
     shape = tuple(reversed(data.axes_manager.signal_shape))
+    print(vector)
     rr, cc = disk(center=(vector[-2], vector[-1]),
                   radius=radius,
                   shape=shape)
@@ -91,17 +93,42 @@ def center_and_crop(image, center):
         return image[slices], slices
 
 
-class DiffractionVector(VectorDecomposition2D):
+class DiffractionVector(VectorSignal):
     """
     Diffraction Vector Object.  A collection of diffraction vectors.
     Extends the vector decomposition class
     """
+    def __init__(self,
+                 data,
+                 **kwds):
+        """
+
+        Parmeters
+        ---------
+        navigation_components: list
+            The list of navigation components.  If navigation components is
+            a vector then each component is a vector of dimension equal
+            to the navigation dimensions. Otherwise the navigation component
+            spans the navigation dimension.
+
+        signal_components:
+            The list of signal components.  If signal components is
+            a vector then each component is a vector of dimension equal
+            to the signal dimensions. Otherwise the signal component
+            spans the navigation dimension.
+        """
+        super().__init__(data, **kwds)
+        self.metadata.add_node("Vectors")
+        self.metadata.Vectors["extents"] = np.empty(self.data.shape, dtype=object)
+        self.metadata.Vectors["slices"] = np.empty(self.data.shape, dtype=object)
+
 
     def get_extents(self,
                     data,
                     threshold=0.9,
                     inplace=False,
                     crop=True,
+                    max_extent=None,
                     **kwargs):
         """Get the extent of each diffraction vector using some dataset.  Finds the extent given
         some seed point and a threshold.
@@ -126,21 +153,44 @@ class DiffractionVector(VectorDecomposition2D):
             vectors = self
         else:
             vectors = self.deepcopy()
-        for i, v in enumerate(vectors.vectors):
-            center, vdf = get_vdf(data,
-                                  v,
-                                  threshold=threshold,
-                                  **kwargs,)
+        for i, vect in enumerate(vectors.data):
+            vdfs = []
+            slices = []
+            for j,v in enumerate(vect):
+                center, vdf = get_vdf(data,
+                                      v,
+                                      threshold=threshold,
+                                      **kwargs,)
             if crop:
-                vdf, slices = center_and_crop(vdf, center)
-                vectors.slices[i] = slices
+                vdf, slice = center_and_crop(vdf, center)
+                #vectors.slices[i] = slices
                 vectors.cropped = True
-
-            vectors.extents[i] = vdf
+                vdfs.append(vdf)
+                slices.append(slice)
             if not any(np.isnan(center)):
-                vectors.vectors[i][:2] = center
+                vectors.data[i][j, :2] = center
+
+            vectors.extents[i] = vdfs
+            vectors.slices[i] = slices
+
 
         return vectors
+
+    @property
+    def extents(self):
+        return self.metadata.Vectors.extents
+
+    @extents.setter
+    def extents(self, extents):
+        self.metadata.Vectors.extents = extents
+
+    @property
+    def slices(self):
+        return self.metadata.Vectors.slices
+
+    @slices.setter
+    def slices(self, slices):
+        self.metadata.Vectors.slices = slices
 
     def refine_positions(self,
                          data,
@@ -167,17 +217,18 @@ class DiffractionVector(VectorDecomposition2D):
         else:
             vectors = self.deepcopy()
 
-        for i, (v, e) in enumerate(zip(vectors.vectors, vectors.extents)):
-            if self.cropped:
-                d = data[self.slices[i]]
-            else:
-                d = data
-            if len(e) != 0:
-                center, ex = refine_reciporical_position(d,
-                                                         e > 0,
-                                                         v,
-                                                         threshold=threshold)
-                vectors.vectors[i][2:] = center
+        for ind in np.ndindex(vectors.data.shape):
+            for i, (v, e, s) in enumerate(zip(self.data[ind],self.extents[ind], self.slices[ind])):
+                if self.cropped:
+                    d = data[s]
+                else:
+                    d = data
+                if len(e) != 0:
+                    center, ex = refine_reciporical_position(d,
+                                                             e > 0,
+                                                             v,
+                                                             threshold=threshold)
+                    vectors.data[ind][i,2:] = center
         return vectors
 
     def combine_vectors(self,
@@ -187,6 +238,7 @@ class DiffractionVector(VectorDecomposition2D):
                         structural_similarity=False,
                         inplace=False
                         ):
+        self.cluster(func=)
         if inplace:
             vectors = self
         else:
@@ -217,3 +269,8 @@ class DiffractionVector(VectorDecomposition2D):
 
         return vectors
 
+def spatial_cluster(vectors,distance,**kwargs):
+    agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
+    agg.fit(vectors)
+    labels = agg.labels_
+    return labels

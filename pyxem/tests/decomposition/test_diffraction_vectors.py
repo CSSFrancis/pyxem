@@ -58,13 +58,12 @@ class TestVectorDecomposition:
         print(peaks)
         peaks.get_extents(three_section)
         print(peaks)
-        print(len(peaks.labels))
 
     def test_decomp(self, three_section):
         filtered = three_section.filter()
         peaks = filtered.find_peaks(threshold_rel=0.7)
         new_peaks = peaks.get_extents(three_section, threshold=0.5)
-        print("new", new_peaks[0:2].vectors)
+        print("new", new_peaks.data[0:2])
 
 
 
@@ -82,13 +81,14 @@ class Test_Refinement:
         return d
 
     def test_extent(self, circles):
-        v = DiffractionVector([[4, 46, 12, 11]])
-        print(v)
+        a = np.empty((1), dtype=object)
+        a[0] = np.array([[4, 46, 12, 11], ])
+        v = DiffractionVector(a)
         e = v.get_extents(data=circles)
         print("extent", e.extents)
         ref = e.refine_positions(data=circles.data)
-        np.testing.assert_array_equal(e.data,v.data)
-        np.testing.assert_equal(ref.vectors, [[3, 45, 10, 10]])
+        np.testing.assert_array_equal(e.data[0], v.data[0])
+        np.testing.assert_equal(ref.data[0], [[3, 45, 10, 10],])
 
     def test_save(self, circles, tmp_path):
         v = DiffractionVector([[4, 46, 12, 11]])
