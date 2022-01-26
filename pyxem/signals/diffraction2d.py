@@ -53,14 +53,13 @@ from pyxem.utils.pyfai_utils import (
     _get_setup,
 )
 
-from pyxem.decomposition.diffraction_vector import DiffractionVector
+from pyxem.signals.diffraction_vector import DiffractionVector
 
 from pyxem.decomposition.label import _find_peaks
 from pyxem.utils.expt_utils import (
     azimuthal_integrate1d,
     azimuthal_integrate2d,
     gain_normalise,
-    remove_dead,
     regional_filter,
     circular_mask,
     find_beam_offset_cross_correlation,
@@ -154,13 +153,24 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         else:
             return self._deepcopy_with_new_data(data=filtered)
 
-    def find_peaks(self, mask=None, **kwargs):
-        peaks = _find_peaks(data=self.data,
+    def find_peaks(self, axis="all", mask=None, **kwargs):
+        if axis is "all":
+            axis = self.axes_manager._axes
+        else:
+            axis = self.axes_manager[axis]
+        shifted = self.transpose(axis)
+        peaks = shifted.map(_find_peaks,
                             mask=mask,
+                            ragged=True,
+                            inplace=False,
                             **kwargs)
-        p = np.empty(1, dtype=object)
-        p[0] = peaks
-        peaks = DiffractionVector(p)
+        ax = shifted.axes_manager.signal_axes
+        [a.convert_to_vector_axis() for a in ax]
+        peaks.axes_manager = shifted.axes_manager
+        peaks.set_signal_type("vector")
+        peaks.vector=True
+
+
         return peaks
 
     def shift_diffraction(

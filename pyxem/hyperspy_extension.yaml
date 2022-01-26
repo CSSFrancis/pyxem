@@ -215,6 +215,18 @@ signals:
     dtype: real
     lazy: False
     module: pyxem.signals.symmetry1d
+  DiffractionVector:
+    signal_type: vector
+    signal_dimension: 4
+    dtype: real
+    lazy: False
+    module: pyxem.signals.diffraction_vector
+  LazyDiffractionVector:
+    signal_type: vector
+    signal_dimension: 4
+    dtype: real
+    lazy: True
+    module: pyxem.signals.diffraction_vector
 
 components1D:
     ReducedIntensityCorrectionComponent:

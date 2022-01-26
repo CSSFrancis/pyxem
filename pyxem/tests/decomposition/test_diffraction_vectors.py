@@ -18,8 +18,7 @@
 
 import pytest
 import numpy as np
-from pyxem.decomposition.vector_decomposition import VectorDecomposition2D
-from pyxem.decomposition.diffraction_vector import DiffractionVector
+from pyxem.signals.diffraction_vector import DiffractionVector
 from pyxem.signals import Diffraction2D
 from skimage.draw import disk
 import hyperspy.api as hs

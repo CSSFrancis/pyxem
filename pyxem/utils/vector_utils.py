@@ -20,7 +20,42 @@ import numpy as np
 import math
 
 from transforms3d.axangles import axangle2mat
+from skimage.morphology import convex_hull_image,flood
+from skimage.draw import disk
 
+
+def get_extents(img, vectors, **kwargs):
+    extents = [_get_vdf(v, img, **kwargs) for v in vectors]
+    return extents
+
+
+def _get_vdf(vector,
+             img,
+             threshold=None,
+             radius=2,
+             fill=True,
+             ):
+    shape = img.shape[-2:]
+    rr, cc = disk(center=(int(vector[-2]), int(vector[-1])),
+                  radius=int(radius),
+                  shape=shape)
+    vdf = np.sum(np.squeeze(img)[:, :, rr, cc], axis=2)
+
+    if threshold is not None:
+        center = np.array([vector[0], vector[1]])
+        maximum = vdf[int(center[0]), int(center[1])]
+        minimum = np.mean(vdf)
+        difference = maximum - minimum
+        thresh = minimum + threshold * difference
+        mask = vdf > thresh
+        mask = flood(mask, seed_point=(int(vector[0]), int(vector[1])))
+        if fill is True:
+            mask = convex_hull_image(mask)
+        if np.sum(mask) > (np.product(vdf.shape) / 2):
+            vdf = np.zeros(vdf.shape)
+        else:
+            vdf[np.logical_not(mask)] = 0
+    return vdf
 
 def detector_to_fourier(k_xy, wavelength, camera_length):
     """Maps two-dimensional Cartesian coordinates in the detector plane to
