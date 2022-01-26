@@ -80,17 +80,21 @@ class Test_Refinement:
         return d
 
     def test_extent(self, circles):
-        a = np.empty((1), dtype=object)
-        a[0] = np.array([[4, 46, 12, 11], ])
+        a = np.empty(1, dtype=object)
+        a[0] = [[4, 46, 12, 11], [4, 46, 12, 11]]
         v = DiffractionVector(a)
-        e = v.get_extents(data=circles)
-        print("extent", e.extents)
-        ref = e.refine_positions(data=circles.data)
+        print(v)
+        v.vector=True
+        c=circles.transpose((3, 2, 0, 1,))
+        e = v.get_extents(img=c)
+        ref = v.refine_positions(data=c)
         np.testing.assert_array_equal(e.data[0], v.data[0])
         np.testing.assert_equal(ref.data[0], [[3, 45, 10, 10],])
 
     def test_save(self, circles, tmp_path):
-        v = DiffractionVector([[4, 46, 12, 11]])
+        x = np.empty(1, dtype=object)
+        x[0]= [[4, 46, 12, 11]]
+        v = DiffractionVector(x)
         print(v)
         e = v.get_extents(data=circles)
         print("extent", e.extents)

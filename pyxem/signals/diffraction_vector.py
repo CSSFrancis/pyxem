@@ -2,25 +2,17 @@ from pyxem.decomposition.vector_decomposition import VectorDecomposition2D
 import numpy as np
 from skimage.morphology import flood
 from sklearn.cluster import AgglomerativeClustering
-from scipy.ndimage import center_of_mass
+
 from scipy.spatial import distance_matrix
 
 
 from hyperspy._signals.vector_signal import BaseVectorSignal
 from hyperspy._signals.lazy import LazySignal
 from pyxem.utils.vector_utils import get_extents as _get_extents
+from pyxem.utils.vector_utils import refine
+from hyperspy.axes import create_axis
 
 
-
-
-def refine_reciporical_position(data, mask, vector, threshold=0.5):
-    mean_image = np.mean(data[mask, :, :], axis=(0))
-    max_val = mean_image[int(vector[2]), int(vector[3])]
-    abs_threshold = max_val*threshold
-    threshold_image = mean_image > abs_threshold
-    ex = flood(threshold_image, seed_point=(int(vector[2]), int(vector[3])))
-    center = center_of_mass(ex)
-    return center, ex
 
 
 def center_and_crop(image, center):
@@ -95,8 +87,12 @@ class DiffractionVector(BaseVectorSignal):
                            output_dtype=object,
                            ragged=True,
                            **kwargs)
+        if len(extents.axes_manager.navigation_axes)==0:
+            ax = (create_axis(size=1, scale=1, offset=0),)
+            extents.axes_manager.navigation_axes = ax
         self.extents = extents
         return
+
 
     @property
     def extents(self):
@@ -115,7 +111,7 @@ class DiffractionVector(BaseVectorSignal):
         self.metadata.Vectors.slices = slices
 
     def refine_positions(self,
-                         data,
+                         data=None,
                          threshold=0.5,
                          inplace=False,
                          ):
@@ -134,24 +130,15 @@ class DiffractionVector(BaseVectorSignal):
             Crop the vdf to only be the extent of the vector.  Saves on memory if you have a large
             number of vectors.
         """
-        if inplace:
-            vectors = self
-        else:
-            vectors = self.deepcopy()
+        print(self.extents)
+        refined = self.map(refine,
+                           extents=self.extents,
+                           data=data,
+                           threshold=threshold,
+                           output_dtype=object,
+                           inplace=False)
 
-        for ind in np.ndindex(vectors.data.shape):
-            for i, (v, e, s) in enumerate(zip(self.data[ind],self.extents[ind], self.slices[ind])):
-                if self.cropped:
-                    d = data[s]
-                else:
-                    d = data
-                if len(e) != 0:
-                    center, ex = refine_reciporical_position(d,
-                                                             e > 0,
-                                                             v,
-                                                             threshold=threshold)
-                    vectors.data[ind][i,2:] = center
-        return vectors
+        return refined
 
     def combine_vectors(self,
                         distance,
