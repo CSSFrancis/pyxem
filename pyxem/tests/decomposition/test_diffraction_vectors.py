@@ -36,7 +36,7 @@ class TestVectorDecomposition:
 
     @pytest.fixture
     def three_section(self):
-        data = np.random.random((25, 25, 20, 80))
+        data = np.random.random((25, 21, 20, 80))
         # 4 fold symmetry
         rr1, cc1 = disk((10, 10), 3)
         rr2, cc2 = disk((10, 30), 3)
@@ -54,15 +54,16 @@ class TestVectorDecomposition:
     def test_decomposition(self, three_section):
         filtered = three_section.filter()
         peaks = filtered.find_peaks(threshold_rel=0.7)
-        print(peaks)
+        print(peaks.data)
         peaks.get_extents(three_section)
         print(peaks)
 
     def test_decomp(self, three_section):
         filtered = three_section.filter()
         peaks = filtered.find_peaks(threshold_rel=0.7)
-        new_peaks = peaks.get_extents(three_section, threshold=0.5)
-        print("new", new_peaks.data[0:2])
+        new_peaks = peaks.get_extents(three_section.transpose((3, 2, 1, 0)), threshold=0.5)
+        ref = peaks.refine_positions(data=three_section.transpose((3, 2, 1, 0)))
+        #print("new", peaks.extents.data)
 
 
 

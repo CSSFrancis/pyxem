@@ -25,32 +25,31 @@ from skimage.draw import disk
 from scipy.ndimage import center_of_mass
 
 
-def refine(vectors, data, extents,threshold):
-    print(vectors)
+def refine(vectors, data, extents, threshold):
     vectors = [refine_position(v,
                                data,
                                extent=e,
-                               threshold=threshold)for v, e in zip(vectors, extents)]
+                               threshold=threshold)for v, e in zip(vectors[0], extents)]
     return vectors
 
 
 def refine_position(vector, data, extent, threshold=0.5):
     mask = extent > 0
     real_pos = center_of_mass(mask)
-    print(np.shape(extent))
-    print(vector)
     mean_image = np.mean(data[mask, :, :], axis=(0))
-    max_val = mean_image[int(vector[2]), int(vector[3])]
+    print(mean_image.shape)
+    max_val = mean_image[int(vector[3]), int(vector[2])]
     abs_threshold = max_val*threshold
     threshold_image = mean_image > abs_threshold
-    ex = flood(threshold_image, seed_point=(int(vector[2]), int(vector[3])))
+    ex = flood(threshold_image, seed_point=(int(vector[3]), int(vector[2])))
     recip_pos = center_of_mass(ex)
     new_vector = tuple(real_pos)+tuple(recip_pos)
     return new_vector
 
 
 def get_extents(img, vectors, **kwargs):
-    print(np.shape(img))
+    for v in vectors[0]:
+        print(v)
     extents = [_get_vdf(v, img, **kwargs) for v in vectors]
     return extents
 
