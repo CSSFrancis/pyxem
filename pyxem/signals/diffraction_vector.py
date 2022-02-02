@@ -130,7 +130,6 @@ class DiffractionVector(BaseVectorSignal):
             Crop the vdf to only be the extent of the vector.  Saves on memory if you have a large
             number of vectors.
         """
-        print("extents",self.extents)
         refined = self.map(refine,
                            data=data,
                            extents=self.extents,

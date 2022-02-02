@@ -37,7 +37,6 @@ def refine_position(vector, data, extent, threshold=0.5):
     mask = extent > 0
     real_pos = center_of_mass(mask)
     mean_image = np.mean(data[mask, :, :], axis=(0))
-    print(mean_image.shape)
     max_val = mean_image[int(vector[3]), int(vector[2])]
     abs_threshold = max_val*threshold
     threshold_image = mean_image > abs_threshold
@@ -48,8 +47,6 @@ def refine_position(vector, data, extent, threshold=0.5):
 
 
 def get_extents(img, vectors, **kwargs):
-    for v in vectors[0]:
-        print(v)
     extents = [_get_vdf(v, img, **kwargs) for v in vectors]
     return extents
 
@@ -65,7 +62,6 @@ def _get_vdf(vector,
                   radius=int(radius),
                   shape=shape)
     vdf = np.sum(np.squeeze(img)[:, :, rr, cc], axis=2)
-    print(vdf.shape)
 
     if threshold is not None:
         center = np.array([vector[0], vector[1]])
@@ -81,7 +77,6 @@ def _get_vdf(vector,
             vdf = np.zeros(vdf.shape)
         else:
             vdf[np.logical_not(mask)] = 0
-        print(vdf.shape)
     return vdf
 
 def detector_to_fourier(k_xy, wavelength, camera_length):
