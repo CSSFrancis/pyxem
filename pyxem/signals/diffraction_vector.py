@@ -85,6 +85,7 @@ class DiffractionVector(BaseVectorSignal):
                            threshold=threshold,
                            inplace=False,
                            output_dtype=object,
+                           output_signal_size=(),
                            ragged=True,
                            **kwargs)
         if len(extents.axes_manager.navigation_axes)==0:
@@ -137,7 +138,9 @@ class DiffractionVector(BaseVectorSignal):
                            threshold=threshold,
                            output_dtype=object,
                            ragged=True,
-                           inplace=False, **kwargs)
+                           inplace=False,
+                           output_signal_size=(),
+                           **kwargs)
 
         return refined
 

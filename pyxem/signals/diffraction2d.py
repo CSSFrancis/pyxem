@@ -163,6 +163,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                             mask=mask,
                             ragged=True,
                             inplace=False,
+                            output_dtype=object,
+                            output_signal_size=(),
                             **kwargs)
         ax = shifted.axes_manager.signal_axes
         [a.convert_to_vector_axis() for a in ax]
