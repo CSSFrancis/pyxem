@@ -170,7 +170,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         [a.convert_to_vector_axis() for a in ax]
         peaks.axes_manager = shifted.axes_manager
         peaks.set_signal_type("vector")
-        peaks.vector=True
+        peaks.vector = True
         return peaks
 
     def shift_diffraction(

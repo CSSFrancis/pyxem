@@ -133,7 +133,7 @@ class DiffractionVector(BaseVectorSignal):
             number of vectors.
         """
         refined = self.map(refine,
-                           data=data,
+                           img=data,
                            extents=self.extents,
                            threshold=threshold,
                            output_dtype=object,

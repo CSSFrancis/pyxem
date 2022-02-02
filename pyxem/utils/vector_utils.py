@@ -48,18 +48,18 @@ def combine(vectors, distance, remove_duplicates=False):
             labels[duplicates] = -1
     return labels
 
-def refine(vectors, data, extents, threshold):
+def refine(vectors, img, extents, threshold):
     vectors = np.array([refine_position(v,
-                                        data,
+                                        img,
                                         extent=e,
                                         threshold=threshold)for v, e in zip(vectors, extents)])
     return vectors
 
 
-def refine_position(vector, data, extent, threshold=0.5):
+def refine_position(vector, img, extent, threshold=0.5):
     mask = extent > 0
     real_pos = center_of_mass(mask)
-    mean_image = np.mean(data[mask, :, :], axis=(0))
+    mean_image = np.mean(img[mask, :, :], axis=(0))
     max_val = mean_image[int(vector[2]), int(vector[3])]
     abs_threshold = max_val*threshold
     threshold_image = mean_image > abs_threshold

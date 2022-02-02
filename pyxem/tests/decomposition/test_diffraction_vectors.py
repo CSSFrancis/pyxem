@@ -95,13 +95,13 @@ class Test_Refinement:
 
     def test_extent_lazy(self, circles):
         lazy_circles = circles.as_lazy()
+        lazy_circles.rechunk((1, -1, -1))
         peaks = lazy_circles.find_peaks(axis=(3, 4, 0, 1))
         peaks.get_extents(img=lazy_circles.transpose((3, 4, 0, 1,)))
-        print(peaks.data.compute())
-        #print(peaks.extents.data.compute())
+        print("Extent", peaks.extents.data)
         ref = peaks.refine_positions(data=lazy_circles.transpose((3, 4, 0, 1,)))
-        ref.combine_vectors(distance=17)
-        print(ref.labels.data[0].compute())
+        ref.data.compute()
+        #ref.combine_vectors(distance=17)
 
 
     def test_save(self, circles, tmp_path):
