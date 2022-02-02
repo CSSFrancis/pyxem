@@ -1,15 +1,15 @@
 from pyxem.decomposition.vector_decomposition import VectorDecomposition2D
 import numpy as np
 from skimage.morphology import flood
-from sklearn.cluster import AgglomerativeClustering
 
-from scipy.spatial import distance_matrix
+
+
 
 
 from hyperspy._signals.vector_signal import BaseVectorSignal
 from hyperspy._signals.lazy import LazySignal
 from pyxem.utils.vector_utils import get_extents as _get_extents
-from pyxem.utils.vector_utils import refine
+from pyxem.utils.vector_utils import refine, combine
 from hyperspy.axes import create_axis
 
 
@@ -54,8 +54,8 @@ class DiffractionVector(BaseVectorSignal):
         """
         super().__init__(data, **kwds)
         self.metadata.add_node("Vectors")
-        self.metadata.Vectors["extents"] = np.empty(self.data.shape, dtype=object)
-        self.metadata.Vectors["slices"] = np.empty(self.data.shape, dtype=object)
+        self.metadata.Vectors["extents"] = None
+        self.metadata.Vectors["labels"] = None
 
     def get_extents(self,
                     img,
@@ -104,12 +104,12 @@ class DiffractionVector(BaseVectorSignal):
         self.metadata.Vectors.extents = extents
 
     @property
-    def slices(self):
-        return self.metadata.Vectors.slices
+    def labels(self):
+        return self.metadata.Vectors.labels
 
-    @slices.setter
-    def slices(self, slices):
-        self.metadata.Vectors.slices = slices
+    @labels.setter
+    def labels(self, labels):
+        self.metadata.Vectors.labels = labels
 
     def refine_positions(self,
                          data=None,
@@ -141,6 +141,10 @@ class DiffractionVector(BaseVectorSignal):
                            inplace=False,
                            output_signal_size=(),
                            **kwargs)
+        refined.axes_manager = self.axes_manager
+        refined.set_signal_type("vector")
+        refined.vector = True
+        print(refined)
 
         return refined
 
@@ -151,42 +155,19 @@ class DiffractionVector(BaseVectorSignal):
                         structural_similarity=False,
                         inplace=False
                         ):
-        if inplace:
-            vectors = self
-        else:
-            vectors = self.deepcopy()
-        agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
-        agg.fit(vectors.vectors[:, :2])
-        labels = agg.labels_
-        new_vectors = []
-        new_labels = []
-        new_extents = []
-        vectors.extents = np.array(vectors.extents)
-        for l in range(max(labels)):
-            grouped_vectors = vectors.vectors[labels == l]
-            extents = vectors.extents[labels == l]
-            if remove_duplicates:
-                dist_mat = distance_matrix(grouped_vectors[:, 2:], grouped_vectors[:, 2:]) < 5
-                is_first = np.sum(np.tril(dist_mat), axis=1) == 1
-                grouped_vectors = grouped_vectors[is_first]
-                extents = extents[is_first]
-            for v, e in zip(grouped_vectors, extents):
-                new_vectors.append(v)
-                new_labels.append(l)
-                new_extents.append(e)
+        labels = self.map(combine,
+                           distance=distance,
+                           remove_duplicates=remove_duplicates,
+                           inplace=False,
+                           output_dtype=object,
+                           output_signal_size=(),
+                           )
 
-        vectors.data = np.array(new_vectors)
-        vectors.labels = np.array(new_labels)
-        vectors.extents = np.array(new_extents)
+        self.labels = labels
 
-        return vectors
+        return
 
 
 class LazyDiffractionVector(LazySignal,DiffractionVector):
     _lazy = True
 
-def spatial_cluster(vectors,distance,**kwargs):
-    agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
-    agg.fit(vectors)
-    labels = agg.labels_
-    return labels

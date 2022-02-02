@@ -72,25 +72,37 @@ class Test_Refinement:
     def circles(self):
         rr1, cc1 = disk((10, 10), 3)
         rr2, cc2 = disk((3, 47), 6, shape=(100, 50))
-        x = np.zeros((1, 1, 20, 20))
-        y = np.zeros((100, 50,1,1))
-        x[:, :, rr1, cc1] = 10
-        y[rr2, cc2, :, :] = 10
+        x = np.zeros((2, 1, 1, 20, 20))
+        y = np.zeros((2, 100, 50,1,1))
+        x[:, :, :, rr1, cc1] = 10
+        y[:, rr2, cc2, :, :] = 10
         c = np.multiply(x,y)
         d = Diffraction2D(c)
         return d
 
     def test_extent(self, circles):
         a = np.empty(1, dtype=object)
-        a[0] = [[4, 46, 12, 11], [4, 46, 12, 11]]
+        a[0] = [[4, 46, 12, 11], ]
         v = DiffractionVector(a)
         print(v)
         v.vector=True
-        c=circles.transpose((3, 2, 0, 1,))
-        e = v.get_extents(img=c)
+        c=circles.transpose((4, 3, 0, 1,))
+        v.get_extents(img=c)
         ref = v.refine_positions(data=c)
-        np.testing.assert_array_equal(e.data[0], v.data[0])
+        np.testing.assert_array_equal(v.data[0], v.data[0])
+        print(ref.data[0])
         np.testing.assert_equal(ref.data[0], [[3, 45, 10, 10],])
+
+    def test_extent_lazy(self, circles):
+        lazy_circles = circles.as_lazy()
+        peaks = lazy_circles.find_peaks(axis=(3, 4, 0, 1))
+        peaks.get_extents(img=lazy_circles.transpose((3, 4, 0, 1,)))
+        print(peaks.data.compute())
+        #print(peaks.extents.data.compute())
+        ref = peaks.refine_positions(data=lazy_circles.transpose((3, 4, 0, 1,)))
+        ref.combine_vectors(distance=17)
+        print(ref.labels.data[0].compute())
+
 
     def test_save(self, circles, tmp_path):
         x = np.empty(1, dtype=object)

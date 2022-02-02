@@ -20,16 +20,39 @@ import numpy as np
 import math
 
 from transforms3d.axangles import axangle2mat
+
 from skimage.morphology import convex_hull_image,flood
 from skimage.draw import disk
+
+from sklearn.cluster import AgglomerativeClustering
+
+from scipy.spatial import distance_matrix
 from scipy.ndimage import center_of_mass
 
 
+def combine(vectors, distance, remove_duplicates=False):
+    agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
+    agg.fit(vectors[:, :2])
+    labels = agg.labels_
+    print("rd", remove_duplicates)
+    print(max(labels))
+    for l in range(max(labels)+1):
+        print(l)
+        grouped_vectors = vectors[labels == l]
+        if remove_duplicates:
+            dist_mat = distance_matrix(grouped_vectors[:, 2:], grouped_vectors[:, 2:]) < 5
+            is_first = np.sum(np.tril(dist_mat), axis=1) == 1
+            duplicates = labels == l
+            duplicates[duplicates] = np.logical_not(is_first)
+            print("is first",is_first)
+            labels[duplicates] = -1
+    return labels
+
 def refine(vectors, data, extents, threshold):
-    vectors = [refine_position(v,
-                               data,
-                               extent=e,
-                               threshold=threshold)for v, e in zip(vectors[0], extents)]
+    vectors = np.array([refine_position(v,
+                                        data,
+                                        extent=e,
+                                        threshold=threshold)for v, e in zip(vectors, extents)])
     return vectors
 
 
@@ -42,7 +65,7 @@ def refine_position(vector, data, extent, threshold=0.5):
     threshold_image = mean_image > abs_threshold
     ex = flood(threshold_image, seed_point=(int(vector[2]), int(vector[3])))
     recip_pos = center_of_mass(ex)
-    new_vector = tuple(real_pos)+tuple(recip_pos)
+    new_vector = list(tuple(real_pos)+tuple(recip_pos))
     return new_vector
 
 
