@@ -114,6 +114,7 @@ class DiffractionVector(BaseVectorSignal):
                          data=None,
                          threshold=0.5,
                          inplace=False,
+                         **kwargs,
                          ):
         """Refine the position of the diffraction vector the signal space
 
@@ -135,7 +136,8 @@ class DiffractionVector(BaseVectorSignal):
                            extents=self.extents,
                            threshold=threshold,
                            output_dtype=object,
-                           inplace=False)
+                           ragged=True,
+                           inplace=False, **kwargs)
 
         return refined
 
