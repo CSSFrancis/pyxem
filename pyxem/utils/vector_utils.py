@@ -37,10 +37,10 @@ def refine_position(vector, data, extent, threshold=0.5):
     mask = extent > 0
     real_pos = center_of_mass(mask)
     mean_image = np.mean(data[mask, :, :], axis=(0))
-    max_val = mean_image[int(vector[3]), int(vector[2])]
+    max_val = mean_image[int(vector[2]), int(vector[3])]
     abs_threshold = max_val*threshold
     threshold_image = mean_image > abs_threshold
-    ex = flood(threshold_image, seed_point=(int(vector[3]), int(vector[2])))
+    ex = flood(threshold_image, seed_point=(int(vector[2]), int(vector[3])))
     recip_pos = center_of_mass(ex)
     new_vector = tuple(real_pos)+tuple(recip_pos)
     return new_vector
