@@ -155,10 +155,10 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
     def find_peaks(self, axis="all", mask=None, **kwargs):
         if axis is "all":
-            axis = self.axes_manager._axes
+            axis = reversed(self.axes_manager._axes)
         else:
             axis = self.axes_manager[axis]
-        shifted = self.transpose(reversed(axis))
+        shifted = self.transpose(axis)
         peaks = shifted.map(_find_peaks,
                             mask=mask,
                             ragged=True,
