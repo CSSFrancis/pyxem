@@ -141,8 +141,11 @@ class DiffractionVector(BaseVectorSignal):
                            ragged=True,
                            inplace=inplace, **kwargs)
         if not inplace:
+            if self._lazy:
+                refined = LazyDiffractionVector(self.data)
+            else:
+                refined = DiffractionVector(self.data)
             refined.axes_manager = self.axes_manager.deepcopy()
-            refined.set_signal_type("vector")
             refined.extents = self.extents
             refined.vector = True
 
