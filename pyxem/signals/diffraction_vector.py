@@ -215,14 +215,6 @@ class DiffractionVector(BaseVectorSignal):
         pass
 
 
-
-
-
 class LazyDiffractionVector(LazySignal,DiffractionVector):
     _lazy = True
 
-def spatial_cluster(vectors,distance,**kwargs):
-    agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
-    agg.fit(vectors)
-    labels = agg.labels_
-    return labels

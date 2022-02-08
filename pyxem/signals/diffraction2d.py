@@ -53,7 +53,7 @@ from pyxem.utils.pyfai_utils import (
     _get_setup,
 )
 
-from pyxem.signals.diffraction_vector import DiffractionVector
+from pyxem.signals.diffraction_vector import DiffractionVector, LazyDiffractionVector
 
 from pyxem.decomposition.label import _find_peaks
 from pyxem.utils.expt_utils import (
@@ -167,7 +167,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                             **kwargs)
         peaks = DiffractionVector(peaks.data)
         if self._lazy:
-            peaks = peaks.as_lazy()
+            peaks = LazyDiffractionVector(peaks.data)
         peaks.ragged = True
         peaks.axes_manager = am
         ax = peaks.axes_manager.signal_axes
