@@ -146,10 +146,9 @@ class DiffractionVector(BaseVectorSignal):
             else:
                 refined = DiffractionVector(self.data)
             refined.axes_manager = self.axes_manager.deepcopy()
-            refined.extents = self.extents
             refined.vector = True
-
-
+            refined.axes_manager._ragged = True
+            refined.extents = self.extents
         return refined
 
     def combine_vectors(self,
@@ -176,6 +175,7 @@ class DiffractionVector(BaseVectorSignal):
             self.map(trim_duplicates, label=labels)
             self.axes_manager = am
             self.set_signal_type("vector")
+            self.axes_manager._ragged=True
             self.labels = new_labels
             self.extents = new_extents
 

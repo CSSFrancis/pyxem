@@ -170,8 +170,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             peaks = LazyDiffractionVector(peaks.data)
         else:
             peaks = DiffractionVector(peaks.data)
-        peaks.ragged = True
         peaks.axes_manager = am
+        am._ragged = True
         ax = peaks.axes_manager.signal_axes
         [a.convert_to_vector_axis() for a in ax]
 
