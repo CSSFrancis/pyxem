@@ -117,6 +117,7 @@ def generate_marker_inputs_from_peaks(peaks):
     y = xy_cords[1]
 
     return x, y
+
 class DiffractionVectorsND(BaseSignal):
     """Crystallographic mapping results containing diffraction vectors in n dimensions.
 

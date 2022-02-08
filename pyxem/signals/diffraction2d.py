@@ -159,16 +159,17 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         else:
             axis = self.axes_manager[axis]
         shifted = self.transpose(axis)
+        am = shifted.axes_manager.deepcopy()
         peaks = shifted.map(_find_peaks,
                             mask=mask,
                             ragged=True,
                             inplace=False,
                             **kwargs)
-        ax = shifted.axes_manager.signal_axes
+        peaks = DiffractionVector(peaks)
+        peaks.axes_manager = am
+        ax = peaks.axes_manager.signal_axes
         [a.convert_to_vector_axis() for a in ax]
-        peaks.axes_manager = shifted.axes_manager
-        peaks.set_signal_type("vector")
-        peaks.vector=True
+        #peaks.vector = True
         return peaks
 
     def shift_diffraction(

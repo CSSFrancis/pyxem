@@ -54,16 +54,14 @@ class TestVectorDecomposition:
     def test_decomposition(self, three_section):
         filtered = three_section.filter()
         peaks = filtered.find_peaks(threshold_rel=0.7)
-        print(peaks.data)
-        peaks.get_extents(three_section)
-        print(peaks)
+        peaks.get_extents(three_section.transpose((3,2,1,0)))
 
     def test_decomp(self, three_section):
         filtered = three_section.filter()
         peaks = filtered.find_peaks(threshold_rel=0.7)
-        new_peaks = peaks.get_extents(three_section.transpose((3, 2, 1, 0)), threshold=0.5)
+        new_peaks = peaks.get_extents(three_section.transpose((3, 2, 1, 0)), threshold=0.9)
         ref = peaks.refine_positions(data=three_section.transpose((3, 2, 1, 0)))
-        #print("new", peaks.extents.data)
+        print("new", ref.data)
 
 
 

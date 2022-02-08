@@ -1,17 +1,18 @@
 from pyxem.decomposition.vector_decomposition import VectorDecomposition2D
 import numpy as np
 from skimage.morphology import flood
-from sklearn.cluster import AgglomerativeClustering
 
-from scipy.spatial import distance_matrix
+
+
 
 
 from hyperspy._signals.vector_signal import BaseVectorSignal
 from hyperspy._signals.lazy import LazySignal
+from hyperspy.signals import BaseSignal
 from pyxem.utils.vector_utils import get_extents as _get_extents
-from pyxem.utils.vector_utils import refine
+from pyxem.utils.vector_utils import refine, combine_vectors,trim_duplicates
 from hyperspy.axes import create_axis
-
+import dask.array as da
 
 
 
@@ -54,12 +55,13 @@ class DiffractionVector(BaseVectorSignal):
         """
         super().__init__(data, **kwds)
         self.metadata.add_node("Vectors")
-        self.metadata.Vectors["extents"] = np.empty(self.data.shape, dtype=object)
-        self.metadata.Vectors["slices"] = np.empty(self.data.shape, dtype=object)
+        self.metadata.Vectors["extents"] = None
+        self.metadata.Vectors["labels"] = None
 
     def get_extents(self,
                     img,
                     threshold=0.9,
+                    chunkwise=False,
                     **kwargs):
         """Get the extent of each diffraction vector using some dataset.  Finds the extent given
         some seed point and a threshold.
@@ -103,12 +105,12 @@ class DiffractionVector(BaseVectorSignal):
         self.metadata.Vectors.extents = extents
 
     @property
-    def slices(self):
-        return self.metadata.Vectors.slices
+    def labels(self):
+        return self.metadata.Vectors.labels
 
-    @slices.setter
-    def slices(self, slices):
-        self.metadata.Vectors.slices = slices
+    @labels.setter
+    def labels(self, labels):
+        self.metadata.Vectors.labels = labels
 
     def refine_positions(self,
                          data=None,
@@ -137,46 +139,83 @@ class DiffractionVector(BaseVectorSignal):
                            threshold=threshold,
                            output_dtype=object,
                            ragged=True,
-                           inplace=False, **kwargs)
+                           inplace=inplace, **kwargs)
+        if not inplace:
+            refined.axes_manager = self.axes_manager.deepcopy()
+            refined.set_signal_type("vector")
+            refined.extents = self.extents
+            refined.vector = True
+
 
         return refined
 
     def combine_vectors(self,
                         distance,
-                        remove_duplicates=True,
+                        duplicate_distance=None,
+                        trim=True,
                         symmetries=None,
                         structural_similarity=False,
-                        inplace=False
                         ):
-        if inplace:
-            vectors = self
+
+        labels = self.map(combine_vectors,
+                          distance=distance,
+                          duplicate_distance=duplicate_distance,
+                          symmetries=symmetries,
+                          structural_similarity=structural_similarity,
+                          ragged=True,
+                          inplace=False)
+        self.labels = labels
+
+        if trim:
+            new_labels = labels.map(trim_duplicates,label=labels, inplace=False)
+            am = self.axes_manager.deepcopy()
+            new_extents = self.extents.map(trim_duplicates,label=self.extents, inplace=False)
+            self.map(trim_duplicates, label=labels)
+            self.axes_manager = am
+            self.set_signal_type("vector")
+            self.labels = new_labels
+            self.extents = new_extents
+
         else:
-            vectors = self.deepcopy()
-        agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
-        agg.fit(vectors.vectors[:, :2])
-        labels = agg.labels_
-        new_vectors = []
-        new_labels = []
-        new_extents = []
-        vectors.extents = np.array(vectors.extents)
-        for l in range(max(labels)):
-            grouped_vectors = vectors.vectors[labels == l]
-            extents = vectors.extents[labels == l]
-            if remove_duplicates:
-                dist_mat = distance_matrix(grouped_vectors[:, 2:], grouped_vectors[:, 2:]) < 5
-                is_first = np.sum(np.tril(dist_mat), axis=1) == 1
-                grouped_vectors = grouped_vectors[is_first]
-                extents = extents[is_first]
-            for v, e in zip(grouped_vectors, extents):
-                new_vectors.append(v)
-                new_labels.append(l)
-                new_extents.append(e)
+            self.labels = labels
 
-        vectors.data = np.array(new_vectors)
-        vectors.labels = np.array(new_labels)
-        vectors.extents = np.array(new_extents)
+        return
 
-        return vectors
+    """def to_polar_markers(self,
+                         index,
+                         x_axis=(-2,),
+                         y_axis=(-1,),
+                         **kwargs):
+        """""" Converts the vector to a set of markers given the axes.
+
+        Parameters
+        ----------
+        x_axis: int
+            The index for the x axis
+        y_axis: int
+            The index for the y axis
+        """"""
+        azim = self.get_real_vectors(axis=(1,))
+        rad = self.get_real_vectors(axis=(2,))
+        x = [np.sin(a)for a, r in zip(azim, rad)]
+        y = [np.cos(a) for a, r in zip(azim, rad)]
+        [x[labels=l] for l in range(max(self.labels)):
+            
+
+        if isinstance(x_axis, int):
+            x_axis = (x_axis,)
+        if isinstance(y_axis, int):
+            y_axis = (y_axis,)
+        x_vectors = self.get_real_vectors(axis=x_axis).T
+        print(x_vectors[0])
+        y_vectors = self.get_real_vectors(axis=y_axis).T
+        return Point(x_vectors, y_vectors,**kwargs)"""
+
+    def plot_patterns(self,):
+        pass
+
+
+
 
 
 class LazyDiffractionVector(LazySignal,DiffractionVector):

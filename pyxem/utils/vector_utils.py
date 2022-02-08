@@ -23,32 +23,65 @@ from transforms3d.axangles import axangle2mat
 from skimage.morphology import convex_hull_image,flood
 from skimage.draw import disk
 from scipy.ndimage import center_of_mass
+from sklearn.cluster import AgglomerativeClustering
+from scipy.spatial import distance_matrix
 
+
+def trim_duplicates(vectors, label):
+    return vectors[label != -1]
 
 def refine(vectors, data, extents, threshold):
-    vectors = [refine_position(v,
+    vectors = np.array([refine_position(v,
                                data,
                                extent=e,
-                               threshold=threshold)for v, e in zip(vectors[0], extents)]
+                               threshold=threshold)for v, e in zip(vectors, extents)],dtype=float)
     return vectors
 
 
 def refine_position(vector, data, extent, threshold=0.5):
     mask = extent > 0
     real_pos = center_of_mass(mask)
-    mean_image = np.mean(data[mask, :, :], axis=(0))
+    mean_image = np.mean(data[mask, :, :], axis=0)
     max_val = mean_image[int(vector[2]), int(vector[3])]
     abs_threshold = max_val*threshold
     threshold_image = mean_image > abs_threshold
     ex = flood(threshold_image, seed_point=(int(vector[2]), int(vector[3])))
     recip_pos = center_of_mass(ex)
-    new_vector = tuple(real_pos)+tuple(recip_pos)
+    new_vector = list(tuple(real_pos)+tuple(recip_pos))
     return new_vector
 
 
 def get_extents(img, vectors, **kwargs):
-    extents = [_get_vdf(v, img, **kwargs) for v in vectors]
+    extents = np.array([_get_vdf(v, img, **kwargs) for v in vectors])
     return extents
+
+
+def combine_vectors(vectors,
+                    distance,
+                    duplicate_distance=None,
+                    symmetries=None,
+                    structural_similarity=False,):
+    agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
+    agg.fit(vectors[:, :2])
+    labels = agg.labels_
+    duplicates = np.zeros(len(labels), dtype=bool)
+    agg2 = AgglomerativeClustering(n_clusters=None, distance_threshold=duplicate_distance)
+    for l in range(max(labels+1)):
+        grouped_vectors = vectors[labels == l]
+        if duplicate_distance is not None:
+            #dup = distance_matrix(grouped_vectors[:, 2:],grouped_vectors[:, 2:]) < duplicate_distance
+            #not_first = np.sum(np.tril(dup), axis=1) > 1
+            #duplicates[labels == l] = not_first
+            agg2.fit(grouped_vectors[:, 2:])
+            labels2 = agg2.labels_
+            un, ind = np.unique(labels2, return_index=True)
+            unique_truth = np.ones(len(labels2), dtype=bool)
+            unique_truth[ind]=False
+            duplicates[labels == l] = unique_truth
+
+    l = np.array(labels)
+    l[duplicates] = -1
+    return l
 
 
 def _get_vdf(vector,
@@ -61,17 +94,18 @@ def _get_vdf(vector,
     rr, cc = disk(center=(int(vector[-2]), int(vector[-1])),
                   radius=int(radius),
                   shape=shape)
-    vdf = np.sum(np.squeeze(img)[:, :, rr, cc], axis=2)
-
+    nav_dims = len(np.shape(img))-2
+    vdf = np.sum(np.squeeze(img)[..., rr, cc], axis=-1)
     if threshold is not None:
-        center = np.array([vector[0], vector[1]])
-        maximum = vdf[int(center[0]), int(center[1])]
+        center = np.array(vector[:nav_dims], dtype=int)
+        #center = np.array([vector[0], vector[1]])
+        maximum = vdf[tuple(center)]
         minimum = np.mean(vdf)
         difference = maximum - minimum
         thresh = minimum + threshold * difference
         mask = vdf > thresh
-        mask = flood(mask, seed_point=(int(vector[0]), int(vector[1])))
-        if fill is True:
+        mask = flood(mask, seed_point=tuple(center))
+        if fill is True and len(mask.shape) > 1:
             mask = convex_hull_image(mask)
         if np.sum(mask) > (np.product(vdf.shape) / 2):
             vdf = np.zeros(vdf.shape)
