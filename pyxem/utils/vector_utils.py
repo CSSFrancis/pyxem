@@ -28,7 +28,7 @@ from scipy.spatial import distance_matrix
 
 
 def trim_duplicates(vectors, label):
-    return vectors[label != -1]
+    return np.squeeze(vectors)[label != -1]
 
 def refine(vectors, data, extents, threshold):
     vectors = np.array([refine_position(v,

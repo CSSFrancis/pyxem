@@ -169,7 +169,7 @@ class DiffractionVector(BaseVectorSignal):
         self.labels = labels
 
         if trim:
-            new_labels = labels.map(trim_duplicates,label=labels, inplace=False)
+            new_labels = labels.map(trim_duplicates, label=labels, inplace=False)
             am = self.axes_manager.deepcopy()
             new_extents = self.extents.map(trim_duplicates,label=self.extents, inplace=False)
             self.map(trim_duplicates, label=labels)
