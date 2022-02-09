@@ -65,19 +65,19 @@ def combine_vectors(vectors,
     agg.fit(vectors[:, :2])
     labels = agg.labels_
     duplicates = np.zeros(len(labels), dtype=bool)
-    agg2 = AgglomerativeClustering(n_clusters=None, distance_threshold=duplicate_distance)
+    #agg2 = AgglomerativeClustering(n_clusters=None, distance_threshold=duplicate_distance)
     for l in range(max(labels+1)):
         grouped_vectors = vectors[labels == l]
         if duplicate_distance is not None:
-            #dup = distance_matrix(grouped_vectors[:, 2:],grouped_vectors[:, 2:]) < duplicate_distance
-            #not_first = np.sum(np.tril(dup), axis=1) > 1
-            #duplicates[labels == l] = not_first
-            agg2.fit(grouped_vectors[:, 2:])
-            labels2 = agg2.labels_
-            un, ind = np.unique(labels2, return_index=True)
-            unique_truth = np.ones(len(labels2), dtype=bool)
-            unique_truth[ind]=False
-            duplicates[labels == l] = unique_truth
+            dup = distance_matrix(grouped_vectors[:, 2:],grouped_vectors[:, 2:]) < duplicate_distance
+            not_first = np.sum(np.tril(dup), axis=1) > 1
+            duplicates[labels == l] = not_first
+            #agg2.fit(grouped_vectors[:, 2:])
+            #labels2 = agg2.labels_
+            #un, ind = np.unique(labels2, return_index=True)
+            #unique_truth = np.ones(len(labels2), dtype=bool)
+            #unique_truth[ind]=False
+            #duplicates[labels == l] = unique_truth
 
     l = np.array(labels)
     l[duplicates] = -1

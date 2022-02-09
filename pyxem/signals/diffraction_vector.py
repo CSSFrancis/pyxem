@@ -175,7 +175,7 @@ class DiffractionVector(BaseVectorSignal):
             self.map(trim_duplicates, label=labels)
             self.axes_manager = am
             self.set_signal_type("vector")
-            self.axes_manager._ragged=True
+            self.axes_manager._ragged = True
             self.labels = new_labels
             self.extents = new_extents
 
