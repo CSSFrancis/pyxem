@@ -49,6 +49,8 @@ def refine_position(vector, data, extent, threshold=0.5):
     ex = flood(threshold_image, seed_point=(int(vector[2]), int(vector[3])))
     recip_pos = center_of_mass(ex)
     new_vector = list(tuple(real_pos)+tuple(recip_pos))
+    if any(np.isnan(new_vector)):
+        new_vector= vector
     return new_vector
 
 
