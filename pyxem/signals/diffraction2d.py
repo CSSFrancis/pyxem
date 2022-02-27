@@ -24,6 +24,7 @@ from skimage.morphology import square
 from scipy.ndimage import rotate, gaussian_laplace
 from skimage import morphology
 import dask.array as da
+from dask.array import blockwise
 from dask.diagnostics import ProgressBar
 from tqdm import tqdm
 import warnings
@@ -34,6 +35,8 @@ from hyperspy._signals.lazy import LazySignal
 from hyperspy._signals.signal1d import LazySignal1D
 from hyperspy._signals.signal2d import LazySignal2D
 from hyperspy.misc.utils import isiterable
+
+from dask.array import map_overlap, map_blocks
 
 from pyFAI.units import to_unit
 
@@ -147,7 +150,13 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                **kwargs,
                ):
         if method is "log":
-            filtered = gaussian_laplace(self.data, sigma,**kwargs)
+            if self._lazy:
+                from dask_image.ndfilters import gaussian_laplace as dask_gl
+                filtered = dask_gl(self.data, sigma,**kwargs)
+            else:
+                filtered = gaussian_laplace(self.data,
+                                            sigma,
+                                            **kwargs)
         if inplace:
             self.data= filtered
         else:
@@ -2437,6 +2446,46 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         k_axis.offset = radial_range[0]
 
         return integration
+
+
+    def find_peaks_nd(self, **kwargs):
+
+        if self._lazy:
+            spanned = np.equal(self.data.chunks, self.data.shape)
+            drop_axes = np.squeeze(np.argwhere(spanned))
+            adjust_chunks = {}
+            for i in range(len(self.data.shape)):
+                if i not in drop_axes:
+                    adjust_chunks[i] = 1
+                else:
+                    adjust_chunks[i] = -1
+
+            pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
+            peaks = da.reshape(blockwise(_find_peaks, pattern,
+                                         self.data, pattern,
+                                         adjust_chunks=adjust_chunks,
+                                         dtype=object,
+                                         concatenate=True,
+                                         align_arrays=False,
+                                         **kwargs),(-1,))
+            print(peaks)
+            peaks = peaks.compute()
+            peaks = np.vstack(peaks)
+
+        else:
+            peaks = _find_peaks(self.data, **kwargs)
+            print(peaks)
+
+
+        peaks = DiffractionVector(peaks.data)
+        am = self.axes_manager
+        peaks.axes_manager = am
+        if peaks.data.dtype is object:
+            am._ragged = True
+        ax = peaks.axes_manager._axes
+        [a.convert_to_vector_axis() for a in ax]
+        return peaks
+
 
     def sigma_clip(
         self,

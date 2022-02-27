@@ -19,7 +19,9 @@ def _find_peaks(data, mask=None,  **kwargs):
     lm = local_maxima.astype(np.float64)
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
-    return lm
+    ans = np.empty(1,dtype=object)
+    ans[0] = lm
+    return ans
 
 
 def spatial_cluster(vectors,
