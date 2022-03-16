@@ -35,8 +35,9 @@ class DiffractionVector4D(BaseVectorSignal):
     Extends the vector decomposition class
     """
 
-    _signal_dimension = 0
+    _signal_dimension = 4
     _signal_type = "diffraction_vectors"
+
     def __init__(self,
                  data,
                  **kwds):
@@ -60,6 +61,7 @@ class DiffractionVector4D(BaseVectorSignal):
         self.metadata.add_node("Vectors")
         self.metadata.Vectors["extents"] = None
         self.metadata.Vectors["labels"] = None
+
 
     def get_extents(self,
                     img,
@@ -85,19 +87,28 @@ class DiffractionVector4D(BaseVectorSignal):
             radius: The radius of to use to create the vdf
             search: The area around the center point to look to higher values.
         """
-        extents = img.map(_get_extents,
-                           vectors=self,
-                           threshold=threshold,
-                           inplace=False,
-                           output_dtype=object,
-                           ragged=True,
-                           **kwargs)
+        if img.lazy:
+            # Find the extents in a smarter fashion
+            extents = da.map_blocks(_get_extents_lazy,
+                                    image=img, vectors=self,
+                                    threshold=threshold,
+                                    inplace=False,
+                          output_dtype=object,
+                          ragged=True,
+                          **kwargs)
+        else:
+            extents = img.map(_get_extents,
+                          vectors=self,
+                          threshold=threshold,
+                          inplace=False,
+                          output_dtype=object,
+                          ragged=True,
+                          **kwargs)
         if len(extents.axes_manager.navigation_axes)==0:
             ax = (create_axis(size=1, scale=1, offset=0),)
             extents.axes_manager.navigation_axes = ax
         self.extents = extents
         return
-
 
     @property
     def extents(self):
@@ -147,7 +158,7 @@ class DiffractionVector4D(BaseVectorSignal):
             if self._lazy:
                 refined = LazyDiffractionVector(refined.data)
             else:
-                refined = DiffractionVector(refined.data)
+                refined = DiffractionVector4D(refined.data)
             refined.axes_manager = self.axes_manager.deepcopy()
             refined.vector = True
             refined.axes_manager._ragged = True
@@ -221,6 +232,6 @@ class DiffractionVector4D(BaseVectorSignal):
         pass
 
 
-class LazyDiffractionVector(LazySignal,DiffractionVector):
+class LazyDiffractionVector(LazySignal,DiffractionVector4D):
     _lazy = True
 
