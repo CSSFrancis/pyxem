@@ -29,11 +29,14 @@ def center_and_crop(image, center):
         return image[slices], slices
 
 
-class DiffractionVector(BaseVectorSignal):
+class DiffractionVector4D(BaseVectorSignal):
     """
     Diffraction Vector Object.  A collection of diffraction vectors.
     Extends the vector decomposition class
     """
+
+    _signal_dimension = 0
+    _signal_type = "diffraction_vectors"
     def __init__(self,
                  data,
                  **kwds):

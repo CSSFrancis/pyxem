@@ -18,7 +18,7 @@
 
 import pytest
 import numpy as np
-from pyxem.signals.diffraction_vector import DiffractionVector
+from pyxem.signals.diffraction_vectors4d import DiffractionVector
 from pyxem.signals import Diffraction2D
 from skimage.draw import disk
 import hyperspy.api as hs

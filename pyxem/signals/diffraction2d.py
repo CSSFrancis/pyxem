@@ -56,7 +56,7 @@ from pyxem.utils.pyfai_utils import (
     _get_setup,
 )
 
-from pyxem.signals.diffraction_vector import DiffractionVector, LazyDiffractionVector
+from pyxem.signals.diffraction_vectors4d import DiffractionVector, LazyDiffractionVector
 
 from pyxem.decomposition.label import _find_peaks
 from pyxem.utils.expt_utils import (
@@ -2449,7 +2449,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
 
     def find_peaks_nd(self, **kwargs):
-
+        """Finds peaks in a nd array.
+        """
         if self._lazy:
             spanned = np.equal(self.data.chunks, self.data.shape)
             drop_axes = np.squeeze(np.argwhere(spanned))
@@ -2468,13 +2469,11 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                                          concatenate=True,
                                          align_arrays=False,
                                          **kwargs),(-1,))
-            print(peaks)
             peaks = peaks.compute()
             peaks = np.vstack(peaks)
 
         else:
             peaks = _find_peaks(self.data, **kwargs)
-            print(peaks)
 
 
         peaks = DiffractionVector(peaks.data)
@@ -2485,7 +2484,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         ax = peaks.axes_manager._axes
         [a.convert_to_vector_axis() for a in ax]
         return peaks
-
 
     def sigma_clip(
         self,
