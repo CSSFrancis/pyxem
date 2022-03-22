@@ -9,7 +9,7 @@ from skimage.morphology import flood
 from hyperspy._signals.vector_signal import BaseVectorSignal
 from hyperspy._signals.lazy import LazySignal
 from hyperspy.signals import BaseSignal
-from pyxem.utils.vector_utils import get_extents as _get_extents
+from pyxem.utils.vector_utils import get_extents as _get_extents, _get_extents_lazy, _lazy_refine
 from pyxem.utils.vector_utils import refine, combine_vectors,trim_duplicates
 from hyperspy.axes import create_axis
 import dask.array as da
@@ -61,7 +61,7 @@ class DiffractionVector4D(BaseVectorSignal):
         self.metadata.add_node("Vectors")
         self.metadata.Vectors["extents"] = None
         self.metadata.Vectors["labels"] = None
-
+        self.metadata.Vectors["slice"] = None
 
     def get_extents(self,
                     img,
@@ -87,28 +87,40 @@ class DiffractionVector4D(BaseVectorSignal):
             radius: The radius of to use to create the vdf
             search: The area around the center point to look to higher values.
         """
-        if img.lazy:
-            # Find the extents in a smarter fashion
-            extents = da.map_blocks(_get_extents_lazy,
-                                    image=img, vectors=self,
-                                    threshold=threshold,
-                                    inplace=False,
-                          output_dtype=object,
-                          ragged=True,
-                          **kwargs)
-        else:
-            extents = img.map(_get_extents,
-                          vectors=self,
-                          threshold=threshold,
-                          inplace=False,
-                          output_dtype=object,
-                          ragged=True,
-                          **kwargs)
-        if len(extents.axes_manager.navigation_axes)==0:
-            ax = (create_axis(size=1, scale=1, offset=0),)
-            extents.axes_manager.navigation_axes = ax
+
+        spanned = np.equal(img.chunks, img.shape)
+        drop_axes = np.squeeze(np.argwhere(spanned))
+        adjust_chunks = {}
+        for i in range(len(img.shape)):
+            if i not in drop_axes:
+                adjust_chunks[i] = 1
+            else:
+                adjust_chunks[i] = -1
+
+        pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
+        from itertools import product
+        offset = []
+        for block_id in product(*(range(len(c)) for c in img.chunks)):
+            offset.append(np.transpose([np.multiply(block_id, img.chunksize),
+                           np.multiply(np.add(block_id,1), img.chunksize)]))
+        offset = np.array(offset, dtype=object)
+        offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
+        offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
+        extents = da.reshape(da.blockwise(_get_extents_lazy,
+                                          pattern,
+                                          img, pattern,
+                                          offset, [0, 1, 2, 3, 4, 5],
+                                          vectors=self.data,
+                                          adjust_chunks=adjust_chunks,
+                                          dtype=object,
+                                          concatenate=True,
+                                          align_arrays=False,
+                                          **kwargs), (-1,))
+        extents = extents.compute()
+        extents = np.array([np.array(e) for extent in extents for e in extent], dtype=object)
         self.extents = extents
-        return
+        self.slices = offset
+        return extents
 
     @property
     def extents(self):
@@ -126,8 +138,16 @@ class DiffractionVector4D(BaseVectorSignal):
     def labels(self, labels):
         self.metadata.Vectors.labels = labels
 
-    def refine_positions(self,
-                         data=None,
+    @property
+    def slices(self):
+        return self.metadata.Vectors.slices
+
+    @slices.setter
+    def slices(self, slices):
+        self.metadata.Vectors.slices = slices
+
+    def refine_positions2(self,
+                         img=None,
                          threshold=0.5,
                          inplace=False,
                          **kwargs,
@@ -147,6 +167,99 @@ class DiffractionVector4D(BaseVectorSignal):
             Crop the vdf to only be the extent of the vector.  Saves on memory if you have a large
             number of vectors.
         """
+
+        spanned = np.equal(img.chunks, img.shape)
+        drop_axes = np.squeeze(np.argwhere(spanned))
+        adjust_chunks = {}
+        for i in range(len(img.shape)):
+            if i not in drop_axes:
+                adjust_chunks[i] = 1
+            else:
+                adjust_chunks[i] = -1
+
+        pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
+        from itertools import product
+        offset = []
+        for block_id in product(*(range(len(c)) for c in img.chunks)):
+            offset.append(np.transpose([np.multiply(block_id, img.chunksize),
+                           np.multiply(np.add(block_id, 1), img.chunksize)]))
+        offset = np.array(offset, dtype=object)
+        offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
+        offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
+        ref = da.reshape(da.blockwise(_lazy_refine,
+                                          pattern,
+                                          img, pattern,
+                                          offset, [0, 1, 2, 3, 4, 5],
+                                          vectors=self.data,
+                                          vdf=self.extents,
+                                          threshold=threshold,
+                                          adjust_chunks=adjust_chunks,
+                                          dtype=object,
+                                          concatenate=True,
+                                          align_arrays=False,
+                                          **kwargs), (-1,))
+        ref = ref.compute()
+        refined = np.array([np.array(r) for refs in ref for r in refs], dtype=object)
+        self.data = refined
+        return refined
+
+    def refine_positions(self,
+                         img=None,
+                         threshold=0.5,
+                         inplace=False,
+                         **kwargs,
+                         ):
+        """Refine the position of the diffraction vector the signal space
+
+        Parameters
+        ----------
+        data: Array-like
+            An n-dimensional array to use to determine the extent of the vector.
+            Should have the same dimensions as one of the diffraction vectors.
+        threshold: float
+            The relative threshold to use to determine the extent of some feature.
+        inplace: bool
+            Return a copy of the data or act on the dataset
+        crop: bool
+            Crop the vdf to only be the extent of the vector.  Saves on memory if you have a large
+            number of vectors.
+        """
+
+        spanned = np.equal(img.chunks, img.shape)
+        drop_axes = np.squeeze(np.argwhere(spanned))
+        adjust_chunks = {}
+        for i in range(len(img.shape)):
+            if i not in drop_axes:
+                adjust_chunks[i] = 1
+            else:
+                adjust_chunks[i] = -1
+
+        pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
+        from itertools import product
+        offset = []
+        for block_id in product(*(range(len(c)) for c in img.chunks)):
+            offset.append(np.transpose([np.multiply(block_id, img.chunksize),
+                           np.multiply(np.add(block_id,1), img.chunksize)]))
+        offset = np.array(offset, dtype=object)
+        offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
+        offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
+        extents = da.reshape(da.blockwise(refine,
+                                          pattern,
+                                          img, pattern,
+                                          offset, [0, 1, 2, 3, 4, 5],
+                                          vectors=self.data,
+                                          adjust_chunks=adjust_chunks,
+                                          dtype=object,
+                                          concatenate=True,
+                                          align_arrays=False,
+                                          **kwargs), (-1,))
+        extents = extents.compute()
+        extents = np.array([np.array(e) for extent in extents for e in extent], dtype=object)
+        self.extents = extents
+        self.slices = offset
+
+
+        refined = refine()
         refined = self.map(refine,
                            data=data,
                            extents=self.extents,

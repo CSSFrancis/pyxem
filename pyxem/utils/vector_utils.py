@@ -31,6 +31,7 @@ def trim_duplicates(vectors, label):
     print(vectors.shape)
     return np.squeeze(vectors)[label != -1]
 
+
 def refine(vectors, data, extents, threshold):
     vectors = np.array([refine_position(v,
                                data,
@@ -38,6 +39,41 @@ def refine(vectors, data, extents, threshold):
                                threshold=threshold)for v, e in zip(vectors, extents)],dtype=float)
     return vectors
 
+
+def _get_extents_lazy(data, extents, vectors, threshold=0.5,crop=True,**kwargs):
+    extents = np.squeeze(extents)
+    vector_in_block = [np.all([v>l[0] and v<l[1] for v,l in zip(vector, extents)])
+                       for vector in vectors]
+    vectors_in_block = vectors[vector_in_block]
+    vdfs =[]
+    for v in vectors_in_block:
+        shifted_vector = v-extents[:,0]
+        vdf = _get_vdf(shifted_vector,data,threshold=threshold, **kwargs)
+        if crop:
+            vdf
+        vdfs.append(vdf)
+
+
+    extents = np.empty(1, dtype=object)
+    extents[0] = np.array(vdfs, dtype=object)
+    return extents
+
+
+def _lazy_refine(data, offset, vectors, vdf, threshold, **kwargs):
+    offset = np.squeeze(offset)
+    vector_in_block = [np.all([v>l[0] and v<l[1] for v,l in zip(vector, offset)])
+                       for vector in vectors]
+    vectors_in_block = vectors[vector_in_block]
+    vdf_in_block = vdf[vector_in_block]
+    refined =[]
+    for v,e in zip(vectors_in_block, vdf_in_block):
+        shifted_vector = v-offset[:,0]
+        ref = refine_position(shifted_vector, data, extent=e, threshold=threshold, **kwargs)
+        ref = np.add(offset[:, 0], ref)
+        refined.append(ref)
+    ref = np.empty(1, dtype=object)
+    ref[0] = np.array(refined, dtype=object)
+    return ref
 
 def refine_position(vector, data, extent, threshold=0.5):
     mask = extent > 0
@@ -92,6 +128,7 @@ def _get_vdf(vector,
              threshold=None,
              radius=2,
              fill=True,
+             crop=True,
              ):
     shape = img.shape[-2:]
     rr, cc = disk(center=(int(vector[-2]), int(vector[-1])),
@@ -114,6 +151,7 @@ def _get_vdf(vector,
             vdf = np.zeros(vdf.shape)
         else:
             vdf[np.logical_not(mask)] = 0
+
     return vdf
 
 def detector_to_fourier(k_xy, wavelength, camera_length):

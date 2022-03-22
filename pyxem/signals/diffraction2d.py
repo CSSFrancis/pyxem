@@ -28,6 +28,7 @@ from dask.array import blockwise
 from dask.diagnostics import ProgressBar
 from tqdm import tqdm
 import warnings
+from itertools import product
 
 import hyperspy.api as hs
 from hyperspy.signals import Signal2D, BaseSignal
@@ -56,7 +57,7 @@ from pyxem.utils.pyfai_utils import (
     _get_setup,
 )
 
-from pyxem.signals.diffraction_vectors4d import DiffractionVector, LazyDiffractionVector
+from pyxem.signals.diffraction_vectors4d import DiffractionVector4D, LazyDiffractionVector
 
 from pyxem.decomposition.label import _find_peaks
 from pyxem.utils.expt_utils import (
@@ -161,30 +162,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             self.data= filtered
         else:
             return self._deepcopy_with_new_data(data=filtered)
-
-    def find_peaks(self, axis="all", mask=None, **kwargs):
-        if axis is "all":
-            axis = reversed(self.axes_manager._axes)
-        else:
-            axis = self.axes_manager[axis]
-        shifted = self.transpose(axis)
-        am = shifted.axes_manager.deepcopy()
-        peaks = shifted.map(_find_peaks,
-                            mask=mask,
-                            ragged=True,
-                            inplace=False,
-                            **kwargs)
-
-        if self._lazy:
-            peaks = LazyDiffractionVector(peaks.data)
-        else:
-            peaks = DiffractionVector(peaks.data)
-        peaks.axes_manager = am
-        am._ragged = True
-        ax = peaks.axes_manager.signal_axes
-        [a.convert_to_vector_axis() for a in ax]
-
-        return peaks
 
     def shift_diffraction(
         self,
@@ -2462,13 +2439,21 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                     adjust_chunks[i] = -1
 
             pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
+            from itertools import product
+            offset = []
+            for block_id in product(*(range(len(c)) for c in self.data.chunks)):
+                offset.append(np.multiply(block_id, self.data.chunksize))
+            offset = np.array(offset, dtype=object)
+            offset = np.reshape(offset, [len(c) for c in self.data.chunks]+[4, ])
+            offset = da.from_array(offset, chunks=(1,)*len(offset.shape))
             peaks = da.reshape(blockwise(_find_peaks, pattern,
                                          self.data, pattern,
+                                         offset, [0, 1, 2, 3, 4],
                                          adjust_chunks=adjust_chunks,
                                          dtype=object,
                                          concatenate=True,
                                          align_arrays=False,
-                                         **kwargs),(-1,))
+                                         **kwargs), (-1,))
             peaks = peaks.compute()
             peaks = np.vstack(peaks)
 
@@ -2476,11 +2461,12 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             peaks = _find_peaks(self.data, **kwargs)
 
 
-        peaks = DiffractionVector(peaks.data)
-        am = self.axes_manager
+        peaks = DiffractionVector4D(peaks.data)
+        am = self.axes_manager.deepcopy()
         peaks.axes_manager = am
-        if peaks.data.dtype is object:
-            am._ragged = True
+        #if peaks.data.dtype is object:
+        #    am._ragged = True
+        peaks.axes_manager.set_signal_dimension(4)
         ax = peaks.axes_manager._axes
         [a.convert_to_vector_axis() for a in ax]
         return peaks

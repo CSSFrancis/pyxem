@@ -3,12 +3,13 @@ from scipy.spatial import distance_matrix
 from skimage.feature.peak import peak_local_max
 
 
-def _find_peaks(data, mask=None,  **kwargs):
+def _find_peaks(data, offset=None, mask=None,  **kwargs):
     """This method helps to format the output from the blob methods
     in skimage for a more hyperspy like format using hs.markers.
     The underlying function finds the local max by finding point where
     a dilution doesn't change.
     """
+    offset = np.squeeze(offset)
     local_maxima = peak_local_max(data,
                                   footprint=np.ones((3,) * (data.ndim)),
                                   **kwargs)
@@ -16,9 +17,12 @@ def _find_peaks(data, mask=None,  **kwargs):
     if local_maxima.size == 0:
         return np.empty((0, 4))
         # Convert local_maxima to float64
-    lm = local_maxima.astype(np.float64)
+    lm = local_maxima.astype(np.int)
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
+
+    if offset is not None:
+        lm = np.add(offset, lm)
     ans = np.empty(1,dtype=object)
     ans[0] = lm
     return ans
