@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2021 The pyXem developers
+# Copyright 2016-2022 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
-"""Signal class for virtual diffraction contrast images."""
+
 import numpy as np
 
 from hyperspy.signals import Signal2D
@@ -26,6 +26,7 @@ from pyxem.utils.segment_utils import separate_watershed
 
 
 class VirtualDarkFieldImage(Signal2D):
+    """Signal class for virtual diffraction contrast images."""
     _signal_type = "virtual_dark_field"
 
     def __init__(self, *args, **kwargs):
@@ -112,6 +113,7 @@ class VirtualDarkFieldImage(Signal2D):
                 marker_radius=marker_radius,
                 threshold=threshold,
                 exclude_border=exclude_border,
+                ragged=True,
             ),
             dtype=object,
         )
