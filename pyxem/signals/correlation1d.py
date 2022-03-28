@@ -92,7 +92,7 @@ class Correlation1D(Signal1D):
                            show_progressbar=True,
                            inplace=False,
                            method=method)
-        if method == "max" or method =="first":
+        if method == "max" or method == "first":
             normalize =False
         if normalize:
             signals = np.divide(signals, num_angles)

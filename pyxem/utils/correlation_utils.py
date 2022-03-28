@@ -251,13 +251,13 @@ def _symmetry_stem(signal, interpolation, method="average"):
     method:str
         One of "average", "max" or "first"
     """
-    if method is "average":
+    if method == "average":
         return np.matmul(signal, np.transpose(interpolation))
-    elif method is "max":
+    elif method == "max":
         val = np.transpose([np.amax([np.matmul(signal, np.transpose(i))
                                      for i in interp], axis=0)
                             for interp in interpolation])
-    elif method is "first":
+    elif method == "first":
         val = np.transpose([np.matmul(signal, np.transpose(interp[0]))
                             for interp in interpolation])
     else:
