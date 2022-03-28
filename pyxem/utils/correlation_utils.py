@@ -261,7 +261,7 @@ def _symmetry_stem(signal, interpolation, method="average"):
         val = np.transpose([np.matmul(signal, np.transpose(interp[0]))
                             for interp in interpolation])
     else:
-        raise ValueError("Method must be one of `average`, `max` or `first`")
+        raise ValueError("Method: "+str(method) + " must be one of `average`, `max` or `first`")
     return val
 
 

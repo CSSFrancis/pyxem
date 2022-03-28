@@ -83,9 +83,9 @@ class Correlation1D(Signal1D):
         num_angles = [len(a) for a in angles]
 
         interp = [_get_interpolation_matrix(a,
-                                           angular_range,
-                                           num_points=self.axes_manager.signal_axes[0].size,
-                                           method=method)
+                                            angular_range,
+                                            num_points=self.axes_manager.signal_axes[0].size,
+                                            method=method)
                   for a in angles]
         signals = self.map(_symmetry_stem,
                            interpolation=interp,
