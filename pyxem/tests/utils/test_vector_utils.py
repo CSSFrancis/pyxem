@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2019 The pyXem developers
+# Copyright 2016-2022 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -35,7 +35,7 @@ def test_calculate_norms():
 
 
 def test_calculate_norms_ragged():
-    norms = calculate_norms_ragged(np.array([[[3], [6, 8]]]))
+    norms = calculate_norms_ragged(np.array([[3], [6, 8]]))
     assert np.allclose(norms, [3, 10])
 
 

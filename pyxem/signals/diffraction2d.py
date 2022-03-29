@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2021 The pyXem developers
+# Copyright 2016-2022 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Signal class for two-dimensional diffraction data in Cartesian coordinates."""
+
 
 import numpy as np
 from skimage import filters
@@ -92,6 +92,8 @@ import pyxem.utils.ransac_ellipse_tools as ret
 
 
 class Diffraction2D(Signal2D, CommonDiffraction):
+    """Signal class for two-dimensional diffraction data in Cartesian coordinates."""
+
     _signal_type = "diffraction"
 
     """ Methods that make geometrical changes to a diffraction pattern """
@@ -276,7 +278,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             show_progressbar=show_progressbar,
         )
         if self._lazy:
-            s_rotated.compute(progressbar=show_progressbar)
+            s_rotated.compute(show_progressbar=show_progressbar)
         return s_rotated
 
     def flip_diffraction_x(self):
@@ -516,7 +518,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         )
         s_dead_pixels = LazySignal2D(dead_pixels)
         if not lazy_result:
-            s_dead_pixels.compute(progressbar=show_progressbar)
+            s_dead_pixels.compute(show_progressbar=show_progressbar)
         return s_dead_pixels
 
     def find_hot_pixels(
@@ -580,7 +582,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         s_hot_pixels = LazySignal2D(hot_pixels)
         if not lazy_result:
-            s_hot_pixels.compute(progressbar=show_progressbar)
+            s_hot_pixels.compute(show_progressbar=show_progressbar)
         return s_hot_pixels
 
     def correct_bad_pixels(
@@ -632,7 +634,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         s_bad_pixel_removed = LazyDiffraction2D(bad_pixel_removed)
         pst._copy_signal2d_axes_manager_metadata(self, s_bad_pixel_removed)
         if not lazy_result:
-            s_bad_pixel_removed.compute(progressbar=show_progressbar)
+            s_bad_pixel_removed.compute(show_progressbar=show_progressbar)
         return s_bad_pixel_removed
 
     """ Direct beam and peak finding tools """
@@ -814,9 +816,9 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         if shifts is None:
             if half_square_width is not None:
-                min_index = np.int(origin_coordinates[0] - half_square_width)
+                min_index = int(origin_coordinates[0] - half_square_width)
                 # fails if non-square dp
-                max_index = np.int(origin_coordinates[0] + half_square_width)
+                max_index = int(origin_coordinates[0] + half_square_width)
                 temp_signal = temp_signal.isig[min_index:max_index, min_index:max_index]
             shifts = temp_signal.get_direct_beam_position(
                 method=method,
@@ -970,7 +972,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         Get a lazy signal, then calculate afterwards
 
         >>> s_com = s.center_of_mass(lazy_result=True, show_progressbar=False)
-        >>> s_com.compute(progressbar=False)
+        >>> s_com.compute(show_progressbar=False)
 
         """
         det_shape = self.axes_manager.signal_shape
@@ -1174,7 +1176,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         show_progressbar : bool, optional
             Default True
         **kwargs :
-            Passed to the peakfinder, see skimage docs for details
+            Passed to the peakfinder, see skimage doc for details
 
         Returns
         -------
@@ -1551,7 +1553,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         navigation_axes=None,
         **kwargs,
     ):
-        """Calculates the variance using one of the methods described in [1]. A shot noise correction and
+        """Calculates the variance using one of the methods described in [1]. A shot noise correction
            and specification of axes to operate over are also possible.
 
         Parameters
@@ -1563,7 +1565,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         dqe : int, optional
             The detector quantum efficiency or the pixel value for one electron.
         spatial : bool, optional
-            Included intermediate spatial variance in output (only avaliable if method=='r')
+            Included intermediate spatial variance in output (only available if method=='r')
         navigation_axes : list or none, optional
             The axes to calculate the variance over.  The default is to use the navigation axes.
         **kwargs: dict
@@ -1700,7 +1702,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         """
         warnings.warn(
-            "This method is depreacted, and will be removed in version 0.14.0, please use .get_azimuthal_integral1d",
+            "This method is deprecated, and will be removed in version 0.14.0, please use .get_azimuthal_integral1d",
             FutureWarning,
         )
         if (centre_x is None) or (centre_y is None):
@@ -1720,37 +1722,39 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             )
             + 1
         )
-        centre_x = centre_x.flatten()
-        centre_y = centre_y.flatten()
-        iterating_kwargs = [("centre_x", centre_x), ("centre_y", centre_y)]
-        if mask_array is not None:
-            #  This line flattens the mask array, except for the two
-            #  last dimensions. This to make the mask array work for the
-            #  _map_iterate function.
-            mask_flat = mask_array.reshape(-1, *mask_array.shape[-2:])
-            iterating_kwargs.append(("mask", mask_flat))
-
         if self._lazy:
             data = pst._radial_average_dask_array(
                 self.data,
                 return_sig_size=radial_array_size,
-                centre_x=centre_x,
-                centre_y=centre_y,
+                centre_x=centre_x.flatten(),
+                centre_y=centre_y.flatten(),
                 mask_array=mask_array,
                 normalize=normalize,
                 show_progressbar=show_progressbar,
             )
             s_radial = hs.signals.Signal1D(data)
         else:
-            s_radial = self._map_iterate(
+            if mask_array is not None:
+                mask_array = Signal2D(mask_array)
+            if self.data.ndim == centre_x.ndim:
+                centre_x = Signal2D(centre_x)
+                centre_y = Signal2D(centre_y)
+            else:
+                centre_x = BaseSignal(centre_x).T
+                centre_y = BaseSignal(centre_y).T
+
+            s_radial = self.map(
                 pst._get_radial_profile_of_diff_image,
                 normalize=normalize,
-                iterating_kwargs=iterating_kwargs,
+                centre_x=centre_x,
+                centre_y=centre_y,
+                mask=mask_array,
                 inplace=False,
                 ragged=False,
                 parallel=parallel,
                 radial_array_size=radial_array_size,
                 show_progressbar=show_progressbar,
+                lazy_output=False,
             )
             data = s_radial.data
         s_radial = hs.signals.Signal1D(data)
@@ -2087,7 +2091,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             The number of azimuthal points to calculate
         mask:  boolean array or BaseSignal
             A boolean mask to apply to the data to exclude some points.
-            If mask is a baseSignal then it is itereated over as well.
+            If mask is a BaseSignal then it is iterated over as well.
         radial_range: None or (float, float)
             The radial range over which to perform the integration. Default is
             the full frame
@@ -2219,7 +2223,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             number of points in the radial space. Too few points may lead to huge rounding errors.
         mask:  boolean array or BaseSignal
             A boolean mask to apply to the data to exclude some points.
-            If mask is a baseSignal then it is itereated over as well.
+            If mask is a BaseSignal then it is iterated over as well.
         radial_range: None or (float, float)
             The radial range over which to perform the integration. Default is
             the full frame
@@ -2254,7 +2258,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         show_progressbar: bool
             If True shows a progress bar for the mapping function
         parallel: bool
-            If true launches paralell workers for the integration
+            If true launches parallel workers for the integration
         max_workers: int
             The number of streams to initialize. Only used if parallel=True
 
@@ -2338,7 +2342,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
              The number of radial points
         mask:  boolean array or BaseSignal
             A boolean mask to apply to the data to exclude some points.
-            If mask is a baseSignal then it is itereated over as well.
+            If mask is a BaseSignal then it is iterated over as well.
         inplace: bool
             If the signal is overwritten or copied to a new signal
         method: str
@@ -2367,7 +2371,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         show_progressbar: bool
             If True shows a progress bar for the mapping function
         parallel: bool
-            If true launches paralell workers for the integration
+            If true launches parallel workers for the integration
         max_workers: int
             The number of streams to initialize. Only used if parallel=True
 
@@ -2495,7 +2499,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
              The number of radial points
         mask:  boolean array or BaseSignal
             A boolean mask to apply to the data to exclude some points.
-            If mask is a baseSignal then it is itereated over as well.
+            If mask is a BaseSignal then it is iterated over as well.
         inplace: bool
             If the signal is overwritten or copied to a new signal
         method: str
@@ -2524,7 +2528,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         show_progressbar: bool
             If True shows a progress bar for the mapping function
         parallel: bool
-            If true launches paralell workers for the integration
+            If true launches parallel workers for the integration
         max_workers: int
             The number of streams to initialize. Only used if parallel=True
 

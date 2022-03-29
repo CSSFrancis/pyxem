@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2021 The pyXem developers
+# Copyright 2016-2022 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Signals to be operated on. The basic unit of data"""
 
 from .common_diffraction import CommonDiffraction
 from .correlation2d import Correlation2D, LazyCorrelation2D
@@ -41,7 +43,7 @@ from .power2d import Power2D, LazyPower2D
 from .reduced_intensity1d import ReducedIntensity1D
 from .segments import LearningSegment, VDFSegment
 from .strain_map import StrainMap
-from .symmetry1d import Symmetry1D
+from .correlation1d import Correlation1D
 from .tensor_field import DisplacementGradientMap
 from .virtual_dark_field_image import VirtualDarkFieldImage
 
@@ -82,7 +84,7 @@ __all__ = [
     "LearningSegment",
     "VDFSegment",
     "StrainMap",
-    "Symmetry1D",
+    "Correlation1D",
     "DisplacementGradientMap",
     "VirtualDarkFieldImage",
 ]

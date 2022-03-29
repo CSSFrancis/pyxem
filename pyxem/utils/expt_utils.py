@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2021 The pyXem developers
+# Copyright 2016-2022 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -28,6 +28,18 @@ from skimage.registration import phase_cross_correlation
 from tqdm import tqdm
 
 from pyxem.utils.pyfai_utils import get_azimuthal_integrator
+from pyxem.utils.cuda_utils import is_cupy_array
+
+
+try:
+    import cupy as cp
+    import cupyx.scipy.ndimage as ndigpu
+
+    CUPY_INSTALLED = True
+except ImportError:
+    CUPY_INSTALLED = False
+    cp = None
+    ndigpu = None
 
 
 """
@@ -506,7 +518,7 @@ def _find_peak_max(arr, sigma, upsample_factor, kind):
     center: float
         Pixel position of the maximum
     """
-    y1 = ndi.filters.gaussian_filter1d(arr, sigma)
+    y1 = ndi.gaussian_filter1d(arr, sigma)
     c1 = np.argmax(y1)  # initial guess for beam center
 
     m = upsample_factor
@@ -575,11 +587,17 @@ def find_beam_center_blur(z, sigma):
     Returns
     -------
     center : np.array
-        np.array [y, x] containing indices of estimated direct beam positon.
+        np.array [x, y] containing indices of estimated direct beam positon.
     """
-    blurred = ndi.gaussian_filter(z, sigma, mode="wrap")
-    center = np.unravel_index(blurred.argmax(), blurred.shape)[::-1]
-    return np.array(center)
+    if is_cupy_array(z):
+        gaus = ndigpu.gaussian_filter
+        dispatcher = cp
+    else:
+        gaus = ndi.gaussian_filter
+        dispatcher = np
+    blurred = gaus(z, sigma, mode="wrap")
+    center = dispatcher.unravel_index(blurred.argmax(), blurred.shape)[::-1]
+    return dispatcher.array(center)
 
 
 def find_beam_offset_cross_correlation(z, radius_start, radius_finish):

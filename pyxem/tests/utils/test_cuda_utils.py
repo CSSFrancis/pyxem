@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2021 The pyXem developers
+# Copyright 2016-2022 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -16,21 +16,29 @@
 # You should have received a copy of the GNU General Public License
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
+from pyxem.utils import cuda_utils as cutls
+import dask.array as da
 import numpy as np
+import pytest
+from unittest.mock import Mock
 
-from hyperspy.signals import Signal1D
 
-from pyxem.signals.symmetry1d import Symmetry1D
+try:
+    import cupy as cp
 
-class TestSymmetry:
-    @pytest.fixture
-    def flat_pattern(self):
-        pd = Symmetry1D(data=np.ones(shape=(2, 2, 360)))
-        pd.axes_manager[2].scale = np.pi/180
-        return pd
+    CUPY_INSTALLED = True
+except ImportError:
+    CUPY_INSTALLED = False
+    cp = np
 
-    def test_get_symmetry_coefficient(self, flat_pattern):
-        sn = flat_pattern.get_symmetry_coefficient()
-        assert isinstance(sn, Symmetry1D)
-        assert (sn.data.shape[-1] == 11)
+skip_cupy = pytest.mark.skipif(not CUPY_INSTALLED, reason="cupy is required")
+
+
+@skip_cupy
+def test_dask_array_to_gpu():
+    cutls.dask_array_to_gpu(da.array([1, 2, 3, 4]))
+
+
+@skip_cupy
+def test_dask_array_from_gpu():
+    cutls.dask_array_from_gpu(da.array(cp.array([1, 2, 3, 4])))
