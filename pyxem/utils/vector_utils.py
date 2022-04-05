@@ -206,7 +206,7 @@ def calculate_norms(z):
     norms : np.array()
         Array of vector norms.
     """
-    return np.linalg.norm(z, axis=1)
+    return np.linalg.norm(z, axis=1 )
 
 
 def calculate_norms_ragged(z):

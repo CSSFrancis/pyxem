@@ -77,14 +77,14 @@ signals:
     dtype: real
     lazy: True
     module: pyxem.signals.polar_diffraction2d
-  DiffractionVectors:
-    signal_type: diffraction_vectors
+  DiffractionVector:
+    signal_type: vectors
     signal_dimension: 0
     dtype: real
     lazy: False
     module: pyxem.signals.diffraction_vectors
-  DiffractionVectors2D:
-    signal_type: diffraction_vectors
+  LazyDiffractionVector:
+    signal_type: vectors
     signal_dimension: 2
     dtype: real
     lazy: False
@@ -215,18 +215,30 @@ signals:
     dtype: real
     lazy: False
     module: pyxem.signals.correlation1d
-  DiffractionVector:
-    signal_type: vector
+  DiffractionVector4D:
+    signal_type: diffraction_vector
     signal_dimension: 4
     dtype: real
     lazy: False
-    module: pyxem.signals.diffraction_vector
-  LazyDiffractionVector:
-    signal_type: vector
+    module: pyxem.signals.diffraction_vectors4d
+  LazyDiffractionVector4D:
+    signal_type: diffraction_vector
     signal_dimension: 4
     dtype: real
     lazy: True
-    module: pyxem.signals.diffraction_vector
+    module: pyxem.signals.diffraction_vectors4d
+  DiffractionVectors2D:
+    signal_type: diffraction_vector
+    signal_dimension: 2
+    dtype: real
+    lazy: False
+    module: pyxem.signals.diffraction_vectors2d
+  LazyDiffractionVectors2D:
+    signal_type: diffraction_vector
+    signal_dimension: 2
+    dtype: real
+    lazy: True
+    module: pyxem.signals.diffraction_vectors2d
 
 components1D:
     ReducedIntensityCorrectionComponent:

@@ -215,7 +215,7 @@ def _get_interpolation_matrix(angles, angular_range, num_points, method="average
         for further processing
 
     """
-    if method is "average":
+    if method == "average":
         angular_ranges = [(angle - angular_range / (2*np.pi),
                            angle + angular_range / (2*np.pi)) for angle in angles]
         angular_ranges = np.multiply(angular_ranges, num_points)
