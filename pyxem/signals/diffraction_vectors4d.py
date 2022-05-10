@@ -292,21 +292,20 @@ class DiffractionVector4D(BaseVectorSignal):
                                  duplicate_distance=duplicate_distance,
                                  symmetries=symmetries,
                                  structural_similarity=structural_similarity)
-        self.labels = labels
-        if trim:
-            new_labels = labels.map(trim_duplicates, label=labels, inplace=False)
-            am = self.axes_manager.deepcopy()
-            new_extents = self.extents.map(trim_duplicates,label=self.extents, inplace=False)
-            self.map(trim_duplicates, label=labels)
-            self.axes_manager = am
-            self.set_signal_type("vector")
-            self.axes_manager._ragged = True
-            self.labels = new_labels
-            self.extents = new_extents
-
-        else:
-            self.labels = labels
-        return
+        #self.labels = labels
+        clusters = [self.data[labels == l] for l in range(0, max(labels))]
+        extents = [self.extents[labels == l] for l in range(0, max(labels))]
+        new_vector = DiffractionVector4D(data=clusters)
+        new_vector.set_signal_type("vector")
+        new_vector.axes_manager._ragged = True
+        for ax_new, ax_old in zip(new_vector.axes_manager.signal_axes,
+                      self.axes_manager.signal_axes):
+            ax_new.scale = ax_old.scale
+            ax_new.units = ax_old.units
+            ax_new.offset = ax_old.offset
+            ax_new.name = ax_old.name
+        new_vector.axes_manager.navigation_axes[0].name="label"
+        return new_vector
 
     def combine_vectors(self,
                         distance,
