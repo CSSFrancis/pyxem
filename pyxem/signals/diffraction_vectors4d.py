@@ -279,6 +279,36 @@ class DiffractionVector4D(BaseVectorSignal):
             refined.extents = self.extents
         return refined
 
+    def combine_vectors2(self,
+                        distance,
+                        duplicate_distance=None,
+                        trim=True,
+                        symmetries=None,
+                        structural_similarity=False,
+                        ):
+
+        labels = combine_vectors(self.data,
+                                 distance=distance,
+                                 duplicate_distance=duplicate_distance,
+                                 symmetries=symmetries,
+                                 structural_similarity=structural_similarity,
+                                 ragged=True)
+        self.labels = labels
+        if trim:
+            new_labels = labels.map(trim_duplicates, label=labels, inplace=False)
+            am = self.axes_manager.deepcopy()
+            new_extents = self.extents.map(trim_duplicates,label=self.extents, inplace=False)
+            self.map(trim_duplicates, label=labels)
+            self.axes_manager = am
+            self.set_signal_type("vector")
+            self.axes_manager._ragged = True
+            self.labels = new_labels
+            self.extents = new_extents
+
+        else:
+            self.labels = labels
+        return
+
     def combine_vectors(self,
                         distance,
                         duplicate_distance=None,
