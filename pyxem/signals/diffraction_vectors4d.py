@@ -291,8 +291,7 @@ class DiffractionVector4D(BaseVectorSignal):
                                  distance=distance,
                                  duplicate_distance=duplicate_distance,
                                  symmetries=symmetries,
-                                 structural_similarity=structural_similarity,
-                                 ragged=True)
+                                 structural_similarity=structural_similarity)
         self.labels = labels
         if trim:
             new_labels = labels.map(trim_duplicates, label=labels, inplace=False)
