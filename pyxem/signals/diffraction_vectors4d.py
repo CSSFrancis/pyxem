@@ -295,18 +295,19 @@ class DiffractionVector4D(BaseVectorSignal):
         #self.labels = labels
         clusters = [self.data[labels == l] for l in range(0, max(labels))]
         extents = [self.extents[labels == l] for l in range(0, max(labels))]
-        new_vector = DiffractionVector4D(data=clusters)
-        new_vector.set_signal_type("vector")
-        new_vector.axes_manager._ragged = True
-        new_vector.extents = extents
-        for ax_new, ax_old in zip(new_vector.axes_manager.signal_axes,
-                      self.axes_manager.signal_axes):
+        s = BaseSignal(clusters)
+        s = s.T
+        s.vector = True
+        s.set_signal_type("diffraction_vector")
+        s.extents = extents
+        for ax_new, ax_old in zip(s.axes_manager.signal_axes,
+                                  self.axes_manager.signal_axes):
             ax_new.scale = ax_old.scale
             ax_new.units = ax_old.units
             ax_new.offset = ax_old.offset
             ax_new.name = ax_old.name
-        #new_vector.axes_manager.navigation_axes[0].name="label"
-        return new_vector
+        s.axes_manager.navigation_axes[0].name = "label"
+        return s
 
     def combine_vectors(self,
                         distance,
