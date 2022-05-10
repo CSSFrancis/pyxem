@@ -2462,7 +2462,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             peaks = np.vstack(peaks)
 
         else:
-            peaks = _find_peaks(self.data, **kwargs)
+            offset = (0,)*len(self.data.shape)
+            peaks = _find_peaks(self.data, offset=offset, **kwargs)[0]
 
 
         peaks = DiffractionVector4D(peaks.data)

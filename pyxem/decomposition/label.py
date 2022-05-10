@@ -23,7 +23,7 @@ def _find_peaks(data, offset=None, mask=None,  **kwargs):
 
     if offset is not None:
         lm = np.add(offset, lm)
-    ans = np.empty(1,dtype=object)
+    ans = np.empty(1, dtype=object)
     ans[0] = lm
     return ans
 
