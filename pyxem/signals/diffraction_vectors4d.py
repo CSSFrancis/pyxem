@@ -87,7 +87,6 @@ class DiffractionVector4D(BaseVectorSignal):
             radius: The radius of to use to create the vdf
             search: The area around the center point to look to higher values.
         """
-
         spanned = np.equal(img.chunks, img.shape)
         drop_axes = np.squeeze(np.argwhere(spanned))
         adjust_chunks = {}
@@ -96,20 +95,22 @@ class DiffractionVector4D(BaseVectorSignal):
                 adjust_chunks[i] = 1
             else:
                 adjust_chunks[i] = -1
-
         pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
         from itertools import product
         offset = []
         for block_id in product(*(range(len(c)) for c in img.chunks)):
             offset.append(np.transpose([np.multiply(block_id, img.chunksize),
-                           np.multiply(np.add(block_id,1), img.chunksize)]))
+                          np.multiply(np.add(block_id, 1), img.chunksize)]))
         offset = np.array(offset, dtype=object)
         offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
         offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
         extents = da.reshape(da.blockwise(_get_extents_lazy,
                                           pattern,
-                                          img, pattern,
-                                          offset, [0, 1, 2, 3, 4, 5],
+                                          img,
+                                          pattern,
+                                          offset,
+                                          [0, 1, 2, 3, 4, 5],
+                                          threshold=threshold,
                                           vectors=self.data,
                                           adjust_chunks=adjust_chunks,
                                           dtype=object,

@@ -39,21 +39,33 @@ def refine(vectors, data, extents, threshold):
                                threshold=threshold)for v, e in zip(vectors, extents)],dtype=float)
     return vectors
 
+def center_and_crop(image, center):
+    extent = np.argwhere(image > 0)
+    if len(extent) == 0:
+        return [], tuple([slice(None) for c in center])
+    else:
+        rounded_center = np.array(np.round(center), dtype=int)
+        max_values = np.max(extent, axis=0)-rounded_center
+        min_values = rounded_center-np.min(extent, axis=0)
+        max_extent = np.max([max_values, min_values])
+        slices = tuple([slice(c-max_extent, c+max_extent+1) for c in rounded_center])
+        return image[slices]
 
-def _get_extents_lazy(data, extents, vectors, threshold=0.5,crop=True,**kwargs):
+
+def _get_extents_lazy(data,
+                      extents,
+                      vectors,
+                      threshold=0.5,
+                      **kwargs):
     extents = np.squeeze(extents)
-    vector_in_block = [np.all([v>l[0] and v<l[1] for v,l in zip(vector, extents)])
+    vector_in_block = [np.all([l[0] < v < l[1] for v, l in zip(vector, extents)])
                        for vector in vectors]
     vectors_in_block = vectors[vector_in_block]
     vdfs =[]
     for v in vectors_in_block:
         shifted_vector = v-extents[:,0]
-        vdf = _get_vdf(shifted_vector,data,threshold=threshold, **kwargs)
-        if crop:
-            vdf
+        vdf = _get_vdf(shifted_vector, data, threshold=threshold, **kwargs)
         vdfs.append(vdf)
-
-
     extents = np.empty(1, dtype=object)
     extents[0] = np.array(vdfs, dtype=object)
     return extents
@@ -138,7 +150,6 @@ def _get_vdf(vector,
     vdf = np.sum(np.squeeze(img)[..., rr, cc], axis=-1)
     if threshold is not None:
         center = np.array(vector[:nav_dims], dtype=int)
-        #center = np.array([vector[0], vector[1]])
         maximum = vdf[tuple(center)]
         minimum = np.mean(vdf)
         difference = maximum - minimum
