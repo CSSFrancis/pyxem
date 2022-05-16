@@ -39,6 +39,7 @@ def refine(vectors, data, extents, threshold):
                                threshold=threshold)for v, e in zip(vectors, extents)],dtype=float)
     return vectors
 
+
 def center_and_crop(image, center):
     extent = np.argwhere(image > 0)
     if len(extent) == 0:

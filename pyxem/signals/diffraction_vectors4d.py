@@ -187,7 +187,7 @@ class DiffractionVector4D(BaseVectorSignal):
         offset = np.array(offset, dtype=object)
         offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
         offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
-        ref = da.reshape(da.blockwise(_lazy_refine,
+        ref = da.blockwise(_lazy_refine,
                                           pattern,
                                           img, pattern,
                                           offset, [0, 1, 2, 3, 4, 5],
@@ -198,8 +198,9 @@ class DiffractionVector4D(BaseVectorSignal):
                                           dtype=object,
                                           concatenate=True,
                                           align_arrays=False,
-                                          **kwargs), (-1,))
+                                          **kwargs)
         ref = ref.compute()
+        ref = da.reshape(ref, (-1,))
         refined = np.array([np.array(r) for refs in ref for r in refs], dtype=object)
         self.data = refined
         return refined
