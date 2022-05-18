@@ -44,7 +44,7 @@ class DiffractionVectors2D(BaseVectorSignal):
 
     """
     _signal_dimension = 2
-    _signal_type = "diffraction_vectors"
+    _signal_type = "diffraction_vector"
 
     def plot_on_signal(self):
         return

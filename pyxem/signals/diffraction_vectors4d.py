@@ -187,20 +187,19 @@ class DiffractionVector4D(BaseVectorSignal):
         offset = np.array(offset, dtype=object)
         offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
         offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
-        ref = da.blockwise(_lazy_refine,
-                                          pattern,
-                                          img, pattern,
-                                          offset, [0, 1, 2, 3, 4, 5],
-                                          vectors=self.data,
-                                          vdf=self.extents,
-                                          threshold=threshold,
-                                          adjust_chunks=adjust_chunks,
-                                          dtype=object,
-                                          concatenate=True,
-                                          align_arrays=False,
-                                          **kwargs)
+        ref = da.reshape(da.blockwise(_lazy_refine,
+                           pattern,
+                           img, pattern,
+                           offset, [0, 1, 2, 3, 4, 5],
+                           vectors=self.data,
+                           vdf=self.extents,
+                           threshold=threshold,
+                           adjust_chunks=adjust_chunks,
+                           dtype=object,
+                           concatenate=True,
+                           align_arrays=False,
+                           **kwargs), (-1,))
         ref = ref.compute()
-        ref = da.reshape(ref, (-1,))
         refined = np.array([np.array(r) for refs in ref for r in refs], dtype=object)
         self.data = refined
         return refined
@@ -297,7 +296,7 @@ class DiffractionVector4D(BaseVectorSignal):
         clusters = np.array([np.array(self.data[labels == l],dtype=float)
                              for l in range(0, max(labels))],dtype=object)
         extents = np.array([self.extents[labels == l]
-                   for l in range(0, max(labels))],dtype=object)
+                   for l in range(0, max(labels))], dtype=object)
         s = BaseSignal(clusters)
         s = s.T
         s.vector = True
