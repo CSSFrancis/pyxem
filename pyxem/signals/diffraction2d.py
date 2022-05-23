@@ -2428,7 +2428,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         return integration
 
-
     def find_peaks_nd(self, **kwargs):
         """Finds peaks in a nd array.
         """
@@ -2459,7 +2458,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                                          align_arrays=False,
                                          **kwargs), (-1,))
             peaks = peaks.compute()
-            peaks = np.vstack(peaks)
+            peaks = np.vstack([p for p in peaks if p is not None])
 
         else:
             offset = (0,)*len(self.data.shape)

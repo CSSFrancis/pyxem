@@ -74,7 +74,7 @@ def _get_extents_lazy(data,
 
 def _lazy_refine(data, offset, vectors, vdf, threshold, **kwargs):
     offset = np.squeeze(offset)
-    vector_in_block = [np.all([v>l[0] and v<l[1] for v,l in zip(vector, offset)])
+    vector_in_block = [np.all([l[0] < v < l[1] for v, l in zip(vector, offset)])
                        for vector in vectors]
     vectors_in_block = vectors[vector_in_block]
     vdf_in_block = vdf[vector_in_block]
@@ -84,9 +84,12 @@ def _lazy_refine(data, offset, vectors, vdf, threshold, **kwargs):
         ref = refine_position(shifted_vector, data, extent=e, threshold=threshold, **kwargs)
         ref = np.add(offset[:, 0], ref)
         refined.append(ref)
+    if len(refined) == 0:
+        return np.empty(1, dtype=object)
     ref = np.empty(1, dtype=object)
     ref[0] = np.array(refined, dtype=object)
     return ref
+
 
 def refine_position(vector, data, extent, threshold=0.5):
     mask = extent > 0
@@ -99,7 +102,7 @@ def refine_position(vector, data, extent, threshold=0.5):
     recip_pos = center_of_mass(ex)
     new_vector = list(tuple(real_pos)+tuple(recip_pos))
     if any(np.isnan(new_vector)):
-        new_vector= vector
+        new_vector = vector
     return new_vector
 
 

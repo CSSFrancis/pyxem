@@ -15,7 +15,7 @@ def _find_peaks(data, offset=None, mask=None,  **kwargs):
                                   **kwargs)
     # Catch no peaks
     if local_maxima.size == 0:
-        return np.empty((0, 4))
+        return np.empty(1, dtype=object)
         # Convert local_maxima to float64
     lm = local_maxima.astype(np.int)
     if mask is not None:
