@@ -242,7 +242,7 @@ class DiffractionVector4D(BaseVectorSignal):
         clusters = np.array([np.array(self.data[labels == l],dtype=float)
                              for l in range(0, max(labels))],dtype=object)
         extents = np.array([self.extents[labels == l]
-                   for l in range(0, max(labels))],dtype=object)
+                   for l in range(0, max(labels))], dtype=object)
         s = BaseSignal(clusters)
         s = s.T
         s.vector = True
