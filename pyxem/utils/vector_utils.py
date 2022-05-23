@@ -78,17 +78,17 @@ def _lazy_refine(data, offset, vectors, vdf, threshold, **kwargs):
                        for vector in vectors]
     vectors_in_block = vectors[vector_in_block]
     vdf_in_block = vdf[vector_in_block]
-    refined =[]
-    for v,e in zip(vectors_in_block, vdf_in_block):
-        shifted_vector = v-offset[:,0]
+    refined = []
+    for v, e in zip(vectors_in_block, vdf_in_block):
+        shifted_vector = v-offset[:, 0]
         ref = refine_position(shifted_vector, data, extent=e, threshold=threshold, **kwargs)
         ref = np.add(offset[:, 0], ref)
         refined.append(ref)
     if len(refined) == 0:
         return np.empty(1, dtype=object)
-    ref = np.empty(1, dtype=object)
-    ref[0] = np.array(refined, dtype=object)
-    return ref
+    ref_data = np.empty(1, dtype=object)
+    ref_data[0] = np.array(refined, dtype=object)
+    return ref_data
 
 
 def refine_position(vector, data, extent, threshold=0.5):

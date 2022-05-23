@@ -175,7 +175,6 @@ class DiffractionVector4D(BaseVectorSignal):
             number of vectors.
         """
         if isinstance(img, da.Array):
-
             spanned = np.equal(img.chunks, img.shape)
             drop_axes = np.squeeze(np.argwhere(spanned))
             adjust_chunks = {}
@@ -197,7 +196,7 @@ class DiffractionVector4D(BaseVectorSignal):
             ref = da.reshape(da.blockwise(_lazy_refine,
                                pattern,
                                img, pattern,
-                               offset, [0, 1, 2, 3, 4,5],
+                               offset, [0, 1, 2, 3, 4, 5],
                                vectors=self.data,
                                vdf=self.extents,
                                threshold=threshold,
@@ -206,6 +205,7 @@ class DiffractionVector4D(BaseVectorSignal):
                                concatenate=True,
                                align_arrays=False,
                                **kwargs), (-1,))
+            print(ref)
             ref = ref.compute()
             refined = np.vstack([p for p in ref if p is not None])
             if inplace:
