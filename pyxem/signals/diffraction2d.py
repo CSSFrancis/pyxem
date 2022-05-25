@@ -2458,14 +2458,20 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                                          align_arrays=False,
                                          **kwargs), (-1,))
             peaks = peaks.compute()
-            peaks = np.vstack([p for p in peaks if p is not None])
+            #peaks = np.array([np.array(p) for peak in peaks if peak is not None for p in peak], dtype=object)
+            pks = np.vstack([p for p in peaks if p is not None])
 
+            peaks = np.empty(1, dtype=object)
+            peaks[0]=pks
         else:
             offset = (0,)*len(self.data.shape)
             peaks = _find_peaks(self.data, offset=offset, **kwargs)[0]
 
+        peaks = BaseSignal(peaks.data).T
+        peaks.ragged=True
+        peaks.vector = True
+        peaks.set_signal_type("diffraction_vector")
 
-        peaks = DiffractionVector4D(peaks.data)
         am = self.axes_manager.deepcopy()
         peaks.axes_manager = am
         #if peaks.data.dtype is object:

@@ -79,6 +79,7 @@ class TestFindPeaks:
         peaks = dataset.find_peaks_nd()
         peaks.get_extents(dataset.data)
 
+
     def test_refine(self,
                     dataset):
         peaks = dataset.find_peaks_nd()
@@ -91,9 +92,9 @@ class TestFindPeaks:
         dataset.rechunk(nav_chunks=(5, 5))
         peaks = dataset.find_peaks_nd()
         peaks.get_extents(dataset.data)
-        ref = peaks.refine_positions(dataset.data)
-        print(peaks.data)
-        print(ref.data)
+        ref = peaks.refine_position(dataset)
+
+        print(ref)
 
     def test_combine_vectors(self,
                              dataset):
