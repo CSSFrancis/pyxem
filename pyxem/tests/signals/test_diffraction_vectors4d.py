@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 from skimage.draw import disk
 from pyxem.signals.polar_diffraction2d import PolarDiffraction2D
-
+from pyxem.signals.diffraction_vectors4d import DiffractionVector4D
 
 class TestFindPeaks:
     @pytest.fixture
@@ -102,8 +102,8 @@ class TestFindPeaks:
         dataset.rechunk(nav_chunks=(5, 5))
         peaks = dataset.find_peaks_nd()
         peaks.get_extents(dataset.data)
-        ref = peaks.refine_positions(dataset.data)
-        combo = ref.combine_vectors2(distance=1, duplicate_distance=2)
+        ref = peaks.refine_position(dataset)
+        combo = ref.combine_vectors(distance=1, duplicate_distance=2)
         print(len(combo.extents))
         print(len(combo.data))
         print(combo)
@@ -111,3 +111,14 @@ class TestFindPeaks:
     def test_get_mean(self,
                      clusters):
         mean = clusters.clusters[0].get_mean(clusters.signal)
+
+
+class TestDiffractionVector4D:
+
+    def test_initalize_vector_0D(self):
+        x = np.empty(1, dtype=object)
+        x[0] = np.ones((15,4))
+
+        dv = DiffractionVector4D(x)
+
+        assert isinstance(dv, DiffractionVector4D)

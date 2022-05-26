@@ -237,6 +237,8 @@ signals:
     signal_type: diffraction_vector
     signal_dimension: 2
     dtype: real
+    ragged: True
+    vector: True
     lazy: True
     module: pyxem.signals.diffraction_vectors2d
 

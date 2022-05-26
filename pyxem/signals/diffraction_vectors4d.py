@@ -202,147 +202,19 @@ class DiffractionVector4D(BaseVectorSignal):
         refined = np.vstack([p for p in ref if p is not None])
         return refined
 
-    def refine_position(self, img, **kwargs):
+    def refine_position(self, img, inplace=False, **kwargs):
         refined = self.vector_signal_map(refine, img, extra_vectors=self.extents, **kwargs)
-        return refined
-
-    def refine_positions2(self,
-                         img=None,
-                         threshold=0.5,
-                         inplace=False,
-                         **kwargs,
-                         ):
-        """Refine the position of the diffraction vector the signal space
-
-        Parameters
-        ----------
-        data: Array-like
-            An n-dimensional array to use to determine the extent of the vector.
-            Should have the same dimensions as one of the diffraction vectors.
-        threshold: float
-            The relative threshold to use to determine the extent of some feature.
-        inplace: bool
-            Return a copy of the data or act on the dataset
-        crop: bool
-            Crop the vdf to only be the extent of the vector.  Saves on memory if you have a large
-            number of vectors.
-        """
-
-        spanned = np.equal(img.chunks, img.shape)
-        drop_axes = np.squeeze(np.argwhere(spanned))
-        adjust_chunks = {}
-        for i in range(len(img.shape)):
-            if i not in drop_axes:
-                adjust_chunks[i] = 1
-            else:
-                adjust_chunks[i] = -1
-
-        pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
-        from itertools import product
-        offset = []
-        for block_id in product(*(range(len(c)) for c in img.chunks)):
-            offset.append(np.transpose([np.multiply(block_id, img.chunksize),
-                           np.multiply(np.add(block_id, 1), img.chunksize)]))
-        offset = np.array(offset, dtype=object)
-        offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
-        offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
-        ref = da.blockwise(_lazy_refine,
-                                          pattern,
-                                          img, pattern,
-                                          offset, [0, 1, 2, 3, 4, 5],
-                                          vectors=self.data,
-                                          vdf=self.extents,
-                                          threshold=threshold,
-                                          adjust_chunks=adjust_chunks,
-                                          dtype=object,
-                                          concatenate=True,
-                                          align_arrays=False,
-                                          **kwargs)
-        ref = ref.compute()
-        ref = da.reshape(ref, (-1,))
-        refined = np.array([np.array(r) for refs in ref for r in refs], dtype=object)
-        self.data = refined
-        return refined
-
-    def refine_positions3(self,
-                         img=None,
-                         threshold=0.5,
-                         inplace=False,
-                         **kwargs,
-                         ):
-        """Refine the position of the diffraction vector the signal space
-
-        Parameters
-        ----------
-        data: Array-like
-            An n-dimensional array to use to determine the extent of the vector.
-            Should have the same dimensions as one of the diffraction vectors.
-        threshold: float
-            The relative threshold to use to determine the extent of some feature.
-        inplace: bool
-            Return a copy of the data or act on the dataset
-        crop: bool
-            Crop the vdf to only be the extent of the vector.  Saves on memory if you have a large
-            number of vectors.
-        """
-
-        spanned = np.equal(img.chunks, img.shape)
-        drop_axes = np.squeeze(np.argwhere(spanned))
-        adjust_chunks = {}
-        for i in range(len(img.shape)):
-            if i not in drop_axes:
-                adjust_chunks[i] = 1
-            else:
-                adjust_chunks[i] = -1
-
-        pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
-        from itertools import product
-        offset = []
-        for block_id in product(*(range(len(c)) for c in img.chunks)):
-            offset.append(np.transpose([np.multiply(block_id, img.chunksize),
-                           np.multiply(np.add(block_id,1), img.chunksize)]))
-        offset = np.array(offset, dtype=object)
-        offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
-        offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
-        extents = da.reshape(da.blockwise(refine,
-                                          pattern,
-                                          img, pattern,
-                                          offset, [0, 1, 2, 3, 4, 5],
-                                          vectors=self.data,
-                                          adjust_chunks=adjust_chunks,
-                                          dtype=object,
-                                          concatenate=True,
-                                          align_arrays=False,
-                                          **kwargs), (-1,))
-        extents = extents.compute()
-        extents = np.array([np.array(e) for extent in extents for e in extent], dtype=object)
-        self.extents = extents
-        self.slices = offset
-
-
-        refined = refine()
-        refined = self.map(refine,
-                           data=data,
-                           extents=self.extents,
-                           threshold=threshold,
-                           output_dtype=object,
-                           ragged=True,
-                           inplace=inplace, **kwargs)
-        if not inplace:
-            if self._lazy:
-                refined = LazyDiffractionVector(refined.data)
-            else:
-                refined = DiffractionVector4D(refined.data)
-            refined.axes_manager = self.axes_manager.deepcopy()
-            refined.vector = True
-            refined.axes_manager._ragged = True
+        if inplace:
+            self.data = refined
+        else:
+            refined = self._deepcopy_with_new_data(data=refined)
             refined.extents = self.extents
+
         return refined
 
-    def combine_vectors2(self,
+    def combine_vectors(self,
                         distance,
                         duplicate_distance=None,
-                        trim=True,
                         symmetries=None,
                         structural_similarity=False,
                         ):
@@ -371,38 +243,20 @@ class DiffractionVector4D(BaseVectorSignal):
         s.axes_manager.navigation_axes[0].name = "label"
         return s
 
-    def combine_vectors(self,
-                        distance,
-                        duplicate_distance=None,
-                        trim=True,
-                        symmetries=None,
-                        structural_similarity=False,
-                        ):
+    def get_separation(self):
+        """Return the separation between diffraction vectors that are clustered in space"""
+        separation = []
+        for v in self.data:
+            angles = v[:, 3]
+            all_angles = np.abs(np.unique(np.triu(np.subtract.outer(angles, angles))) * 4)
+            all_angles = all_angles[all_angles != 0]
+            all_angles[all_angles > 180] = np.abs(all_angles[all_angles > 180] - 360)
+            separation.append(all_angles)
+            separation = [s for sep in separation for s in sep]
+        return separation
 
-        labels = self.map(combine_vectors,
-                          distance=distance,
-                          duplicate_distance=duplicate_distance,
-                          symmetries=symmetries,
-                          structural_similarity=structural_similarity,
-                          ragged=True,
-                          inplace=False)
-        self.labels = labels
 
-        if trim:
-            new_labels = labels.map(trim_duplicates, label=labels, inplace=False)
-            am = self.axes_manager.deepcopy()
-            new_extents = self.extents.map(trim_duplicates,label=self.extents, inplace=False)
-            self.map(trim_duplicates, label=labels)
-            self.axes_manager = am
-            self.set_signal_type("vector")
-            self.axes_manager._ragged = True
-            self.labels = new_labels
-            self.extents = new_extents
 
-        else:
-            self.labels = labels
-
-        return
 
     """def to_polar_markers(self,
                          index,
