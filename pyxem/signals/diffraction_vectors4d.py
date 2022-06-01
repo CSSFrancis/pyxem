@@ -252,7 +252,7 @@ class DiffractionVector4D(BaseVectorSignal):
             all_angles = all_angles[all_angles != 0]
             all_angles[all_angles > 180] = np.abs(all_angles[all_angles > 180] - 360)
             separation.append(all_angles)
-            separation = [s for sep in separation for s in sep]
+        separation = [s for sep in separation for s in sep]
         return separation
 
 

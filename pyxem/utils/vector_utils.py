@@ -191,10 +191,15 @@ def get_extents(img, vectors, **kwargs):
 def combine_vectors(vectors,
                     distance,
                     duplicate_distance=None,
+                    include_k=True,
                     symmetries=None,
-                    structural_similarity=False,):
+                    structural_similarity=False,
+                    ):
     agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
-    agg.fit(vectors[:, :2])
+    if include_k:
+        agg.fit(vectors[:, :3])
+    else:
+        agg.fit(vectors[:, :2])
     labels = agg.labels_
     duplicates = np.zeros(len(labels), dtype=bool)
     #agg2 = AgglomerativeClustering(n_clusters=None, distance_threshold=duplicate_distance)
