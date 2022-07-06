@@ -198,9 +198,11 @@ class DiffractionVector4D(BaseVectorSignal):
                          (-1,)
                          )
         ref = ref.compute()
-
-        refined = np.vstack([p for p in ref if p is not None])
-        return refined
+        ref = [p for p in ref if p is not None]
+        if len(ref) == 1:
+            return ref
+        else:
+            return np.vstack(ref)
 
     def refine_position(self, img, inplace=False, **kwargs):
         refined = self.vector_signal_map(refine, img, extra_vectors=self.extents, **kwargs)
