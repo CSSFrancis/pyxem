@@ -1,5 +1,5 @@
 import numpy as np
-from skimage._shared.fft import fftmodule, next_fast_len
+#from skimage._shared.fft import fftmodule, next_fast_len
 from functools import partial
 
 def _correlation(z, axis=0, mask=None, wrap=True, normalize=True):

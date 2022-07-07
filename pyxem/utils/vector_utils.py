@@ -17,7 +17,9 @@
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import dask.array as da
 import math
+from itertools import product
 
 from transforms3d.axangles import axangle2mat
 from skimage.morphology import convex_hull_image,flood
@@ -29,14 +31,6 @@ from scipy.spatial import distance_matrix
 
 def trim_duplicates(vectors, label):
     return np.squeeze(vectors)[label != -1]
-
-
-def refine(vectors, data, extents, threshold):
-    vectors = np.array([refine_position(v,
-                               data,
-                               extent=e,
-                               threshold=threshold)for v, e in zip(vectors, extents)],dtype=float)
-    return vectors
 
 
 def center_and_crop(image, center):
@@ -52,51 +46,32 @@ def center_and_crop(image, center):
         return image[slices]
 
 
-def _get_extents_lazy(data,
-                      extents,
-                      vectors,
-                      threshold=0.5,
-                      **kwargs):
-    extents = np.squeeze(extents)
-    vector_in_block = [np.all([l[0] < v < l[1] for v, l in zip(vector, extents)])
-                       for vector in vectors[0]]
-    vectors_in_block = vectors[0][vector_in_block]
-    vdfs =[]
-    for v in vectors_in_block:
-        shifted_vector = v-extents[:,0]
-        vdf = _get_vdf(shifted_vector, data, threshold=threshold, **kwargs)
-        vdfs.append(vdf)
-    extents = np.empty(1, dtype=object)
-    extents[0] = np.array(vdfs, dtype=object)
-    return extents
-
-
-import numpy as np
-import dask.array as da
-
-
 def get_chunk_offsets(img):
-    from itertools import product
-    import dask.array as da
+    """Returns the extent of some chunk.
+
+     For determining if a vector is inside of the chunk.
+     """
     offset = []
     for block_id in product(*(range(len(c)) for c in img.chunks)):
         offset.append(np.transpose([np.multiply(block_id, img.chunksize),
                                     np.multiply(np.add(block_id, 1), img.chunksize)]))
     offset = np.array(offset, dtype=object)
-
-    offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])
+    offset = np.reshape(offset, [len(c) for c in img.chunks] + [4, 2])  # this might fail eventually
     offset = np.squeeze(offset)
-    # offset = da.from_array(offset, chunks=(1,) * len(offset.shape))
+    if np.shape(offset) == (4, 2):
+        offset = np.reshape(offset, (1, 4, 2))
     return offset
 
 
 def get_vectors_chunkwise(vectors, offsets, extra_vectors=None):
+    chunks = offsets.shape[:-2]
+    if chunks == ():
+        chunks = (1,)
     vectors = vectors[0]
-    new_vectors = np.empty(shape=offsets.shape[:-2], dtype=object)
-    print("new_shape", new_vectors.shape)
+    new_vectors = np.empty(shape=chunks, dtype=object)
     if extra_vectors is not None:
-        extra = [np.empty(shape=offsets.shape[:-2], dtype=object) for v in extra_vectors]
-    for i in np.ndindex(offsets.shape[:-2]):
+        extra = [np.empty(shape=chunks, dtype=object) for v in extra_vectors]
+    for i in np.ndindex(chunks):
         sliced_offsets = offsets[i]
         vector_in_block = np.prod([np.greater(vectors[:, i], s[0]) &
                                    np.less(vectors[:, i], s[1]) for i, s in enumerate(sliced_offsets)], axis=0,
@@ -111,14 +86,18 @@ def get_vectors_chunkwise(vectors, offsets, extra_vectors=None):
         return da.from_array(new_vectors, chunks=1)
 
 
+"""
+Functions for refining the position of vectors
+"""
+
 
 def refine(data, vectors, extents, offset=None, threshold=0.7):
     if offset is not None:
         offset = np.squeeze(offset)
     else:
         offset = (np.zeros(vectors.shape[1]))
-    vectors = vectors[0,0]
-    extents = extents[0,0]
+    vectors = vectors[0, 0]
+    extents = extents[0, 0]
     refined = []
     for v, e in zip(vectors, extents):
         shifted_vector = v - offset[:, 0]
@@ -148,43 +127,20 @@ def refine_position(vector, data, extent, threshold=0.5):
     return new_vector
 
 
-def _lazy_refine(data, offset, vectors, vdf, threshold, **kwargs):
-    offset = np.squeeze(offset)
-    vector_in_block = [np.all([l[0] < v < l[1] for v, l in zip(vector, offset)])
-                       for vector in vectors[0]]
-    vectors_in_block = vectors[vector_in_block]
-    vdf_in_block = vdf[vector_in_block]
-    refined =[]
-    for v,e in zip(vectors_in_block, vdf_in_block):
-        shifted_vector = v-offset[:,0]
-        ref = refine_position(shifted_vector, data, extent=e, threshold=threshold, **kwargs)
-        ref = np.add(offset[:, 0], ref)
-        refined.append(ref)
-    if len(refined) == 0:
-        return np.empty(1, dtype=object)
-    ref = np.empty(1, dtype=object)
-    ref[0] = np.array(refined, dtype=object)
-    return ref
+"""
+Functions for getting the VDF image from some dataset
+"""
 
 
-def refine_position(vector, data, extent, threshold=0.5):
-    sh = extent.shape
-    mask = extent > 0
-    real_pos = center_of_mass(mask)
-    mean_image = np.mean(data[mask, :, :], axis=0)
-    max_val = mean_image[int(vector[2]), int(vector[3])]
-    abs_threshold = max_val*threshold
-    threshold_image = mean_image > abs_threshold
-    ex = flood(threshold_image, seed_point=(int(vector[2]), int(vector[3])))
-    recip_pos = center_of_mass(ex)
-    new_vector = list(tuple(real_pos)+tuple(recip_pos))
-    if any(np.isnan(new_vector)):
-        new_vector = vector
-    return new_vector
-
-
-def get_extents(img, vectors, **kwargs):
-    extents = np.array([_get_vdf(v, img, **kwargs) for v in vectors])
+def get_extents(img, vectors, offset=None, **kwargs):
+    if offset is None:
+        offset = np.zeros(vectors.shape[1])
+    else:
+        offset = offset[0, :, 0]
+    vectors = vectors + offset
+    extents = np.array([_get_vdf(v,
+                                 img,
+                                 **kwargs) for v in vectors[0]])
     return extents
 
 
@@ -229,6 +185,7 @@ def _get_vdf(vector,
              crop=True,
              ):
     shape = img.shape[-2:]
+    print("vector", vector)
     rr, cc = disk(center=(int(vector[-2]), int(vector[-1])),
                   radius=int(radius),
                   shape=shape)
@@ -250,6 +207,7 @@ def _get_vdf(vector,
             vdf[np.logical_not(mask)] = 0
 
     return vdf
+
 
 def detector_to_fourier(k_xy, wavelength, camera_length):
     """Maps two-dimensional Cartesian coordinates in the detector plane to

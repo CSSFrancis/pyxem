@@ -2428,57 +2428,47 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         return integration
 
+    def map_blockwise(self, func, **kwargs):
+        from pyxem.utils.vector_utils import get_chunk_offsets
+        if not self._lazy:
+            signal = self.as_lazy()
+        else:
+            signal = self
+        spanned = [c == s or c == (s,) for c, s in zip(signal.data.chunks, signal.data.shape)]
+
+        drop_axes = np.squeeze(np.argwhere(spanned))
+        adjust_chunks = {}
+        for i in range(len(signal.data.shape)):
+            if i not in drop_axes:
+                adjust_chunks[i] = 1
+            else:
+                adjust_chunks[i] = -1
+        pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
+        if len(pattern) == 0:
+            pattern = [True, ]
+        offsets = get_chunk_offsets(signal.data)
+        offsets = da.from_array(offsets, chunks=(1,)*len(pattern)+(-1, -1))
+
+        new_args = (signal.data, range(len(signal.data.shape)))
+        # Applying the function blockwise
+        new_args += (offsets, range(len(offsets.shape)))
+
+        ref = da.reshape(da.blockwise(func, pattern,
+                                      *new_args,
+                                      adjust_chunks=adjust_chunks,
+                                      dtype=object,
+                                      concatenate=True,
+                                      align_arrays=False,
+                                      **kwargs),
+                         (-1,)
+                         )
+        ref = ref.compute()
+        return ref
+
     def find_peaks_nd(self, **kwargs):
         """Finds peaks in a nd array.
         """
-        if self._lazy:
-            spanned = np.equal(self.data.chunks, self.data.shape)
-            drop_axes = np.squeeze(np.argwhere(spanned))
-            adjust_chunks = {}
-            for i in range(len(self.data.shape)):
-                if i not in drop_axes:
-                    adjust_chunks[i] = 1
-                else:
-                    adjust_chunks[i] = -1
-
-            pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
-            from itertools import product
-            offset = []
-            for block_id in product(*(range(len(c)) for c in self.data.chunks)):
-                offset.append(np.multiply(block_id, self.data.chunksize))
-            offset = np.array(offset, dtype=object)
-            offset = np.reshape(offset, [len(c) for c in self.data.chunks]+[4, ])
-            offset = da.from_array(offset, chunks=(1,)*len(offset.shape))
-            peaks = da.reshape(blockwise(_find_peaks, pattern,
-                                         self.data, pattern,
-                                         offset, [0, 1, 2, 3, 4],
-                                         adjust_chunks=adjust_chunks,
-                                         dtype=object,
-                                         concatenate=True,
-                                         align_arrays=False,
-                                         **kwargs), (-1,))
-            peaks = peaks.compute()
-            #peaks = np.array([np.array(p) for peak in peaks if peak is not None for p in peak], dtype=object)
-            pks = np.vstack([p for p in peaks if p is not None])
-
-            peaks = np.empty(1, dtype=object)
-            peaks[0]=pks
-        else:
-            offset = (0,)*len(self.data.shape)
-            peaks = _find_peaks(self.data, offset=offset, **kwargs)[0]
-
-        peaks = BaseSignal(peaks.data).T
-        peaks.ragged=True
-        peaks.vector = True
-        peaks.set_signal_type("diffraction_vector")
-
-        am = self.axes_manager.deepcopy()
-        peaks.axes_manager = am
-        #if peaks.data.dtype is object:
-        #    am._ragged = True
-        peaks.axes_manager.set_signal_dimension(4)
-        ax = peaks.axes_manager._axes
-        [a.convert_to_vector_axis() for a in ax]
+        peaks = self.map_blockwise(_find_peaks)
         return peaks
 
     def sigma_clip(

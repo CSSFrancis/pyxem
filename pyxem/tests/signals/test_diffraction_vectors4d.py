@@ -63,38 +63,39 @@ class TestFindPeaks:
     def test_get_peaks_lazy(self,
                             dataset):
         dataset = dataset.as_lazy()
-        dataset.rechunk(nav_chunks=(5, 5))
+        print(dataset.data)
+        #dataset.rechunk(nav_chunks=(5, 5))
         peaks = dataset.find_peaks_nd()
         return peaks
 
     def test_get_extents(self,
                          dataset):
         peaks = dataset.find_peaks_nd()
-        peaks.get_extents(dataset.data)
+        ext = peaks.get_extents(dataset)
+        assert len(ext) == len(peaks.data[0])
 
     def test_get_extents_lazy(self,
                               dataset):
         dataset = dataset.as_lazy()
-        dataset.rechunk(nav_chunks=(5, 5))
+        dataset.rechunk(nav_chunks=(10, 10))
         peaks = dataset.find_peaks_nd()
-        peaks.get_extents(dataset.data)
+        print(peaks)
+        peaks.get_extents(dataset)
 
 
     def test_refine(self,
                     dataset):
         peaks = dataset.find_peaks_nd()
-        peaks.get_extents(dataset.data)
-        peaks.refine_positions(dataset.data)
+        peaks.get_extents(dataset)
+        peaks.refine_position(dataset)
 
     def test_refine_lazy(self,
                          dataset):
         dataset = dataset.as_lazy()
-        dataset.rechunk(nav_chunks=(5, 5))
         peaks = dataset.find_peaks_nd()
-        peaks.get_extents(dataset.data)
+        peaks.get_extents(dataset)
         ref = peaks.refine_position(dataset)
 
-        print(ref)
 
     def test_combine_vectors(self,
                              dataset):
