@@ -113,7 +113,6 @@ class DiffractionVector4D(BaseVectorSignal):
 
         # Applying the function blockwise
         new_args += (offsets, range(len(offsets.shape)))
-
         ref = da.reshape(da.blockwise(func, pattern,
                                       *new_args,
                                       adjust_chunks=adjust_chunks,
@@ -124,6 +123,7 @@ class DiffractionVector4D(BaseVectorSignal):
                          (-1,)
                          )
         ref = ref.compute()
+        ref = np.vstack(r for r in ref if r is not None)
         return ref
 
     def get_extents(self,

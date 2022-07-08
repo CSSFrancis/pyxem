@@ -2469,6 +2469,22 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         """Finds peaks in a nd array.
         """
         peaks = self.map_blockwise(_find_peaks)
+        pks = np.vstack([p for p in peaks if p is not None])
+        peaks = np.empty(1, dtype=object)
+        peaks[0] = pks
+        peaks = BaseSignal(peaks).T
+        peaks.ragged = True
+        peaks.vector = True
+        peaks.set_signal_type("diffraction_vector")
+
+        am = self.axes_manager.deepcopy()
+        peaks.axes_manager = am
+        # if peaks.data.dtype is object:
+        #    am._ragged = True
+        peaks.axes_manager.set_signal_dimension(4)
+        ax = peaks.axes_manager._axes
+        [a.convert_to_vector_axis() for a in ax]
+
         return peaks
 
     def sigma_clip(

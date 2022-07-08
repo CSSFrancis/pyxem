@@ -22,7 +22,6 @@ def _find_peaks(data, offset=None, mask=None,  **kwargs):
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
 
     if offset is not None:
-        print(offset[:,0])
         lm = np.add(offset[:, 0], lm)
     ans = np.empty(1, dtype=object)
     ans[0] = lm

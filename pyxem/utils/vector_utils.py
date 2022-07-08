@@ -133,15 +133,23 @@ Functions for getting the VDF image from some dataset
 
 
 def get_extents(img, vectors, offset=None, **kwargs):
+    ind = (0,)*len(vectors.shape)
+    vectors = vectors[ind]
     if offset is None:
         offset = np.zeros(vectors.shape[1])
     else:
-        offset = offset[0, :, 0]
+        offset = np.squeeze(offset)[:, 0]
     vectors = vectors + offset
+    np.array
     extents = np.array([_get_vdf(v,
                                  img,
-                                 **kwargs) for v in vectors[0]])
-    return extents
+                                 **kwargs) for v in vectors])
+
+    if len(extents) == 0:
+        return np.empty(1, dtype=object)
+    ext_data = np.empty(1, dtype=object)
+    ext_data[0] = np.array(extents, dtype=object)
+    return ext_data
 
 
 def combine_vectors(vectors,
@@ -185,7 +193,6 @@ def _get_vdf(vector,
              crop=True,
              ):
     shape = img.shape[-2:]
-    print("vector", vector)
     rr, cc = disk(center=(int(vector[-2]), int(vector[-1])),
                   radius=int(radius),
                   shape=shape)
