@@ -92,17 +92,17 @@ Functions for refining the position of vectors
 
 
 def refine(data, vectors, extents, offset=None, threshold=0.7):
-    if offset is not None:
-        offset = np.squeeze(offset)
+    ind = (0,)*len(vectors.shape)
+    vectors = vectors[ind]
+    if offset is None:
+        offset = np.zeros(vectors.shape[1])
     else:
-        offset = (np.zeros(vectors.shape[1]))
-    vectors = vectors[0, 0]
-    extents = extents[0, 0]
+        offset = np.squeeze(offset)[:, 0]
     refined = []
-    for v, e in zip(vectors, extents):
-        shifted_vector = v - offset[:, 0]
+    for v, e in zip(vectors, extents[ind]):
+        shifted_vector = v - offset
         ref = refine_position(shifted_vector, data, extent=e, threshold=threshold)
-        ref = np.add(offset[:, 0], ref)
+        ref = np.add(offset, ref)
         refined.append(ref)
     if len(refined) == 0:
         return np.empty(1, dtype=object)
@@ -139,8 +139,7 @@ def get_extents(img, vectors, offset=None, **kwargs):
         offset = np.zeros(vectors.shape[1])
     else:
         offset = np.squeeze(offset)[:, 0]
-    vectors = vectors + offset
-    np.array
+    vectors = vectors - offset
     extents = np.array([_get_vdf(v,
                                  img,
                                  **kwargs) for v in vectors])

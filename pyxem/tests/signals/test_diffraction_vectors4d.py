@@ -84,12 +84,20 @@ class TestFindPeaks:
 
     def test_get_extents_lazy(self,
                               dataset):
-        dataset = dataset.as_lazy()
-        dataset.rechunk(nav_chunks=(5, 5))
         peaks = dataset.find_peaks_nd()
         ext = peaks.get_extents(dataset)
-        assert len(ext) == len(peaks.data[0])
 
+        dataset = dataset.as_lazy()
+        peaks = dataset.find_peaks_nd()
+        ext_lazy = peaks.get_extents(dataset)
+        np.testing.assert_array_equal(ext, ext_lazy)
+
+    def test_get_extents_rechunk(self,
+                                 dataset):
+        dataset = dataset.as_lazy()
+        dataset.rechunk(nav_chunks=(5,5))
+        peaks = dataset.find_peaks_nd()
+        ext_lazy = peaks.get_extents(dataset)
 
     def test_refine(self,
                     dataset):
@@ -104,22 +112,26 @@ class TestFindPeaks:
         peaks.get_extents(dataset)
         ref = peaks.refine_position(dataset)
 
+    def test_refine_rechunk(self,
+                            dataset):
+        dataset = dataset.as_lazy()
+        dataset.rechunk(nav_chunks=(5,5))
+        peaks = dataset.find_peaks_nd()
+        peaks.get_extents(dataset)
+        ref = peaks.refine_position(dataset)
 
     def test_combine_vectors(self,
                              dataset):
         dataset = dataset.as_lazy()
         dataset.rechunk(nav_chunks=(5, 5))
         peaks = dataset.find_peaks_nd()
-        peaks.get_extents(dataset.data)
+        peaks.get_extents(dataset)
         ref = peaks.refine_position(dataset)
         combo = ref.combine_vectors(distance=1, duplicate_distance=2)
         print(len(combo.extents))
         print(len(combo.data))
         print(combo)
 
-    def test_get_mean(self,
-                     clusters):
-        mean = clusters.clusters[0].get_mean(clusters.signal)
 
 
 class TestDiffractionVector4D:
