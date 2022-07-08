@@ -2444,6 +2444,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             else:
                 adjust_chunks[i] = -1
         pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
+        print(pattern)
         if len(pattern) == 0:
             pattern = [True, ]
         offsets = get_chunk_offsets(signal.data)
