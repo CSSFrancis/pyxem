@@ -72,7 +72,7 @@ class TestFindPeaks:
     def test_get_peaks_lazy_rechunked(self,
                             dataset):
         dataset = dataset.as_lazy()
-        dataset.rechunk(nav_chunks=(5, 5))
+        dataset.rechunk(nav_chunks=(5, 25))
         peaks = dataset.find_peaks_nd()
         return peaks
 

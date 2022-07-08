@@ -2432,6 +2432,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         from pyxem.utils.vector_utils import get_chunk_offsets
         if not self._lazy:
             signal = self.as_lazy()
+            signal.rechunk(nav_chunks=self.axes_manager.navigation_shape)
         else:
             signal = self
         spanned = [c == s or c == (s,) for c, s in zip(signal.data.chunks, signal.data.shape)]
@@ -2443,8 +2444,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                 adjust_chunks[i] = 1
             else:
                 adjust_chunks[i] = -1
-        pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
-        print(pattern)
+        pattern = np.argwhere(np.logical_not(spanned))[:, 0]
         if len(pattern) == 0:
             pattern = [True, ]
         offsets = get_chunk_offsets(signal.data)
