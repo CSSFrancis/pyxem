@@ -20,7 +20,6 @@ def _find_peaks(data, offset=None, mask=None,  **kwargs):
     lm = local_maxima.astype(np.int)
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
-
     if offset is not None:
         lm = np.add(offset[:, 0], lm)
     ans = np.empty(1, dtype=object)

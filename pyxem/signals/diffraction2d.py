@@ -2446,13 +2446,13 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                 adjust_chunks[i] = -1
         pattern = np.argwhere(np.logical_not(spanned))[:, 0]
         if len(pattern) == 0:
-            pattern = [True, ]
+            pattern = [0, ]
         offsets = get_chunk_offsets(signal.data)
         offsets = da.from_array(offsets, chunks=(1,)*len(pattern)+(-1, -1))
-
         new_args = (signal.data, range(len(signal.data.shape)))
         # Applying the function blockwise
-        new_args += (offsets, range(len(offsets.shape)))
+        offsets_pattern = list(pattern)+list(range(len(signal.data.shape)-2, len(signal.data.shape)))
+        new_args += (offsets, offsets_pattern)
 
         ref = da.reshape(da.blockwise(func, pattern,
                                       *new_args,

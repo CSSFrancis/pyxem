@@ -80,6 +80,7 @@ class DiffractionVector4D(BaseVectorSignal):
         """
         if not signal._lazy:
             signal = signal.as_lazy()
+            signal.rechunk(nav_chunks=signal.axes_manager.navigation_shape)
         spanned = [c == s or c == (s,) for c, s in zip(signal.data.chunks, signal.data.shape)]
 
         drop_axes = np.squeeze(np.argwhere(spanned))
@@ -89,7 +90,7 @@ class DiffractionVector4D(BaseVectorSignal):
                 adjust_chunks[i] = 1
             else:
                 adjust_chunks[i] = -1
-        pattern = np.squeeze(np.argwhere(np.logical_not(spanned)))
+        pattern = np.argwhere(np.logical_not(spanned))[:, 0]
         if len(pattern) == 0:
             pattern = [True, ]
         offsets = get_chunk_offsets(signal.data)
