@@ -203,7 +203,7 @@ class DiffractionVector4D(BaseVectorSignal):
                                  distance=distance,
                                  duplicate_distance=duplicate_distance,
                                  extents=self.extents,
-                                 structural_similarity=structural_similarity)
+                                 ss=structural_similarity)
         clusters = np.array([np.array(self.data[labels == l], dtype=float)
                              for l in range(0, max(labels))], dtype=object)
         extents = np.array([self.extents[labels == l]

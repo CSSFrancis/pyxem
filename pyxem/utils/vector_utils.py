@@ -162,7 +162,7 @@ def combine_vectors(vectors,
                     duplicate_distance=None,
                     include_k=True,
                     extents=None,
-                    structural_similarity=None,
+                    ss=None,
                     ):
     import itertools
     agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
@@ -183,7 +183,7 @@ def combine_vectors(vectors,
 
     max_l = max(labels) + 1
 
-    if structural_similarity is not None:
+    if ss is not None:
         if extents is None:
             raise ValueError("extents must be passed if structural similarity is compared")
         else:
@@ -198,7 +198,7 @@ def combine_vectors(vectors,
                 index_combo = itertools.combinations(indexes, 2)
                 sim = np.array([crop_ss(c[0], c[1]) for c in comb])
                 sim[sim < 0] = 0
-                above_ss = np.array(list(index_combo))[sim > structural_similarity]
+                above_ss = np.array(list(index_combo))[sim > ss]
 
                 above_ss = above_ss[..., 0]
                 new_groups = merge_it(above_ss)
