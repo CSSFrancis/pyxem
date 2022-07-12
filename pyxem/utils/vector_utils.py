@@ -230,24 +230,33 @@ def merge_it(lot):
                 break  # don't inflate 'merged' with intermediate results
     return merged
 
+
 def crop_extent(ex1, ex2):
-    non_zero = np.where(ex1 > 0)
-    non_zero2 = np.where(ex2 > 0)
+    try:
+        non_zero = np.where(ex1 > 0)
+        non_zero2 = np.where(ex2 > 0)
 
-    min1 = np.min(non_zero, axis=1)
-    max1 = np.max(non_zero, axis=1)
+        min1 = np.min(non_zero, axis=1)
+        max1 = np.max(non_zero, axis=1)
 
-    min2 = np.min(non_zero2, axis=1)
-    max2 = np.max(non_zero2, axis=1)
+        min2 = np.min(non_zero2, axis=1)
+        max2 = np.max(non_zero2, axis=1)
 
-    mins = [np.min([min1[0], min2[0]]), np.min([min1[1], min2[1]])]
-    maxes = [np.max([max1[0], max2[0]]), np.max([max1[1], max2[1]])]
-    return ex1[mins[0]:maxes[0], mins[1]:maxes[1]], ex2[mins[0]:maxes[0], mins[1]:maxes[1]]
+        mins = [np.min([min1[0], min2[0]]), np.min([min1[1], min2[1]])]
+        maxes = [np.max([max1[0], max2[0]]), np.max([max1[1], max2[1]])]
+        return ex1[mins[0]:maxes[0], mins[1]:maxes[1]], ex2[mins[0]:maxes[0], mins[1]:maxes[1]]
+    except ValueError:
+        return ex1, ex2
 
 
 def crop_ss(im1, im2, **kwargs):
     e1, e2 = crop_extent(im1, im2)
-    return structural_similarity(e1, e2, **kwargs)
+
+    try:
+        ss = structural_similarity(e1, e2, **kwargs)
+        return ss
+    except ValueError:
+        return 0
 
 
 def _get_vdf(vector,
