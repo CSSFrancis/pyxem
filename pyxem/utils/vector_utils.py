@@ -207,6 +207,8 @@ def combine_vectors(vectors,
                         for i in n:
                             labels[i] = max_l
                             max_l += 1
+                if len(new_groups) == 0:
+                    indexes = indexes[1:]
                 for i in indexes:
                     if i[0] not in set().union(*new_groups):
                         labels[i] = max_l
