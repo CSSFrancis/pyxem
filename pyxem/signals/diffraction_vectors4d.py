@@ -196,14 +196,13 @@ class DiffractionVector4D(BaseVectorSignal):
     def combine_vectors(self,
                         distance,
                         duplicate_distance=None,
-                        symmetries=None,
-                        structural_similarity=False,
+                        structural_similarity=None,
                         ):
 
         labels = combine_vectors(self.data,
                                  distance=distance,
                                  duplicate_distance=duplicate_distance,
-                                 symmetries=symmetries,
+                                 extents=self.extents,
                                  structural_similarity=structural_similarity)
         clusters = np.array([np.array(self.data[labels == l], dtype=float)
                              for l in range(0, max(labels))], dtype=object)

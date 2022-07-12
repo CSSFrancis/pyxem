@@ -24,6 +24,7 @@ from itertools import product
 from transforms3d.axangles import axangle2mat
 from skimage.morphology import convex_hull_image,flood
 from skimage.draw import disk
+from skimage.metrics import structural_similarity
 from scipy.ndimage import center_of_mass
 from sklearn.cluster import AgglomerativeClustering
 from scipy.spatial import distance_matrix
@@ -151,13 +152,19 @@ def get_extents(img, vectors, offset=None, **kwargs):
     return ext_data
 
 
+from sklearn.cluster import AgglomerativeClustering
+from scipy.spatial import distance_matrix
+from scipy.cluster.hierarchy import linkage, fcluster
+
+
 def combine_vectors(vectors,
                     distance,
                     duplicate_distance=None,
                     include_k=True,
-                    symmetries=None,
-                    structural_similarity=False,
+                    extents=None,
+                    structural_similarity=None,
                     ):
+    import itertools
     agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
     if include_k:
         agg.fit(vectors[:, :3])
@@ -165,23 +172,82 @@ def combine_vectors(vectors,
         agg.fit(vectors[:, :2])
     labels = agg.labels_
     duplicates = np.zeros(len(labels), dtype=bool)
-    #agg2 = AgglomerativeClustering(n_clusters=None, distance_threshold=duplicate_distance)
-    for l in range(max(labels+1)):
+    for l in range(max(labels + 1)):
         grouped_vectors = vectors[labels == l]
         if duplicate_distance is not None:
-            dup = distance_matrix(grouped_vectors[:, 2:],grouped_vectors[:, 2:]) < duplicate_distance
+            dup = distance_matrix(grouped_vectors[:, 2:], grouped_vectors[:, 2:]) < duplicate_distance
             not_first = np.sum(np.tril(dup), axis=1) > 1
             duplicates[labels == l] = not_first
-            #agg2.fit(grouped_vectors[:, 2:])
-            #labels2 = agg2.labels_
-            #un, ind = np.unique(labels2, return_index=True)
-            #unique_truth = np.ones(len(labels2), dtype=bool)
-            #unique_truth[ind]=False
-            #duplicates[labels == l] = unique_truth
+    labels = np.array(labels)
+    labels[duplicates] = -1
 
-    l = np.array(labels)
-    l[duplicates] = -1
-    return l
+    max_l = max(labels) + 1
+
+    if structural_similarity is not None:
+        if extents is None:
+            raise ValueError("extents must be passed if structural similarity is compared")
+        else:
+            for l in range(max(labels + 1)):
+                grouped_extents = extents[labels == l]
+                if len(grouped_extents) == 1:
+                    continue
+                grouped_extents = [np.array(ex, dtype=float) for ex in grouped_extents]
+
+                comb = itertools.combinations(grouped_extents, 2)
+                indexes = np.argwhere(labels == l)
+                index_combo = itertools.combinations(indexes, 2)
+                sim = np.array([crop_ss(c[0], c[1]) for c in comb])
+                sim[sim < 0] = 0
+                above_ss = np.array(list(index_combo))[sim > structural_similarity]
+
+                above_ss = above_ss[..., 0]
+                new_groups = merge_it(above_ss)
+                if len(new_groups) > 1:
+                    for n in new_groups[1:]:
+                        for i in n:
+                            labels[i] = max_l
+                            max_l += 1
+                for i in indexes:
+                    if i[0] not in set().union(*new_groups):
+                        labels[i] = max_l
+                        max_l += 1
+    return labels
+
+
+def merge_it(lot):
+    import itertools
+    merged = [set(x) for x in lot]  # operate on sets only
+    finished = False
+    while not finished:
+        finished = True
+        for a, b in itertools.combinations(merged, 2):
+            if a & b:
+                # we merged in this iteration, we may have to do one more
+                finished = False
+                if a in merged: merged.remove(a)
+                if b in merged: merged.remove(b)
+                merged.append(a.union(b))
+                break  # don't inflate 'merged' with intermediate results
+    return merged
+
+def crop_extent(ex1, ex2):
+    non_zero = np.where(ex1 > 0)
+    non_zero2 = np.where(ex2 > 0)
+
+    min1 = np.min(non_zero, axis=1)
+    max1 = np.max(non_zero, axis=1)
+
+    min2 = np.min(non_zero2, axis=1)
+    max2 = np.max(non_zero2, axis=1)
+
+    mins = [np.min([min1[0], min2[0]]), np.min([min1[1], min2[1]])]
+    maxes = [np.max([max1[0], max2[0]]), np.max([max1[1], max2[1]])]
+    return ex1[mins[0]:maxes[0], mins[1]:maxes[1]], ex2[mins[0]:maxes[0], mins[1]:maxes[1]]
+
+
+def crop_ss(im1, im2, **kwargs):
+    e1, e2 = crop_extent(im1, im2)
+    return structural_similarity(e1, e2, **kwargs)
 
 
 def _get_vdf(vector,

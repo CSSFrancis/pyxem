@@ -136,6 +136,17 @@ class TestFindPeaks:
         ref = peaks.refine_position(dataset)
         combo = ref.combine_vectors(distance=1, duplicate_distance=2)
 
+    def test_combine_vectors_ss(self,
+                             dataset):
+        dataset = dataset.as_lazy()
+        dataset.rechunk(nav_chunks=(25, 25))
+        peaks = dataset.find_peaks_nd()
+        peaks.get_extents(dataset)
+        ref = peaks.refine_position(dataset)
+        combo = ref.combine_vectors(distance=1,
+                                    duplicate_distance=2,
+                                    structural_similarity=0.5)
+
 
 
 
