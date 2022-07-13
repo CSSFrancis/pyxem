@@ -157,12 +157,21 @@ from scipy.spatial import distance_matrix
 from scipy.cluster.hierarchy import linkage, fcluster
 
 
+def cross_corrleation(im1, im2):
+    e1, e2 = crop_extent(np.array(im1, dtype=float),
+                         np.array(im2, dtype=float))
+    num = np.sum((e1-np.mean(e1))*(e2-np.mean(e2)))
+    denom = np.sum(((e1-np.mean(e1))**2))*np.sum(((e2-np.mean(e2)))**2)
+    return num/np.sqrt(denom)
+
+
 def combine_vectors(vectors,
                     distance,
                     duplicate_distance=None,
                     include_k=True,
                     extents=None,
                     ss=None,
+                    cc=None,
                     ):
     import itertools
     agg = AgglomerativeClustering(n_clusters=None, distance_threshold=distance)
@@ -199,6 +208,36 @@ def combine_vectors(vectors,
                 sim = np.array([crop_ss(c[0], c[1]) for c in comb])
                 sim[sim < 0] = 0
                 above_ss = np.array(list(index_combo))[sim > ss]
+
+                above_ss = above_ss[..., 0]
+                new_groups = merge_it(above_ss)
+                if len(new_groups) > 1:
+                    for n in new_groups[1:]:
+                        for i in n:
+                            labels[i] = max_l
+                            max_l += 1
+                if len(new_groups) == 0:
+                    indexes = indexes[1:]
+                for i in indexes:
+                    if i[0] not in set().union(*new_groups):
+                        labels[i] = max_l
+                        max_l += 1
+    if cc is not None:
+        if extents is None:
+            raise ValueError("extents must be passed if structural similarity is compared")
+        else:
+            for l in range(max(labels + 1)):
+                grouped_extents = extents[labels == l]
+                if len(grouped_extents) == 1:
+                    continue
+                grouped_extents = [np.array(ex, dtype=float) for ex in grouped_extents]
+
+                comb = itertools.combinations(grouped_extents, 2)
+                indexes = np.argwhere(labels == l)
+                index_combo = itertools.combinations(indexes, 2)
+                sim = np.array([cross_corrleation(c[0], c[1]) for c in comb])
+                sim[sim < 0] = 0
+                above_ss = np.array(list(index_combo))[sim > cc]
 
                 above_ss = above_ss[..., 0]
                 new_groups = merge_it(above_ss)
@@ -259,6 +298,37 @@ def crop_ss(im1, im2, **kwargs):
         return ss
     except ValueError:
         return 0
+
+
+def _get_vdf(vector,
+             img,
+             threshold=None,
+             radius=2,
+             fill=True,
+             crop=True,
+             ):
+    shape = img.shape[-2:]
+    rr, cc = disk(center=(int(vector[-2]), int(vector[-1])),
+                  radius=int(radius),
+                  shape=shape)
+    nav_dims = len(np.shape(img))-2
+    vdf = np.sum(np.squeeze(img)[..., rr, cc], axis=-1)
+    if threshold is not None:
+        center = np.array(vector[:nav_dims], dtype=int)
+        maximum = vdf[tuple(center)]
+        minimum = np.mean(vdf)
+        difference = maximum - minimum
+        thresh = minimum + threshold * difference
+        mask = vdf > thresh
+        mask = flood(mask, seed_point=tuple(center))
+        if fill is True and len(mask.shape) > 1:
+            mask = convex_hull_image(mask)
+        if np.sum(mask) > (np.product(vdf.shape) / 2):
+            vdf = np.zeros(vdf.shape)
+        else:
+            vdf[np.logical_not(mask)] = 0
+
+    return vdf
 
 
 def _get_vdf(vector,

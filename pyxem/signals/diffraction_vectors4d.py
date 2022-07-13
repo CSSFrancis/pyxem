@@ -11,7 +11,6 @@ from hyperspy._signals.lazy import LazySignal
 from hyperspy.signals import BaseSignal
 from pyxem.utils.vector_utils import get_extents as _get_extents
 from pyxem.utils.vector_utils import refine, combine_vectors, trim_duplicates, get_vectors_chunkwise, get_chunk_offsets
-from hyperspy.axes import create_axis
 import dask.array as da
 
 
@@ -197,13 +196,15 @@ class DiffractionVector4D(BaseVectorSignal):
                         distance,
                         duplicate_distance=None,
                         structural_similarity=None,
+                        cross_correlation=None,
                         ):
 
         labels = combine_vectors(self.data,
                                  distance=distance,
                                  duplicate_distance=duplicate_distance,
                                  extents=self.extents,
-                                 ss=structural_similarity)
+                                 ss=structural_similarity,
+                                 cc=cross_correlation)
         clusters = np.array([np.array(self.data[labels == l], dtype=float)
                              for l in range(0, max(labels))], dtype=object)
         extents = np.array([self.extents[labels == l]
