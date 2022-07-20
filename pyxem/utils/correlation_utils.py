@@ -114,7 +114,7 @@ def _power(z, axis=0, mask=None, wrap=True, normalize=True):
         ).real
 
 
-def _pearson_correlation(z, mask=None):
+def _pearson_correlation(z, mask=None, mode='full'):
     """
     Calculate Pearson cross-correlation of the image with itself
     after rotation as a function of rotation
@@ -125,6 +125,8 @@ def _pearson_correlation(z, mask=None):
         Input image in 2D array
     mask: np.array
         A boolean mask to be applied.
+    mode: str 'full' or 'kresolved'
+        Mode for calculating pearson correlation, default is 'full'
 
     Returns
     -------
@@ -147,7 +149,13 @@ def _pearson_correlation(z, mask=None):
         fft_intensity = np.fft.fft(z, axis=1) / z_length
         a = np.fft.ifft(fft_intensity * fft_intensity.conj(), axis=1).real * z_length
 
-    p_correlation = (np.mean(a, axis=0) - np.mean(z) ** 2) / (np.mean(z ** 2) - np.mean(z) ** 2)
+    if mode is 'full':
+        p_correlation = (np.mean(a, axis=0) - np.mean(z) ** 2) / (np.mean(z ** 2) - np.mean(z) ** 2)
+    elif mode is 'kresolved':
+        p_correlation = (a - np.mean(z, axis=1) ** 2) / (np.mean(z ** 2, axis=1) - np.mean(z, axis=1) ** 2)
+    else:
+        raise ValueError('Mode must be chosen from \'full\' or \'kresolved\'')
+
     return p_correlation
 
 
