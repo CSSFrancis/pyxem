@@ -197,6 +197,7 @@ class DiffractionVector4D(BaseVectorSignal):
                         duplicate_distance=None,
                         structural_similarity=None,
                         cross_correlation=None,
+                        **kwargs
                         ):
 
         labels = combine_vectors(self.data,
@@ -204,7 +205,8 @@ class DiffractionVector4D(BaseVectorSignal):
                                  duplicate_distance=duplicate_distance,
                                  extents=self.extents,
                                  ss=structural_similarity,
-                                 cc=cross_correlation)
+                                 cc=cross_correlation,
+                                 **kwargs)
         clusters = np.array([np.array(self.data[labels == l], dtype=float)
                              for l in range(0, max(labels))], dtype=object)
         extents = np.array([self.extents[labels == l]
