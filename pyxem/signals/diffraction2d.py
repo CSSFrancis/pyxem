@@ -862,6 +862,43 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         )
         return s_out
 
+    def map_blockwise(self, func, **kwargs):
+
+        if not self._lazy:
+            signal = self.as_lazy()
+            signal.rechunk(nav_chunks=self.axes_manager.navigation_shape)
+        else:
+            signal = self
+        spanned = [c == s or c == (s,) for c, s in zip(signal.data.chunks, signal.data.shape)]
+
+        drop_axes = np.squeeze(np.argwhere(spanned))
+        adjust_chunks = {}
+        for i in range(len(signal.data.shape)):
+            if i not in drop_axes:
+                adjust_chunks[i] = 1
+            else:
+                adjust_chunks[i] = -1
+        pattern = np.argwhere(np.logical_not(spanned))[:, 0]
+        if len(pattern) == 0:
+            pattern = [0, ]
+        offsets = get_chunk_offsets(signal.data)
+        offsets = da.from_array(offsets, chunks=(1,)*len(pattern)+(-1, -1))
+        new_args = (signal.data, range(len(signal.data.shape)))
+        # Applying the function blockwise
+        offsets_pattern = list(pattern)+list(range(len(signal.data.shape)-2, len(signal.data.shape)))
+        new_args += (offsets, offsets_pattern)
+        ref = da.reshape(da.blockwise(func, pattern,
+                                      *new_args,
+                                      adjust_chunks=adjust_chunks,
+                                      dtype=object,
+                                      concatenate=True,
+                                      align_arrays=False,
+                                      **kwargs),
+                         (-1,)
+                         )
+        ref = ref.compute()
+        return ref
+
     def center_of_mass(
         self,
         threshold=None,
