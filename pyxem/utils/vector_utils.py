@@ -326,6 +326,7 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
     a dilution doesn't change.
     """
     offset = np.squeeze(offset)
+    dimensions = data.ndim
     local_maxima = peak_local_max(data,
                                   footprint=np.ones((3,) * (data.ndim)),
                                   **kwargs)
@@ -337,8 +338,9 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
     if get_intensity:
-        intensity = data[lm]
-        lm = np.vstack(lm, intensity)
+        maxima = tuple([tuple(l) for l in lm.transpose()])
+        intensity = data[maxima]
+        lm = np.concatenate([lm, intensity[:, np.newaxis]], axis=1)
     if extent_threshold is not None:
         if extent_rel is True:
             threshold = lm[:, -1] * extent_threshold
@@ -347,7 +349,7 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
         dims = lm.shape[1]
         for d in range(dims):
             axes = range(dims)
-            rearranged = axes[:d]+axes[d+1:] + [d,]
+            rearranged = axes[:d]+axes[d+1:] + [d, ]
             trans_data = data.transpose(rearranged)
             non_dim_points = np.vstack(lm[:, :d], lm[:, :d+1])
             dim_point = lm[:, d]
@@ -357,7 +359,7 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
             upper_bound = dim_slice[dim_point,]
 
     if offset is not None:
-        lm = np.add(offset[:, 0], lm)
+        lm[:, :dimensions] = np.add(offset[:, 0], lm[:, :dimensions])
 
     ans = np.empty(1, dtype=object)
     ans[0] = lm

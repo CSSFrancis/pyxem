@@ -1163,7 +1163,12 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         """Finds peaks in a nd array.
         """
         peaks = self.map_blockwise(_find_peaks, **kwargs)
-        pks = np.vstack([p for p in peaks if p is not None])
+        print(peaks)
+        peaks = [p for p in peaks if p is not None]
+        if not peaks:
+            print("No peaks found")
+            return
+        pks = np.vstack(peaks)
         peaks = BaseSignal(pks).T
         return peaks
 
