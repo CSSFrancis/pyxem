@@ -18,6 +18,8 @@
 
 import numpy as np
 import math
+from skimage.feature.peak import peak_local_max
+from itertools import product
 
 from transforms3d.axangles import axangle2mat
 

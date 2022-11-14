@@ -71,6 +71,8 @@ from pyxem.utils.signal import (
     select_method_from_method_dict,
     transfer_navigation_axes,
 )
+
+from pyxem.utils.vector_utils import _find_peaks, get_chunk_offsets
 import pyxem.utils.pixelated_stem_tools as pst
 import pyxem.utils.dask_tools as dt
 import pyxem.utils.marker_tools as mt
@@ -1136,6 +1138,34 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             s = LazyDiffraction2D(output_array)
         pst._copy_signal_all_axes_metadata(self, s)
         return s
+
+    def filter(self,
+               method="log",
+               sigma=2,
+               inplace=False,
+               **kwargs,
+               ):
+        if method is "log":
+            if self._lazy:
+                from dask_image.ndfilters import gaussian_laplace as dask_gl
+                filtered = dask_gl(self.data, sigma,**kwargs)
+            else:
+                from scipy.ndimage.filters import gaussian_laplace
+                filtered = gaussian_laplace(self.data,
+                                            sigma,
+                                            **kwargs)
+        if inplace:
+            self.data= filtered
+        else:
+            return self._deepcopy_with_new_data(data=filtered)
+
+    def find_peaks_nd(self, interactive=False, **kwargs):
+        """Finds peaks in a nd array.
+        """
+        peaks = self.map_blockwise(_find_peaks, **kwargs)
+        pks = np.vstack([p for p in peaks if p is not None])
+        peaks = BaseSignal(pks).T
+        return peaks
 
     @deprecated(
         since="0.15",
