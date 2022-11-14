@@ -351,7 +351,8 @@ def filter_vectors_near_basis(vectors, basis, distance=None):
     return closest_vectors
 
 
-def _find_peaks(data, offset=None, mask=None,  **kwargs):
+def _find_peaks(data, offset=None, mask=None, get_intensity=True,
+                extent_threshold=None,extent_rel=True,  **kwargs):
     """This method helps to format the output from the blob methods
     in skimage for a more hyperspy like format using hs.markers.
     The underlying function finds the local max by finding point where
@@ -368,8 +369,29 @@ def _find_peaks(data, offset=None, mask=None,  **kwargs):
     lm = local_maxima.astype(np.int)
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
+    if get_intensity:
+        intensity = data[lm]
+        lm = np.vstack(lm, intensity)
+    if extent_threshold is not None:
+        if extent_rel is True:
+            threshold = lm[:, -1] * extent_threshold
+        else:
+            threshold = extent_threshold
+        dims = lm.shape[1]
+        for d in range(dims):
+            axes = range(dims)
+            rearranged = axes[:d]+axes[d+1:] + [d,]
+            trans_data = data.transpose(rearranged)
+            non_dim_points = np.vstack(lm[:, :d], lm[:, :d+1])
+            dim_point = lm[:, d]
+            non_dim_points = [tuple(p)for p in non_dim_points]
+            dim_slice = trans_data[non_dim_points] > threshold
+            np.where(np.abs(np.diff(dim_slice) == 1))
+            upper_bound = dim_slice[dim_point,]
+
     if offset is not None:
         lm = np.add(offset[:, 0], lm)
+
     ans = np.empty(1, dtype=object)
     ans[0] = lm
     return ans
