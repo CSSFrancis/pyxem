@@ -22,7 +22,7 @@ import dask.array as da
 import hyperspy.api as hs
 from matplotlib import pyplot as plt
 from numpy.random import default_rng
-from skimage.draw import circle_perimeter_aa
+from skimage.draw import circle_perimeter_aa,disk
 
 from pyxem.signals import (
     Diffraction1D,
@@ -1396,3 +1396,53 @@ class TestPlotNavigator:
         s_nav = Diffraction2D(np.zeros((2, 19)))
         s._navigator_probe = s_nav
         s.plot()
+
+class TestNDPeakFinding:
+    @pytest.fixture
+    def three_section(self):
+        x = np.random.random((100, 50, 20, 20))
+        x[0:20, :, 5:7, 5:7] = x[0:20, :, 5:7, 5:7] + 10
+        x[20:60, :, 1:3, 14:16] = x[20:60, :, 1:3, 14:16] + 10
+        x[60:100, :, 6:8, 10:12] = x[60:100, :, 6:8, 10:12] + 10
+        d = Diffraction2D(x)
+        return d
+
+    @pytest.fixture
+    def three_section(self):
+        data = np.random.random((60, 60, 20, 80)) *10
+        # 4 fold symmetry
+        rr1, cc1 = disk((10, 10), 3)
+        rr2, cc2 = disk((10, 30), 3)
+        rr3, cc3 = disk((10, 50), 3)
+        rr4, cc4 = disk((10, 70), 3)
+        rr2fold, cc2fold = np.append(rr1, rr2), np.append(cc1, cc2)
+        rr4fold, cc4fold = np.append(rr1, [rr2, rr3, rr4]), np.append(cc1, [cc2, cc3, cc4])
+        two_fold_img = np.random.random((20, 80)) *10
+        two_fold_img[rr2fold, cc2fold] = two_fold_img[rr2fold, cc2fold] + 100
+        four_fold_img = np.random.random((20, 80))*10
+        four_fold_img[rr4fold, cc4fold] = four_fold_img[rr4fold, cc4fold] + 100
+
+        pos1r, pos1c = disk((10, 15), radius=3)
+        pos2r, pos2c = disk((14, 7), radius=3)
+        pos3r, pos3c = disk((45, 35), radius=3)
+
+        data[pos1r, pos1c] = two_fold_img
+        data[pos2r, pos2c] = four_fold_img
+        data[pos3r, pos3c] = two_fold_img
+        data = Diffraction2D(data)
+        data.plot()
+        return data
+
+    def test_decomposition(self, three_section):
+        filtered = -three_section.filter(sigma=(3, 3, 3, 3))
+        peaks = filtered.find_peaks_nd(threshold_rel=.1)
+        intensities = peaks.data[:, 4]
+        assert len(intensities) == 8
+        np.testing.assert_array_equal(np.sort(peaks.data[:, 0]),
+                                      [10, 10, 14, 14, 14, 14, 45, 45])
+        np.testing.assert_array_equal(np.sort(peaks.data[:, 1]),
+                                      [7, 7, 7, 7, 15, 15, 35, 35])
+
+
+
+
