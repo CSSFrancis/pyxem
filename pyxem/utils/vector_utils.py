@@ -358,6 +358,8 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
     The underlying function finds the local max by finding point where
     a dilution doesn't change.
     """
+    from scipy.signal import peak_widths
+    from skimage.util.shape import view_as_windows as viewW
     offset = np.squeeze(offset)
     dimensions = data.ndim
     local_maxima = peak_local_max(data,
@@ -370,8 +372,17 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
     lm = local_maxima.astype(np.int)
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
+
+    def strided_indexing_roll(a, r, ):
+        a = a.transpose()
+        a_ext = np.concatenate((a, a[:, :-1]), axis=1)
+        # Get sliding windows; use advanced-indexing to select appropriate ones
+        n = a.shape[1]
+        index = (np.arange(len(r)), (n - r) % n, 0)
+        return viewW(a_ext, (1, n))[index].transpose()
+
     if get_intensity:
-        maxima = tuple([tuple(l) for l in lm.transpose()])
+        maxima = tuple([tuple(lm[:, d]) for d in range(dimensions)])
         intensity = data[maxima]
         lm = np.concatenate([lm, intensity[:, np.newaxis]], axis=1)
     if extent_threshold is not None:
@@ -379,17 +390,18 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
             threshold = lm[:, -1] * extent_threshold
         else:
             threshold = extent_threshold
-        dims = lm.shape[1]
-        for d in range(dims):
-            axes = range(dims)
-            rearranged = axes[:d]+axes[d+1:] + [d, ]
-            trans_data = data.transpose(rearranged)
-            non_dim_points = np.vstack(lm[:, :d], lm[:, :d+1])
-            dim_point = lm[:, d]
-            non_dim_points = [tuple(p)for p in non_dim_points]
-            dim_slice = trans_data[non_dim_points] > threshold
-            np.where(np.abs(np.diff(dim_slice) == 1))
-            upper_bound = dim_slice[dim_point,]
+        for d in range(dimensions):
+            non_dim_points = maxima[:d]+(slice(None),)+maxima[d+1:]
+            center = maxima[d]
+            if d == 0:
+                sliced_data = data[non_dim_points]
+            else:
+                sliced_data = data[non_dim_points].transpose()
+            dim_slice = np.greater(sliced_data, threshold)
+            rolled = strided_indexing_roll(dim_slice, -np.array(center))
+            top = np.sum(np.cumprod(rolled, axis=0), axis=0)
+            bottom = np.sum(np.cumprod(rolled[::-1], axis=0), axis=0)
+            lm = np.concatenate([lm, top[:, np.newaxis], bottom[:, np.newaxis]], axis=1)
 
     if offset is not None:
         lm[:, :dimensions] = np.add(offset[:, 0], lm[:, :dimensions])
