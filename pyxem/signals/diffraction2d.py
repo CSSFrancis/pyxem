@@ -1145,7 +1145,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                inplace=False,
                **kwargs,
                ):
-        if method == "log":
+        if method is "log":
             if self._lazy:
                 from dask_image.ndfilters import gaussian_laplace as dask_gl
                 filtered = dask_gl(self.data, sigma,**kwargs)
@@ -1158,20 +1158,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             self.data= filtered
         else:
             return self._deepcopy_with_new_data(data=filtered)
-
-    def find_peaks_nd_interactive(self, blocks=None,display=True, toolkit=None,):
-        if self._lazy:
-            if blocks is None:
-                blocks = len(self.data.blocks.shape)*(0,)
-            new_data = self.data.blocks[blocks]
-            signal = self._deepcopy_with_new_data(new_data)
-            signal.compute()
-        else:
-            signal = self
-        from pyxem.utils.nd_peak_finder import PeaksFinderND
-        pks_finder = PeaksFinderND(signal=signal,)
-        pks_finder.gui(display=display, toolkit=toolkit)
-        return
 
     def find_peaks_nd(self, interactive=False, **kwargs):
         """Finds peaks in a nd array.
