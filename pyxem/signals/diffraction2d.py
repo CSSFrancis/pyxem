@@ -1223,7 +1223,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         else:
             signal = self
 
-        pk_finder = PeaksFinder2D(self)
+        pk_finder = PeaksFinder2D(signal)
         pk_finder.gui()
 
 
