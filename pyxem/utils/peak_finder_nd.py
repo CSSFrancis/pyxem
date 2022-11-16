@@ -2,7 +2,7 @@ from hyperspy.ui_registry import add_gui_method
 import traits.api as t
 from hyperspy.exceptions import SignalDimensionError
 import numpy as np
-from hyperspy.drawing.marker import
+import hyperspy.api as hs
 
 @add_gui_method(toolkey="pyxem.Diffraction2D.find_peaks_nd_interactive")
 class PeaksFinder2D(t.HasTraits):
@@ -41,9 +41,29 @@ class PeaksFinder2D(t.HasTraits):
                   for i in range(self.signal.data.ndim)]
         print(sigmas)
         self.signal.data = -self.original_signal.filter(sigma=sigmas).data
-        nav_marker = h
+        nav_corner = self.signal.axes_manager.navigation_extent[::2]
+        sig_corner = self.signal.axes_manager.signal_extent[::2]
 
+        kernel_size = np.multiply(sigmas, 2*np.sqrt(2))
+        nav_marker = hs.plot.markers.ellipse(x=nav_corner[0]+kernel_size[0],
+                                             y=nav_corner[1]++kernel_size[1],
+                                             width=kernel_size[0],
+                                             height=kernel_size[1],
+                                             fill=True, alpha=0.7)
+
+        sig_marker = hs.plot.markers.ellipse(x=sig_corner[0]+kernel_size[2],
+                                             y=sig_corner[1]+kernel_size[3],
+                                             width=kernel_size[2],
+                                             height=kernel_size[3],
+                                             fill=True, alpha=0.7)
+        self.signal._plot.signal_plot.remove_markers(render_figure=True)
+        self.signal._plot.navigator_plot.remove_markers(render_figure=True)
+        self.signal.add_marker(sig_marker)
+        self.signal.add_marker(nav_marker, plot_on_signal=False)
 
         self.signal.update_plot()
-        #self.signal. .update()
         print("filtering Data...")
+
+    def find_peaks(self):
+        print(self.threshold)
+        #self.signal.find_peaks_nd()
