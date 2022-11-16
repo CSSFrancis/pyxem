@@ -21,7 +21,7 @@ class PeaksFinder2D(t.HasTraits):
         if signal.axes_manager.signal_dimension != 2:
             raise SignalDimensionError(
                 signal.axes.signal_dimension, 2)
-        self.original_signal = signal
+        self.original_signal = signal.deepcopy()
         self.signal = signal
         self.peaks = peaks
         if self.signal._plot is None or not self.signal._plot.is_active:
@@ -45,13 +45,13 @@ class PeaksFinder2D(t.HasTraits):
         sig_corner = self.signal.axes_manager.signal_extent[::2]
 
         kernel_size = np.multiply(sigmas, 2*np.sqrt(2))
-        nav_marker = hs.plot.markers.ellipse(x=nav_corner[0]+kernel_size[0],
+        nav_marker = hs.plot.markers.Ellipse(x=nav_corner[0]+kernel_size[0],
                                              y=nav_corner[1]++kernel_size[1],
                                              width=kernel_size[0],
                                              height=kernel_size[1],
                                              fill=True, alpha=0.7)
 
-        sig_marker = hs.plot.markers.ellipse(x=sig_corner[0]+kernel_size[2],
+        sig_marker = hs.plot.markers.Ellipse(x=sig_corner[0]+kernel_size[2],
                                              y=sig_corner[1]+kernel_size[3],
                                              width=kernel_size[2],
                                              height=kernel_size[3],
