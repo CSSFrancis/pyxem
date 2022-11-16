@@ -220,3 +220,14 @@ components1D:
     ScatteringFitComponentXTables:
       module: pyxem.components.scattering_fit_component_xtables
       class: ScatteringFitComponentXTables
+
+
+GUI:
+  toolkeys:
+    - pyxem.Diffraction2D.find_peaks_nd_interactive
+
+  widgets:
+    ipywidgets:
+      pyxem.Diffraction2D.find_peaks_nd_interactive:
+        module: pyxem.widgets.peak_finder_nd_widget
+        function: peak_finder_nd

@@ -1159,6 +1159,23 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         else:
             return self._deepcopy_with_new_data(data=filtered)
 
+    def find_peaks_nd_interactive(self, blocks=None):
+        from pyxem.utils.peak_finder_nd import PeaksFinder2D
+        if self._lazy:
+            if blocks is None:
+                blocks = len(self.data.blocks.shape) * (0,)
+            new_data = self.data.blocks[blocks]
+            signal = self._deepcopy_with_new_data(new_data)
+            signal.compute()
+        else:
+            signal = self
+
+        pk_finder = PeaksFinder2D(self)
+        pk_finder.gui()
+
+
+
+
     def find_peaks_nd(self, interactive=False, **kwargs):
         """Finds peaks in a nd array.
         """
