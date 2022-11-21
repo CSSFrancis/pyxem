@@ -319,6 +319,44 @@ def get_angle_cartesian(a, b):
     return math.acos(max(-1.0, min(1.0, np.dot(a, b) / denom)))
 
 
+def strided_indexing_roll(a, r, ):
+    from skimage.util.shape import view_as_windows as viewW
+    a = a.transpose()
+    a_ext = np.concatenate((a, a[:, :-1]), axis=1)
+    # Get sliding windows; use advanced-indexing to select appropriate ones
+    n = a.shape[1]
+    index = (np.arange(len(r)), (n - r) % n, 0)
+    return viewW(a_ext, (1, n))[index].transpose()
+
+
+def get_extent_along_dim(chunk, dim, center, threshold):
+    non_dim_points = center[:dim] + (slice(None),) + center[dim + 1:]
+    c = center[dim]
+    if dim == 0:
+        sliced_data = chunk[non_dim_points]
+    else:
+        sliced_data = chunk[non_dim_points].transpose()
+    dim_slice = np.greater(sliced_data, threshold)
+    rolled = strided_indexing_roll(dim_slice, -np.array(c))
+    top = np.sum(np.cumprod(rolled, axis=0), axis=0)
+    bottom = np.sum(np.cumprod(rolled[::-1], axis=0), axis=0)
+    ext = np.concatenate([top[:, np.newaxis], bottom[:, np.newaxis]], axis=1)
+    return ext
+
+
+def get_overlap_grids(array, footprint, not_spanned):
+    shapes = np.shape(footprint)
+    inds = []
+    for i, (chunks, shape) in enumerate(zip(array.chunks, shapes)):
+        if i in not_spanned:
+            chunk_ind = np.cumsum(chunks)
+            inds.append([np.array([ind-shape-1, ind+shape-1]) for ind in chunk_ind])
+        else:
+            inds.append([])
+    return inds
+
+
+
 def filter_vectors_near_basis(vectors, basis, distance=None):
     """
     Filter an array of vectors to only the list of closest vectors
@@ -352,13 +390,15 @@ def filter_vectors_near_basis(vectors, basis, distance=None):
 
 
 def _find_peaks(data, offset=None, mask=None, get_intensity=True,
-                extent_threshold=None, extent_rel=True,  **kwargs):
+                extent_threshold=None, extent_rel=True, spanned=[True,],
+                **kwargs):
     """This method helps to format the output from the blob methods
     in skimage for a more hyperspy like format using hs.markers.
     The underlying function finds the local max by finding point where
     a dilution doesn't change.
     """
-    from skimage.util.shape import view_as_windows as viewW
+    if not all(spanned):
+        kwargs["exclude_border"] = tuple([1 if s else 0 for s in spanned])
     offset = np.squeeze(offset)
     dimensions = data.ndim
     local_maxima = peak_local_max(data,
@@ -372,38 +412,44 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
 
-    def strided_indexing_roll(a, r, ):
-        a = a.transpose()
-        a_ext = np.concatenate((a, a[:, :-1]), axis=1)
-        # Get sliding windows; use advanced-indexing to select appropriate ones
-        n = a.shape[1]
-        index = (np.arange(len(r)), (n - r) % n, 0)
-        return viewW(a_ext, (1, n))[index].transpose()
-
-    if get_intensity:
+    if get_intensity or extent_threshold is not None:
         maxima = tuple([tuple(lm[:, d]) for d in range(dimensions)])
         intensity = data[maxima]
         lm = np.concatenate([lm, intensity[:, np.newaxis]], axis=1)
+
+    # calculating the extent threshold in the chunk
     if extent_threshold is not None:
         if extent_rel is True:
             threshold = lm[:, -1] * extent_threshold
         else:
             threshold = extent_threshold
         for d in range(dimensions):
-            non_dim_points = maxima[:d]+(slice(None),)+maxima[d+1:]
-            center = maxima[d]
-            if d == 0:
-                sliced_data = data[non_dim_points]
-            else:
-                sliced_data = data[non_dim_points].transpose()
-            dim_slice = np.greater(sliced_data, threshold)
-            rolled = strided_indexing_roll(dim_slice, -np.array(center))
-            top = np.sum(np.cumprod(rolled, axis=0), axis=0)
-            bottom = np.sum(np.cumprod(rolled[::-1], axis=0), axis=0)
-            lm = np.concatenate([lm, top[:, np.newaxis], bottom[:, np.newaxis]], axis=1)
+            lm = np.concatenate([lm, get_extent_along_dim(data,
+                                                          dim=d,
+                                                          center=maxima,
+                                                          threshold=threshold,
+                                                          )
+                                 ], axis=1)
 
     if offset is not None:
+        low_edges = offset[:, 0]
+        high_edges = offset[:, 1]
         lm[:, :dimensions] = np.add(offset[:, 0], lm[:, :dimensions])
+
+    if extent_threshold is not None:
+        indexes = []
+        for i in range(dimensions):
+            indexes.append([i, i+dimensions+1, i+dimensions+2])
+    else:
+        indexes = range(dimensions)
+
+    if not all(spanned):
+        for s, low, high, ind in zip(spanned, low_edges, high_edges, indexes):
+            if not s:
+                columns = lm[:, ind]
+                columns[columns == low] = -columns[columns == low]
+                columns[columns == high] = -(columns[columns == high]+1)  # add one to handle filtering
+                lm[:, ind] = columns
 
     ans = np.empty(1, dtype=object)
     ans[0] = lm

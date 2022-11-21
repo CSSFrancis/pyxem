@@ -1450,6 +1450,14 @@ class TestNDPeakFinding:
         intensities = peaks.data[:, 4]
         assert len(intensities) == 8
 
+    def test_centers_chunked(self, three_section):
+        filtered = -three_section.filter(sigma=(3, 3, 3, 3))
+        filtered = filtered.as_lazy()
+        filtered.rechunk(nav_chunks=(10, 10))
+        peaks = filtered.find_peaks_nd(threshold_rel=.1, extent_threshold=0.7)
+        intensities = peaks.data[:, 4]
+        assert len(intensities) == 8
+
 
 
 
