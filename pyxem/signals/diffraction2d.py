@@ -72,7 +72,7 @@ from pyxem.utils.signal import (
     transfer_navigation_axes,
 )
 
-from pyxem.utils.vector_utils import _find_peaks, get_chunk_offsets
+from pyxem.utils.vector_utils import _find_peaks, get_chunk_offsets, get_overlap_grids
 import pyxem.utils.pixelated_stem_tools as pst
 import pyxem.utils.dask_tools as dt
 import pyxem.utils.marker_tools as mt
@@ -864,7 +864,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         )
         return s_out
 
-    def map_blockwise(self, func, **kwargs):
+    def map_blockwise(self, func, pass_spanned=False, **kwargs):
 
         if not self._lazy:
             signal = self.as_lazy()
@@ -883,6 +883,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         pattern = np.argwhere(np.logical_not(spanned))[:, 0]
         if len(pattern) == 0:
             pattern = [0, ]
+        if pass_spanned:
+            kwargs["spanned"] = spanned
         offsets = get_chunk_offsets(signal.data)
         offsets = da.from_array(offsets, chunks=(1,)*len(pattern)+(-1, -1))
         new_args = (signal.data, range(len(signal.data.shape)))
@@ -1178,6 +1180,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                       get_intensity=False,
                       extent_threshold=None,
                       extend_threshold=True,
+                      min_distance =1,
+                      footprint = None,
                       **kwargs):
         """Finds peaks in a nd array.
 
@@ -1194,8 +1198,13 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             If True, and the signal is Lazy the program will recompute the extents which extend
             past the
         """
-        array_indexes =  [ax.index_in_array() for ax in self.axes_manger._axes]
-        labels = [self.axes_manger._axes.name for ind in array_indexes]
+        is_lazy = self._lazy
+        dimensions = self.data.ndim
+        if footprint is None:
+            footprint = np.ones((min_distance,)*dimensions)
+        array_indexes = [ax.index_in_array for ax in self.axes_manager._axes]
+        labels = [self.axes_manager._axes[ind].name if isinstance(self.axes_manager._axes[ind].name, str)
+                  else "axes-"+ str(ind) for ind in array_indexes]
         if extent_threshold is not None:
             extent_labels = []
             for l in labels:
@@ -1210,6 +1219,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                                    mask=mask,
                                    get_intensity=get_intensity,
                                    extent_threshold=extent_threshold,
+                                   pass_spanned=True,
+                                   footprint=footprint,
                                    **kwargs)
 
 
@@ -1218,6 +1229,45 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             print("No peaks found")
             return
         pks = np.vstack(peaks)
+
+        # getting rid of duplicate edge peaks or not real edge peaks
+        if is_lazy:
+
+            # sort over all the unspanned_axes
+            not_spanned = np.nonzero([c != s or c != (s,) for c, s in zip(self.data.chunks,
+                                                                          self.data.shape)])[0]
+            grids = get_overlap_grids(self.data,
+                                      footprint=footprint,
+                                      not_spanned=not_spanned)
+            inds = []
+            for g, s in zip(grids[not_spanned], not_spanned):
+                sorted_ind = np.argsort(pks[s])
+                sorted_col = pks[sorted_ind,s]
+                lows = g[:,0]
+                highs = g[:,1]
+                lo = np.searchsorted(sorted_col, lows, side="left")
+                hi = np.searchsorted(sorted_col, highs, side="right")
+                for l,h in zip(lo, hi):
+                    inds.append(list(sorted_ind[l:h]))
+            in_grid = lm[inds]
+
+
+            np.searchsorted(for grid in grids[not_spanned] for g in grid ]
+            pks = np.lexsort(pks, axis=not_spanned)
+            grid_pks = pks[:, not_spanned]
+
+
+            sizes = [ax.size for ax in self.axes_manager._axes]
+            centers = pks[:, :dimensions]
+            keep = np.all(centers > 0 * np.less(centers, sizes), axis=1)  # filter out non edges
+            print(centers)
+            print(keep)
+            _, ind = np.unique(centers, return_inverse=True, axis=1)
+            keep[ind] = False
+            print(pks.shape)
+            pks = pks[keep]
+
+
         peaks = BaseSignal(pks).T
         return peaks
 
