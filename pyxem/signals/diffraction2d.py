@@ -1173,14 +1173,46 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         pk_finder = PeaksFinder2D(signal)
         pk_finder.gui()
 
-
-
-
-    def find_peaks_nd(self, interactive=False, **kwargs):
+    def find_peaks_nd(self,
+                      mask=None,
+                      get_intensity=False,
+                      extent_threshold=None,
+                      extend_threshold=True,
+                      **kwargs):
         """Finds peaks in a nd array.
+
+        Parameters
+        ----------
+         mask: None or Array-Like
+            The mask to determine which parts of the data set should be used to find peaks
+        get_intensity: bool
+            If the intensity at each position should be returned as well.
+        extent_threshold: float(0.0 - 1.0) or None
+            The threshold for determining the extent of some feature in all dimensions.  If none the
+            extent will not be calculated.
+        extend_threshold: bool
+            If True, and the signal is Lazy the program will recompute the extents which extend
+            past the
         """
-        peaks = self.map_blockwise(_find_peaks, **kwargs)
-        print(peaks)
+        array_indexes =  [ax.index_in_array() for ax in self.axes_manger._axes]
+        labels = [self.axes_manger._axes.name for ind in array_indexes]
+        if extent_threshold is not None:
+            extent_labels = []
+            for l in labels:
+                extent_labels.append(l + "high")
+                extent_labels.append(l + "low")
+        if get_intensity:
+            labels += ["intensity",]
+        if extent_threshold is not None:
+            labels += extent_labels
+
+        peaks = self.map_blockwise(_find_peaks,
+                                   mask=mask,
+                                   get_intensity=get_intensity,
+                                   extent_threshold=extent_threshold,
+                                   **kwargs)
+
+
         peaks = [p for p in peaks if p is not None]
         if not peaks:
             print("No peaks found")
