@@ -352,13 +352,12 @@ def filter_vectors_near_basis(vectors, basis, distance=None):
 
 
 def _find_peaks(data, offset=None, mask=None, get_intensity=True,
-                extent_threshold=None,extent_rel=True,  **kwargs):
+                extent_threshold=None, extent_rel=True,  **kwargs):
     """This method helps to format the output from the blob methods
     in skimage for a more hyperspy like format using hs.markers.
     The underlying function finds the local max by finding point where
     a dilution doesn't change.
     """
-    from scipy.signal import peak_widths
     from skimage.util.shape import view_as_windows as viewW
     offset = np.squeeze(offset)
     dimensions = data.ndim
