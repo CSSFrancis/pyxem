@@ -1180,7 +1180,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                       get_intensity=False,
                       extent_threshold=None,
                       extend_threshold=True,
-                      min_distance =1,
+                      min_distance=3,
                       footprint = None,
                       **kwargs):
         """Finds peaks in a nd array.
@@ -1204,7 +1204,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             footprint = np.ones((min_distance,)*dimensions)
         array_indexes = [ax.index_in_array for ax in self.axes_manager._axes]
         labels = [self.axes_manager._axes[ind].name if isinstance(self.axes_manager._axes[ind].name, str)
-                  else "axes-"+ str(ind) for ind in array_indexes]
+                  else "axes-" + str(ind) for ind in array_indexes]
         if extent_threshold is not None:
             extent_labels = []
             for l in labels:
@@ -1232,7 +1232,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         # getting rid of duplicate edge peaks or not real edge peaks
         if is_lazy:
-
+            from scipy.spatial import KDTree
             # sort over all the unspanned_axes
             not_spanned = np.nonzero([c != s or c != (s,) for c, s in zip(self.data.chunks,
                                                                           self.data.shape)])[0]
@@ -1240,32 +1240,30 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                                       footprint=footprint,
                                       not_spanned=not_spanned)
             inds = []
+
             for g, s in zip(grids[not_spanned], not_spanned):
-                sorted_ind = np.argsort(pks[s])
-                sorted_col = pks[sorted_ind,s]
-                lows = g[:,0]
-                highs = g[:,1]
+                sorted_ind = np.argsort(pks[:, s])
+                sorted_col = pks[sorted_ind, s]
+                lows = g[:, 0]
+                highs = g[:, 1]
                 lo = np.searchsorted(sorted_col, lows, side="left")
                 hi = np.searchsorted(sorted_col, highs, side="right")
-                for l,h in zip(lo, hi):
-                    inds.append(list(sorted_ind[l:h]))
-            in_grid = lm[inds]
-
-
-            np.searchsorted(for grid in grids[not_spanned] for g in grid ]
-            pks = np.lexsort(pks, axis=not_spanned)
-            grid_pks = pks[:, not_spanned]
-
-
-            sizes = [ax.size for ax in self.axes_manager._axes]
-            centers = pks[:, :dimensions]
-            keep = np.all(centers > 0 * np.less(centers, sizes), axis=1)  # filter out non edges
-            print(centers)
-            print(keep)
-            _, ind = np.unique(centers, return_inverse=True, axis=1)
-            keep[ind] = False
-            print(pks.shape)
-            pks = pks[keep]
+                for l, h in zip(lo, hi):
+                    inds.append(sorted_ind[l:h])
+            inds = np.unique(np.hstack(inds))
+            in_grid = pks[inds, :dimensions]
+            tree = KDTree(in_grid)
+            dd, ii = tree.query(in_grid, k=[2])
+            max_dist = np.power(np.sum(np.power(footprint.shape, 2)), .5)
+            distance, index = np.squeeze(dd), np.squeeze(ii)
+            delete_ind = index[distance > max_dist]
+            cen_indexes = inds[distance <= max_dist]
+            nn_indexes = inds[cen_indexes]
+            org_int = pks[cen_indexes][:, dimensions]  # intensity of center
+            comp_int = pks[nn_indexes][:, dimensions]  # intensity of nearest neighbor
+            delete_ind = np.hstack([delete_ind, np.where(org_int < comp_int, cen_indexes, nn_indexes)])
+            delete_ind = np.unique(delete_ind)
+            pks = np.delete(pks, delete_ind, axis=0)
 
 
         peaks = BaseSignal(pks).T

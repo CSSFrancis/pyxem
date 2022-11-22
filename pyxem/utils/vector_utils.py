@@ -349,11 +349,10 @@ def get_overlap_grids(array, footprint, not_spanned):
     for i, (chunks, shape) in enumerate(zip(array.chunks, shapes)):
         if i in not_spanned:
             chunk_ind = np.cumsum(chunks)
-            inds.append([np.array([ind-shape-1, ind+shape-1]) for ind in chunk_ind])
+            inds.append(np.array([[ind-shape-1, ind+shape-1] for ind in chunk_ind]))
         else:
             inds.append([])
-    return inds
-
+    return np.array(inds, dtype=object)
 
 
 def _find_peaks(data, offset=None, mask=None, get_intensity=True,
@@ -369,7 +368,6 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
     offset = np.squeeze(offset)
     dimensions = data.ndim
     local_maxima = peak_local_max(data,
-                                  footprint=np.ones((3,) * (data.ndim)),
                                   **kwargs)
     # Catch no peaks
     if local_maxima.size == 0:
@@ -407,16 +405,6 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
         indexes = []
         for i in range(dimensions):
             indexes.append([i, i+dimensions+1, i+dimensions+2])
-    else:
-        indexes = range(dimensions)
-
-    if not all(spanned):
-        for s, low, high, ind in zip(spanned, low_edges, high_edges, indexes):
-            if not s:
-                columns = lm[:, ind]
-                columns[columns == low] = -columns[columns == low]
-                columns[columns == high] = -(columns[columns == high]+1)  # add one to handle filtering
-                lm[:, ind] = columns
 
     ans = np.empty(1, dtype=object)
     ans[0] = lm
