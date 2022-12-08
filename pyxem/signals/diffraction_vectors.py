@@ -715,3 +715,5 @@ class DiffractionVectors2D(DiffractionVectors):
         super().__init__(*args, **kw)
         if self.axes_manager.signal_dimension != 2:
             self.axes_manager.set_signal_dimension(2)
+
+        self.labels = kw.get("labels", None)

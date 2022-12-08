@@ -20,6 +20,7 @@ import pytest
 import numpy as np
 import dask.array as da
 import hyperspy.api as hs
+import scipy.ndimage
 from matplotlib import pyplot as plt
 from numpy.random import default_rng
 from skimage.draw import circle_perimeter_aa,disk
@@ -1449,6 +1450,24 @@ class TestNDPeakFinding:
         data = Diffraction2D(data)
         data.plot()
         return data
+
+    @pytest.mark.parametrize("method", ["gaussian_filter", scipy.ndimage.gaussian_filter])
+    @pytest.mark.parametrize("lazy", [True, False])
+    def test_filter(self, three_section, method, lazy):
+        if lazy:
+            three_section = three_section.as_lazy()
+        sigma = (3, 3, 3, 3)
+        new = three_section.filter(method=method, sigma=sigma, inplace=False)
+        three_section.filter(method=method, sigma=sigma, inplace=True)
+        np.testing.assert_array_almost_equal(new.data, three_section.data)
+
+    def test_filter_lazy_fail(self, three_section):
+        sigma = (3, 3, 3, 3)
+        three_section = three_section.as_lazy()
+        three_section.rechunk((3, 3, -1, -1))
+        with pytest.raises(ValueError):
+            three_section.filter(method="gaussian_laplace",
+                                                 sigma=sigma)
 
     def test_decomposition(self, three_section):
         filtered = -three_section.filter(sigma=(3, 3, 3, 3))

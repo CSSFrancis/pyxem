@@ -26,6 +26,7 @@ import dask.array as da
 from dask.diagnostics import ProgressBar
 from tqdm import tqdm
 import warnings
+from importlib import import_module
 
 import hyperspy.api as hs
 from hyperspy.signals import Signal2D, BaseSignal
@@ -1142,24 +1143,45 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         return s
 
     def filter(self,
-               method="log",
-               sigma=2,
+               method="gaussian_laplace",
                inplace=False,
-               **kwargs,
+               **kwargs
                ):
-        if method is "log":
+        """ Filters the entire dataset given some ndimage filter. If the dataset is lazy
+        an appropriate filter from `dask-image` will be applied if applicable.
+
+        Additional considerations for lazy signals are given to the chunk structure of
+        some signal in order to maintain efficient computation.
+
+        If you only want to filter some of the dimensions.
+
+        """
+        if isinstance(method, str):
             if self._lazy:
-                from dask_image.ndfilters import gaussian_laplace as dask_gl
-                filtered = dask_gl(self.data, sigma,**kwargs)
+                name = "dask_image.ndfilters"
+                _method = getattr(import_module(name), method)
             else:
-                from scipy.ndimage.filters import gaussian_laplace
-                filtered = gaussian_laplace(self.data,
-                                            sigma,
-                                            **kwargs)
-        if inplace:
-            self.data= filtered
+                name = "scipy.ndimage"
+                _method = getattr(import_module(name), method)
         else:
-            return self._deepcopy_with_new_data(data=filtered)
+            _method = method
+
+        if self._lazy:
+            axes = np.arange(self.data.ndim)
+            unspanned_dim = set(axes) - set(self.spanned_dimensions())
+            chunked_dim = len(unspanned_dim)
+            if chunked_dim > 1:
+                raise ValueError("Only one axis should be chunked when"
+                                 "filtering the dataset. The complexity"
+                                 "of filtering increases exponentially with"
+                                 "the number of unchunked dimensions so it"
+                                 "is highly recommended to rechunk your dataset.")
+        new_data = _method(self.data, **kwargs)
+        if inplace:
+            self.data= new_data
+            return
+        else:
+            return self._deepcopy_with_new_data(data=new_data)
 
     def find_peaks_nd_interactive(self, blocks=None):
         from pyxem.utils.peak_finder_nd import PeaksFinder2D
@@ -1175,6 +1197,10 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         pk_finder = PeaksFinder2D(signal)
         pk_finder.gui()
 
+    def spanned_dimensions(self):
+        return np.nonzero([c == s or c == (s,) for c, s in zip(self.data.chunks,
+                                                                      self.data.shape)])[0]
+
     def find_peaks_nd(self,
                       mask=None,
                       get_intensity=False,
@@ -1183,7 +1209,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                       min_distance=3,
                       footprint = None,
                       **kwargs):
-        """Finds peaks in a nd array.
+        """Finds peaks in a nd array. This uses a map-overlap type approach so be careful about the
+        amount of non-spanned chunks in the dataset.
 
         Parameters
         ----------
@@ -1223,7 +1250,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                                    footprint=footprint,
                                    **kwargs)
 
-
         peaks = [p for p in peaks if p is not None]
         if not peaks:
             print("No peaks found")
@@ -1231,6 +1257,9 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         pks = np.vstack(peaks)
 
         # getting rid of duplicate edge peaks or not real edge peaks
+        # if some peak is real then it will have a nearest neighbor peak
+        # with an intensity that is within the footprint and that is
+        # also a peak.
         if is_lazy:
             from scipy.spatial import KDTree
             # sort over all the unspanned_axes
@@ -1265,8 +1294,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             delete_ind = np.unique(delete_ind)
             pks = np.delete(pks, delete_ind, axis=0)
 
-
-        peaks = BaseSignal(pks).T
+        from pyxem.signals.diffraction_vectors import DiffractionVectors2D
+        peaks = DiffractionVectors2D(pks, labels=labels)
         return peaks
 
     @deprecated(
