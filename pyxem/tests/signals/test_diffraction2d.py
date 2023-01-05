@@ -1467,7 +1467,12 @@ class TestNDPeakFinding:
         three_section.rechunk((3, 3, -1, -1))
         with pytest.raises(ValueError):
             three_section.filter(method="gaussian_laplace",
-                                                 sigma=sigma)
+                                 sigma=sigma)
+
+    def test_map_blockwise(self, three_section):
+        three_section = three_section.as_lazy()
+        three_section.
+
 
     def test_decomposition(self, three_section):
         filtered = -three_section.filter(sigma=(3, 3, 3, 3))

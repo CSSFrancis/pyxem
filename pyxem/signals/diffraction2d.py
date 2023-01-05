@@ -865,8 +865,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         )
         return s_out
 
-    def map_blockwise(self, func, pass_spanned=False, **kwargs):
-
+    def map_blockwise(self, func, pass_spanned=False, overlap=None,  **kwargs):
         if not self._lazy:
             signal = self.as_lazy()
             signal.rechunk(nav_chunks=self.axes_manager.navigation_shape)
@@ -888,7 +887,12 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             kwargs["spanned"] = spanned
         offsets = get_chunk_offsets(signal.data)
         offsets = da.from_array(offsets, chunks=(1,)*len(pattern)+(-1, -1))
+        if overlap is not None:
+            overlap =
+
         new_args = (signal.data, range(len(signal.data.shape)))
+
+
         # Applying the function blockwise
         offsets_pattern = list(pattern)+list(range(len(signal.data.shape)-2, len(signal.data.shape)))
         new_args += (offsets, offsets_pattern)
@@ -1142,6 +1146,20 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         pst._copy_signal_all_axes_metadata(self, s)
         return s
 
+    def filter_signal_axes(self,
+                           method="gaussian_filter",
+                           **kwargs):
+        if isinstance(method, str):
+            name = "scipy.ndimage"
+            _method = getattr(import_module(name), method)
+        return self.map(_method, **kwargs)
+
+    def get_num_chunked_axes(self):
+        axes = np.arange(self.data.ndim)
+        unspanned_dim = set(axes) - set(self.spanned_dimensions())
+        chunked_dim = len(unspanned_dim)
+        return chunked_dim
+
     def filter(self,
                method="gaussian_laplace",
                inplace=False,
@@ -1167,10 +1185,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             _method = method
 
         if self._lazy:
-            axes = np.arange(self.data.ndim)
-            unspanned_dim = set(axes) - set(self.spanned_dimensions())
-            chunked_dim = len(unspanned_dim)
-            if chunked_dim > 1:
+            if self.get_num_chunked_axes() > 1:
                 raise ValueError("Only one axis should be chunked when"
                                  "filtering the dataset. The complexity"
                                  "of filtering increases exponentially with"
