@@ -26,6 +26,7 @@ Fixed
 - Fixed error related to `DiffractionSignal2D.apply_affine_transformation` when multiple affine transformations are given. (#870)
 - Bugfix related to Numpy 1.24.0. Strict array creation with dtype=object is needed
   for ragged arrays. (#880 & #881)
+- Bugfix for #866.  Default cross correlation normalization is None and supports passing of kwargs.
 
 
 2022-15-06 - version 0.14.2

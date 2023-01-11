@@ -625,7 +625,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             Must be one of "cross_correlate", "blur", "interpolate" or "center_of_mass".
 
            "cross_correlate": Center finding using cross-correlation of circles of 
-                `radius_start` to `radius_finish`.
+                `radius_start` to `radius_finish`. Additionally supports arguments for
+                 `skimage.registration.phase_cross_correlation`.
            "blur": Center finding by blurring each frame with a Gaussian kernel with 
                 standard deviation `sigma` and finding the maximum.
            "interpolate": Finding the center by summing along X/Y and finding the peak 

@@ -600,7 +600,7 @@ def find_beam_center_blur(z, sigma):
     return dispatcher.array(center)
 
 
-def find_beam_offset_cross_correlation(z, radius_start, radius_finish):
+def find_beam_offset_cross_correlation(z, radius_start, radius_finish, normalization=None, **kwargs):
     """Find the offset of the direct beam from the image center by a cross-correlation algorithm.
     The shift is calculated relative to an circle perimeter. The circle can be
     refined across a range of radii during the centring procedure to improve
@@ -635,7 +635,10 @@ def find_beam_offset_cross_correlation(z, radius_start, radius_finish):
         hann2d = np.sqrt(np.outer(h0, h1))
         ref = hann2d * ref
         im = hann2d * z
-        shift, error, diffphase = phase_cross_correlation(ref, im, upsample_factor=10)
+        shift, error, diffphase = phase_cross_correlation(ref, im,
+                                                          normalization=normalization,
+                                                          upsample_factor=10,
+                                                          **kwargs)
         errRecord[ind] = error
         index_min = np.argmin(errRecord)
 
@@ -647,7 +650,8 @@ def find_beam_offset_cross_correlation(z, radius_start, radius_finish):
     hann2d = np.sqrt(np.outer(h0, h1))
     ref = hann2d * ref
     im = hann2d * z
-    shift, error, diffphase = phase_cross_correlation(ref, im, upsample_factor=100)
+    shift, error, diffphase = phase_cross_correlation(ref, im, upsample_factor=100,
+                                                      normalization=None, **kwargs)
 
     shift = shift[::-1]
     return shift - 0.5
