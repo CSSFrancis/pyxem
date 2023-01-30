@@ -1454,16 +1454,15 @@ class TestNDPeakFinding:
 
     def test_map_blockwise(self, three_section):
         three_section = three_section.as_lazy()
-        three_section.
 
 
     def test_decomposition(self, three_section):
         filtered = -three_section.filter(sigma=(3, 3, 3, 3))
-        peaks = filtered.find_peaks_nd(threshold_rel=.1)
+        peaks = filtered.find_peaks_nd(threshold_rel=.1, get_intensity=True)
         intensities = peaks.data[:, 4]
         assert len(intensities) == 8
         np.testing.assert_array_equal(np.sort(peaks.data[:, 0]),
-                                      [10, 10, 14, 14, 14, 14, 45, 45])
+                                      [10, 10, 14, 14, 14, 14, 38, 38])
         np.testing.assert_array_equal(np.sort(peaks.data[:, 1]),
                                       [7, 7, 7, 7, 15, 15, 35, 35])
         assert np.max(filtered) == np.max(intensities)

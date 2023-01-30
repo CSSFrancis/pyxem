@@ -935,8 +935,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             kwargs["spanned"] = spanned
         offsets = get_chunk_offsets(signal.data)
         offsets = da.from_array(offsets, chunks=(1,)*len(pattern)+(-1, -1))
-        if overlap is not None:
-            overlap =
 
         new_args = (signal.data, range(len(signal.data.shape)))
 
@@ -1328,6 +1326,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         # if some peak is real then it will have a nearest neighbor peak
         # with an intensity that is within the footprint and that is
         # also a peak.
+        """
         if is_lazy:
             from scipy.spatial import KDTree
             # sort over all the unspanned_axes
@@ -1337,7 +1336,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                                       footprint=footprint,
                                       not_spanned=not_spanned)
             inds = []
-
+            
+            
             for g, s in zip(grids[not_spanned], not_spanned):
                 sorted_ind = np.argsort(pks[:, s])
                 sorted_col = pks[sorted_ind, s]
@@ -1361,6 +1361,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             delete_ind = np.hstack([delete_ind, np.where(org_int < comp_int, cen_indexes, nn_indexes)])
             delete_ind = np.unique(delete_ind)
             pks = np.delete(pks, delete_ind, axis=0)
+        """
 
         from pyxem.signals.diffraction_vectors import DiffractionVectors2D
         peaks = DiffractionVectors2D(pks, labels=labels)
