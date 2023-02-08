@@ -73,7 +73,7 @@ from pyxem.utils.signal import (
     transfer_navigation_axes,
 )
 
-from pyxem.utils.vector_utils import _find_peaks, get_chunk_offsets, get_overlap_grids
+from pyxem.utils.vector_utils import _find_peaks, get_chunk_offsets, trim_vectors
 import pyxem.utils.pixelated_stem_tools as pst
 import pyxem.utils.dask_tools as dt
 import pyxem.utils.marker_tools as mt
@@ -913,35 +913,53 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         )
         return s_out
 
-    def map_blockwise(self, func, pass_spanned=False, overlap=None,  **kwargs):
+    def map_blockwise(self,
+                      func,
+                      pass_spanned=False,
+                      overlap=None,
+                      **kwargs):
         if not self._lazy:
-            signal = self.as_lazy()
-            signal.rechunk(nav_chunks=self.axes_manager.navigation_shape)
-        else:
-            signal = self
-        spanned = [c == s or c == (s,) for c, s in zip(signal.data.chunks, signal.data.shape)]
+            return func(self.data,offset=None,  **kwargs)
 
-        drop_axes = np.squeeze(np.argwhere(spanned))
+        spanned = [c == s or c == (s,) for c, s in zip(self.data.chunks, self.data.shape)]
+        drop_axes = np.squeeze(np.argwhere(spanned))  # (1,2,3)
         adjust_chunks = {}
-        for i in range(len(signal.data.shape)):
+        for i in range(len(self.data.shape)):
             if i not in drop_axes:
-                adjust_chunks[i] = 1
+                adjust_chunks[i] = 1  # chunks to 1
             else:
-                adjust_chunks[i] = -1
-        pattern = np.argwhere(np.logical_not(spanned))[:, 0]
-        if len(pattern) == 0:
+                adjust_chunks[i] = -1  # Remove axis
+        pattern = np.argwhere(np.logical_not(spanned))[:, 0]  # [0,]
+        if len(pattern) == 0:  # all spanned
             pattern = [0, ]
         if pass_spanned:
             kwargs["spanned"] = spanned
-        offsets = get_chunk_offsets(signal.data)
+        # do offsets before
+        offsets = get_chunk_offsets(self.data)
         offsets = da.from_array(offsets, chunks=(1,)*len(pattern)+(-1, -1))
 
-        new_args = (signal.data, range(len(signal.data.shape)))
+        if overlap is not None:
+            overlaps = {i: 0 if s else overlap for i, s in enumerate(spanned)}
+            boundary = None
+            data = da.overlap.overlap(self.data,
+                              depth=overlaps,
+                              boundary=boundary)
+            trims = trim_vectors(data,
+                                                    depth=overlaps,
+                                                    boundary=boundary)
 
+        else:
+            data = self.data
+
+        new_args = (data, range(len(data.shape)))  # [0,1,2,3]
 
         # Applying the function blockwise
-        offsets_pattern = list(pattern)+list(range(len(signal.data.shape)-2, len(signal.data.shape)))
+        offsets_pattern = list(pattern)+list(range(len(data.shape)-2, len(data.shape))) #
         new_args += (offsets, offsets_pattern)
+        if overlap:
+            trims = da.from_array(trims, chunks=(1,) * len(pattern) + (-1, -1))
+            new_args += (trims, offsets_pattern)
+
         ref = da.reshape(da.blockwise(func, pattern,
                                       *new_args,
                                       adjust_chunks=adjust_chunks,
@@ -953,7 +971,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                          )
         ref = ref.compute()
         return ref
-
 
     @deprecated_argument(since="0.15.0", name="lazy_result", alternative="lazy_output", removal="1.00.0")
     def center_of_mass(
@@ -1304,7 +1321,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                 extent_labels.append(l + "high")
                 extent_labels.append(l + "low")
         if get_intensity:
-            labels += ["intensity",]
+            labels += ["intensity", ]
         if extent_threshold is not None:
             labels += extent_labels
 
@@ -1321,48 +1338,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             print("No peaks found")
             return
         pks = np.vstack(peaks)
-
-        # getting rid of duplicate edge peaks or not real edge peaks
-        # if some peak is real then it will have a nearest neighbor peak
-        # with an intensity that is within the footprint and that is
-        # also a peak.
-        """
-        if is_lazy:
-            from scipy.spatial import KDTree
-            # sort over all the unspanned_axes
-            not_spanned = np.nonzero([c != s or c != (s,) for c, s in zip(self.data.chunks,
-                                                                          self.data.shape)])[0]
-            grids = get_overlap_grids(self.data,
-                                      footprint=footprint,
-                                      not_spanned=not_spanned)
-            inds = []
-            
-            
-            for g, s in zip(grids[not_spanned], not_spanned):
-                sorted_ind = np.argsort(pks[:, s])
-                sorted_col = pks[sorted_ind, s]
-                lows = g[:, 0]
-                highs = g[:, 1]
-                lo = np.searchsorted(sorted_col, lows, side="left")
-                hi = np.searchsorted(sorted_col, highs, side="right")
-                for l, h in zip(lo, hi):
-                    inds.append(sorted_ind[l:h])
-            inds = np.unique(np.hstack(inds))
-            in_grid = pks[inds, :dimensions]
-            tree = KDTree(in_grid)
-            dd, ii = tree.query(in_grid, k=[2])
-            max_dist = np.power(np.sum(np.power(footprint.shape, 2)), .5)
-            distance, index = np.squeeze(dd), np.squeeze(ii)
-            delete_ind = index[distance > max_dist]
-            cen_indexes = inds[distance <= max_dist]
-            nn_indexes = inds[cen_indexes]
-            org_int = pks[cen_indexes][:, dimensions]  # intensity of center
-            comp_int = pks[nn_indexes][:, dimensions]  # intensity of nearest neighbor
-            delete_ind = np.hstack([delete_ind, np.where(org_int < comp_int, cen_indexes, nn_indexes)])
-            delete_ind = np.unique(delete_ind)
-            pks = np.delete(pks, delete_ind, axis=0)
-        """
-
         from pyxem.signals.diffraction_vectors import DiffractionVectors2D
         peaks = DiffractionVectors2D(pks, labels=labels)
         return peaks

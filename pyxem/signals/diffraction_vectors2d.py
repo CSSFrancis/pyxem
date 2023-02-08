@@ -47,6 +47,7 @@ class DiffractionVectors2D(Signal2D):
         self.column_scale = kwargs.pop("column_scale", None)
         self.column_offsets = kwargs.pop("column_offsets", None)
         self.detector_shape = kwargs.pop("detector_shape", None)
+        self.labels = kwargs.pop("labels", None)
         super().__init__(*args, **kwargs)
 
     def get_unique_vectors(

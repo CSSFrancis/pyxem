@@ -1431,7 +1431,6 @@ class TestNDPeakFinding:
         data[pos2r, pos2c] = four_fold_img
         data[pos3r, pos3c] = two_fold_img
         data = Diffraction2D(data)
-        data.plot()
         return data
 
     @pytest.mark.parametrize("method", ["gaussian_filter", scipy.ndimage.gaussian_filter])
@@ -1452,10 +1451,6 @@ class TestNDPeakFinding:
             three_section.filter(method="gaussian_laplace",
                                  sigma=sigma)
 
-    def test_map_blockwise(self, three_section):
-        three_section = three_section.as_lazy()
-
-
     def test_decomposition(self, three_section):
         filtered = -three_section.filter(sigma=(3, 3, 3, 3))
         peaks = filtered.find_peaks_nd(threshold_rel=.1, get_intensity=True)
@@ -1473,15 +1468,20 @@ class TestNDPeakFinding:
         intensities = peaks.data[:, 4]
         assert len(intensities) == 8
 
-    def test_centers_chunked(self, three_section):
+    @pytest.mark.parametrize("chunks", ((20, 20,), (10, 10), (10, -1)))
+    def test_centers_chunked(self, three_section, chunks):
         filtered = -three_section.filter(sigma=(3, 3, 3, 3))
         filtered = filtered.as_lazy()
-        filtered.rechunk(nav_chunks=(20, 20))
+        filtered.rechunk(nav_chunks=chunks)
         peaks = filtered.find_peaks_nd(threshold_abs=2,
-                                       extent_threshold=0.7)
+                                       extent_threshold=0.7, overlap=3)
         intensities = peaks.data[:, 4]
-        print(peaks.data)
         assert len(intensities) == 8
+        np.testing.assert_array_equal(np.sort(peaks.data[:, 0]),
+                                      [10, 10, 14, 14, 14, 14, 38, 38])
+        np.testing.assert_array_equal(np.sort(peaks.data[:, 1]),
+                                      [7, 7, 7, 7, 15, 15, 35, 35])
+
 
 
 

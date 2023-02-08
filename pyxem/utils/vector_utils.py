@@ -17,6 +17,7 @@
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+from dask.array.overlap import coerce_boundary, coerce_depth
 import math
 from skimage.feature.peak import peak_local_max
 from itertools import product
@@ -388,8 +389,14 @@ def filter_vectors_near_basis(vectors, basis, distance=None):
     return closest_vectors
 
 
-def _find_peaks(data, offset=None, mask=None, get_intensity=True,
-                extent_threshold=None, extent_rel=True, spanned=[True,],
+def _find_peaks(data,
+                offset=None,
+                overlap=None,
+                mask=None,
+                get_intensity=True,
+                extent_threshold=None,
+                extent_rel=True,
+                spanned=[True,],
                 **kwargs):
     """This method helps to format the output from the blob methods
     in skimage for a more hyperspy like format using hs.markers.
@@ -398,10 +405,12 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
     """
     if not all(spanned):
         kwargs["exclude_border"] = tuple([1 if s else 0 for s in spanned])
-    offset = np.squeeze(offset)
+    if offset is not None:
+        offset = np.squeeze(offset)
     dimensions = data.ndim
     local_maxima = peak_local_max(data,
                                   **kwargs)
+
     # Catch no peaks
     if local_maxima.size == 0:
         return np.empty(1, dtype=object)
@@ -409,6 +418,23 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
     lm = local_maxima.astype(np.int)
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
+
+    if overlap is not None:
+        # cutting peaks that are inside of the overlapped region.
+        overlap = np.squeeze(overlap)
+        isin = np.ones(len(lm[:, 0]), dtype=bool)
+        for i, axis in enumerate(overlap):
+            if axis[0] != 0:
+                above = lm[:, i] >= axis[0] # equal to handle edges
+                isin = isin * above
+            if axis[1] != 0:
+                below = lm[:, i] < axis[1]
+                isin = isin * below
+        lm = lm[isin]
+        lm = np.subtract(lm, overlap[:, 0])
+
+    if lm.size == 0:
+        return np.empty(1, dtype=object)
 
     if get_intensity or extent_threshold is not None:
         maxima = tuple([tuple(lm[:, d]) for d in range(dimensions)])
@@ -430,8 +456,6 @@ def _find_peaks(data, offset=None, mask=None, get_intensity=True,
                                  ], axis=1)
 
     if offset is not None:
-        low_edges = offset[:, 0]
-        high_edges = offset[:, 1]
         lm[:, :dimensions] = np.add(offset[:, 0], lm[:, :dimensions])
 
     if extent_threshold is not None:
@@ -458,3 +482,47 @@ def get_chunk_offsets(img):
     if np.shape(offset) == (4, 2):
         offset = np.reshape(offset, (1, 4, 2))
     return offset
+
+
+def trim_vectors(x, depth, boundary=None):
+    axes = coerce_depth(x.ndim, depth)
+    boundary = coerce_boundary(x.ndim, boundary)
+    lower_overlaps = []
+    upper_overlaps = []
+    for i, bd in enumerate(x.chunks):
+        bdy = boundary.get(i, "none")
+        overlap = axes.get(i, 0)
+        l_list = []
+        u_list = []
+        for j, d in enumerate(bd):
+            if bdy != "none":
+                if isinstance(overlap, tuple):  # inconsistant overlaps
+                    ds = (overlap[0], d-overlap[0])
+                else:
+                    ds = (overlap, d-overlap)
+            else:  # boundary is none
+                if isinstance(overlap, tuple):
+                    low_o = overlap[0] if j != 0 else 0
+                    high_o = d-overlap[1] if j != len(bd) - 1 else 0
+                    ds = (low_o, high_o)
+                else:
+                    low_o = overlap if j != 0 else 0
+                    high_o = d - overlap if j != len(bd) - 1 else 0
+                    ds = (low_o, high_o)
+
+            l_list.append(ds[0])
+            u_list.append(ds[1])
+        lower_overlaps.append(tuple(l_list))
+        upper_overlaps.append(tuple(u_list))
+    lower_overlaps = tuple(lower_overlaps)
+    upper_overlaps = tuple(upper_overlaps)
+
+    lower_overlaps = np.stack(np.meshgrid(*lower_overlaps, indexing='ij'), axis=-1)
+    upper_overlaps = np.stack(np.meshgrid(*upper_overlaps, indexing='ij'), axis=-1)
+
+
+
+    lower_overlaps = np.squeeze(lower_overlaps)
+    upper_overlaps = np.squeeze(upper_overlaps)
+
+    return np.stack((lower_overlaps, upper_overlaps),axis=-1)
