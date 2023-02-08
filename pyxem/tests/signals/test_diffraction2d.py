@@ -1481,6 +1481,7 @@ class TestNDPeakFinding:
                                       [10, 10, 14, 14, 14, 14, 38, 38])
         np.testing.assert_array_equal(np.sort(peaks.data[:, 1]),
                                       [7, 7, 7, 7, 15, 15, 35, 35])
+        assert np.max(filtered) == np.max(intensities)
 
 
 

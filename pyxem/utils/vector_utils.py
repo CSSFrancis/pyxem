@@ -431,7 +431,7 @@ def _find_peaks(data,
                 below = lm[:, i] < axis[1]
                 isin = isin * below
         lm = lm[isin]
-        lm = np.subtract(lm, overlap[:, 0])
+
 
     if lm.size == 0:
         return np.empty(1, dtype=object)
@@ -454,6 +454,8 @@ def _find_peaks(data,
                                                           threshold=threshold,
                                                           )
                                  ], axis=1)
+    if overlap is not None:
+        lm[:, :4] = np.subtract(lm[:, :4], overlap[:, 0])
 
     if offset is not None:
         lm[:, :dimensions] = np.add(offset[:, 0], lm[:, :dimensions])
