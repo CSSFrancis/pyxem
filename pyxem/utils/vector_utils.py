@@ -331,15 +331,16 @@ def strided_indexing_roll(a, r, ):
 
 
 def get_extent_along_dim(chunk, dim, center, threshold):
-    non_dim_points = center[:dim] + (slice(None),) + center[dim + 1:]
-    c = center[dim]
-    if dim == 0:
+    non_dim_points = center[:dim] + (slice(None),) + center[dim + 1:]  # slice only along dim
+    c = center[dim]  # the center of the peak at dim.
+    if dim == 0:  # slicing before/ after gives different results
         sliced_data = chunk[non_dim_points]
     else:
         sliced_data = chunk[non_dim_points].transpose()
-    dim_slice = np.greater(sliced_data, threshold)
-    rolled = strided_indexing_roll(dim_slice, -np.array(c))
-    top = np.sum(np.cumprod(rolled, axis=0), axis=0)
+    # sliced_data gives a bunch of 1d strips ie. chunk[3,4,:,3] where dim=2 and center is [3,4,5,3]
+    dim_slice = np.greater(sliced_data, threshold)  # find points greater than threshold
+    rolled = strided_indexing_roll(dim_slice, -np.array(c))  # Roll by the center to put center at 0
+    top = np.sum(np.cumprod(rolled, axis=0), axis=0)-1  # subtract 1 to handle the center point at 0
     bottom = np.sum(np.cumprod(rolled[::-1], axis=0), axis=0)
     ext = np.concatenate([top[:, np.newaxis], bottom[:, np.newaxis]], axis=1)
     return ext

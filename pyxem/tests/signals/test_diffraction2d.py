@@ -1461,6 +1461,9 @@ class TestNDPeakFinding:
         np.testing.assert_array_equal(np.sort(peaks.data[:, 1]),
                                       [7, 7, 7, 7, 15, 15, 35, 35])
         assert np.max(filtered) == np.max(intensities)
+        max_index = np.unravel_index(np.argmax(filtered.data), filtered.data.shape)
+        max_index_found = peaks.data[np.argmax(intensities), :4]
+        np.testing.assert_array_equal(max_index, max_index_found)
 
     def test_extent(self, three_section):
         filtered = -three_section.filter(sigma=(3, 3, 3, 3))

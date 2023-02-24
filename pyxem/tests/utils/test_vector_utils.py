@@ -29,6 +29,7 @@ from pyxem.utils.vector_utils import get_rotation_matrix_between_vectors
 from pyxem.utils.vector_utils import get_angle_cartesian
 from pyxem.utils.vector_utils import get_angle_cartesian_vec
 from pyxem.utils.vector_utils import trim_vectors, get_chunk_offsets
+from pyxem.utils.vector_utils import get_extent_along_dim
 
 
 def test_calculate_norms():
@@ -165,3 +166,18 @@ def test_get_offsets():
     offsets = get_chunk_offsets(overlapped)
 
     assert trims.shape == offsets.shape == new_shape
+
+
+def test_get_extent_along_dim():
+    x = np.zeros((10, 10, 10, 10))
+    x[4, 5, 3:8, 7] = 1
+    ext = get_extent_along_dim(chunk=x, dim=2,
+                               center=((4, 4),
+                                       (5, 6),
+                                       (4, 4),
+                                       (7, 7),)
+                               , threshold=0.4)
+    assert ext[0, 0] == 3
+    assert ext[0, 1] == 1
+    assert ext[1, 0] == -1  # this point isn't even above the threshold
+    assert ext[1, 1] == 0
