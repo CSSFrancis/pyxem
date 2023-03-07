@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2022 The pyXem developers
+# Copyright 2016-2023 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -78,7 +78,7 @@ import pyxem.utils.pixelated_stem_tools as pst
 import pyxem.utils.dask_tools as dt
 import pyxem.utils.marker_tools as mt
 import pyxem.utils.ransac_ellipse_tools as ret
-from pyxem.utils._deprecated import deprecated
+from pyxem.utils._deprecated import deprecated, deprecated_argument
 
 
 class Diffraction2D(Signal2D, CommonDiffraction):
@@ -286,7 +286,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         """
         s_out = self.copy()
         s_out.axes_manager = self.axes_manager.deepcopy()
-        s_out.metadata = self.metadata.deepcopy()
         s_out.data = np.flip(self.data, axis=-1)
         return s_out
 
@@ -317,7 +316,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         """
         s_out = self.copy()
         s_out.axes_manager = self.axes_manager.deepcopy()
-        s_out.metadata = self.metadata.deepcopy()
         s_out.data = np.flip(self.data, axis=-2)
         return s_out
 
@@ -618,17 +616,35 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
     """ Direct beam and peak finding tools """
 
-    def get_direct_beam_position(self, method, lazy_output=None, **kwargs):
+    def get_direct_beam_position(
+        self, method, lazy_output=None, signal_slice=None, **kwargs
+    ):
         """Estimate the direct beam position in each experimentally acquired
         electron diffraction pattern.
 
         Parameters
         ----------
         method : str,
-            Must be one of "cross_correlate", "blur" or "interpolate"
-        lazy_result : optional
+            Must be one of "cross_correlate", "blur", "interpolate" or "center_of_mass".
+
+           "cross_correlate": Center finding using cross-correlation of circles of
+                `radius_start` to `radius_finish`.
+           "blur": Center finding by blurring each frame with a Gaussian kernel with
+                standard deviation `sigma` and finding the maximum.
+           "interpolate": Finding the center by summing along X/Y and finding the peak
+                for each axis independently. Data is blurred first using a Gaussian kernel
+                with standard deviation "sigma".
+           "center_of_mass": The center is found using a calculation of the center of mass.
+                Optionally a `mask` can be applied to focus on just the center of some
+                dataset. A threshold value can also be given to suppress contrast from
+                weaker diffraction features.
+        lazy_output : optional
             If True, s_shifts will be a lazy signal. If False, a non-lazy signal.
             By default, if the signal is (non-)lazy, the result will also be (non-)lazy.
+        signal_slice : None or tuple
+            A tuple defining the (low_x,high_x, low_y, high_y) to slice the data before
+            finding the direct beam. Equivalent to
+            s.isig[low_x:high_x, low_y:high_y].get_direct_beam_position()+[low_x,low_y])
         **kwargs:
             Keyword arguments to be passed to the method function.
 
@@ -639,6 +655,14 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             signal index being the x-shift and the second the y-shift.
 
         """
+        if signal_slice is not None:
+            sig_axes = self.axes_manager.signal_axes
+            low_x, high_x, low_y, high_y = signal_slice
+            low_x, high_x = sig_axes[0].value_range_to_indices(low_x, high_x)
+            low_y, high_y = sig_axes[1].value_range_to_indices(low_y, high_y)
+            signal = self.isig[low_x:high_x, low_y:high_y]
+        else:
+            signal = self
         if "lazy_result" in kwargs:
             warnings.warn(
                 "lazy_result was replaced with lazy_output in version 0.14",
@@ -647,15 +671,16 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             lazy_output = kwargs.pop("lazy_result")
 
         if lazy_output is None:
-            lazy_output = self._lazy
+            lazy_output = signal._lazy
 
-        signal_shape = self.axes_manager.signal_shape
+        signal_shape = signal.axes_manager.signal_shape
         origin_coordinates = np.array(signal_shape) / 2
 
         method_dict = {
             "cross_correlate": find_beam_offset_cross_correlation,
             "blur": find_beam_center_blur,
             "interpolate": find_beam_center_interpolate,
+            "center_of_mass": None,
         }
 
         method_function = select_method_from_method_dict(
@@ -663,7 +688,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         )
 
         if method == "cross_correlate":
-            shifts = self.map(
+            shifts = signal.map(
                 method_function,
                 inplace=False,
                 output_signal_size=(2,),
@@ -672,7 +697,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                 **kwargs,
             )
         elif method == "blur":
-            centers = self.map(
+            centers = signal.map(
                 method_function,
                 inplace=False,
                 output_signal_size=(2,),
@@ -682,7 +707,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             )
             shifts = -centers + origin_coordinates
         elif method == "interpolate":
-            centers = self.map(
+            centers = signal.map(
                 method_function,
                 inplace=False,
                 output_signal_size=(2,),
@@ -691,6 +716,24 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                 **kwargs,
             )
             shifts = -centers + origin_coordinates
+        elif method == "center_of_mass":
+            if "mask" in kwargs and signal_slice is not None:
+                x, y, r = kwargs["mask"]
+                x = x - signal_slice[0]
+                y = y - signal_slice[1]
+                kwargs["mask"] = (x, y, r)
+            centers = signal.center_of_mass(
+                lazy_result=lazy_output,
+                show_progressbar=False,
+                **kwargs,
+            )
+            shifts = -centers.T + origin_coordinates
+
+        if signal_slice is not None:
+            shifted_center = [(low_x + high_x) / 2, (low_y + high_y) / 2]
+            unshifted_center = np.array(self.axes_manager.signal_shape) / 2
+            shift = np.subtract(unshifted_center, shifted_center)
+            shifts = shifts + shift
 
         shifts.set_signal_type("beam_shift")
 
@@ -715,13 +758,15 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         Parameters
         ----------
-        method : str {'cross_correlate', 'blur', 'interpolate'}
+        method : str {'cross_correlate', 'blur', 'interpolate', 'center_of_mass'}
             Method used to estimate the direct beam position. The direct
             beam position can also be passed directly with the shifts parameter.
         half_square_width : int
             Half the side length of square that captures the direct beam in all
             scans. Means that the centering algorithm is stable against
-            diffracted spots brighter than the direct beam.
+            diffracted spots brighter than the direct beam. Crops the diffraction
+            pattern to `half_sqare_width` pixels around th center of the diffraction
+            pattern.
         shifts : Signal, optional
             The position of the direct beam, which can either be passed with this
             parameter (shifts), or calculated on its own.
@@ -742,7 +787,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             Parameters passed to the alignment function. See scipy.ndimage.shift
             for more information about the parameters.
         *args, **kwargs :
-            Passed to the function which estimate the direct beam position
+            Passed to the function which estimate the direct beam position.
 
         Example
         -------
@@ -777,22 +822,25 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             )
         if align_kwargs is None:
             align_kwargs = {}
-
         signal_shape = self.axes_manager.signal_shape
-        origin_coordinates = np.array(signal_shape) / 2
+        signal_center = np.array(signal_shape) / 2
         temp_signal = self
 
+        # Cropping the signal around the center alternatively use the signal_slice when
+        # Direct beam is not near the center.
         if shifts is None:
             if half_square_width is not None:
-                min_index = int(origin_coordinates[0] - half_square_width)
-                # fails if non-square dp
-                max_index = int(origin_coordinates[0] + half_square_width)
-                temp_signal = temp_signal.isig[min_index:max_index, min_index:max_index]
-            shifts = temp_signal.get_direct_beam_position(
-                method=method, lazy_output=lazy_output, **kwargs,
-            )
+                min_x = int(signal_center[0] - half_square_width)
+                max_x = int(signal_center[0] + half_square_width)
 
-        if not "order" in align_kwargs:
+                min_y = int(signal_center[1] - half_square_width)
+                max_y = int(signal_center[1] + half_square_width)
+                sig_slice = (min_x, max_x, min_y, max_y)
+                kwargs["signal_slice"] = sig_slice
+            shifts = self.get_direct_beam_position(
+                method=method, lazy_output=lazy_output, **kwargs
+            )
+        if "order" not in align_kwargs:
             if subpixel:
                 align_kwargs["order"] = 1
             else:
@@ -865,37 +913,53 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         )
         return s_out
 
-    def map_blockwise(self, func, pass_spanned=False, overlap=None,  **kwargs):
+    def map_blockwise(self,
+                      func,
+                      pass_spanned=False,
+                      overlap=None,
+                      **kwargs):
         if not self._lazy:
-            signal = self.as_lazy()
-            signal.rechunk(nav_chunks=self.axes_manager.navigation_shape)
-        else:
-            signal = self
-        spanned = [c == s or c == (s,) for c, s in zip(signal.data.chunks, signal.data.shape)]
+            return func(self.data,offset=None,  **kwargs)
 
-        drop_axes = np.squeeze(np.argwhere(spanned))
+        spanned = [c == s or c == (s,) for c, s in zip(self.data.chunks, self.data.shape)]
+        drop_axes = np.squeeze(np.argwhere(spanned))  # (1,2,3)
         adjust_chunks = {}
-        for i in range(len(signal.data.shape)):
+        for i in range(len(self.data.shape)):
             if i not in drop_axes:
-                adjust_chunks[i] = 1
+                adjust_chunks[i] = 1  # chunks to 1
             else:
-                adjust_chunks[i] = -1
-        pattern = np.argwhere(np.logical_not(spanned))[:, 0]
-        if len(pattern) == 0:
+                adjust_chunks[i] = -1  # Remove axis
+        pattern = np.argwhere(np.logical_not(spanned))[:, 0]  # [0,]
+        if len(pattern) == 0:  # all spanned
             pattern = [0, ]
         if pass_spanned:
             kwargs["spanned"] = spanned
-        offsets = get_chunk_offsets(signal.data)
+        # do offsets before
+        offsets = get_chunk_offsets(self.data)
         offsets = da.from_array(offsets, chunks=(1,)*len(pattern)+(-1, -1))
+
         if overlap is not None:
-            overlap =
+            overlaps = {i: 0 if s else overlap for i, s in enumerate(spanned)}
+            boundary = None
+            data = da.overlap.overlap(self.data,
+                              depth=overlaps,
+                              boundary=boundary)
+            trims = trim_vectors(data,
+                                                    depth=overlaps,
+                                                    boundary=boundary)
 
-        new_args = (signal.data, range(len(signal.data.shape)))
+        else:
+            data = self.data
 
+        new_args = (data, range(len(data.shape)))  # [0,1,2,3]
 
         # Applying the function blockwise
-        offsets_pattern = list(pattern)+list(range(len(signal.data.shape)-2, len(signal.data.shape)))
+        offsets_pattern = list(pattern)+list(range(len(data.shape)-2, len(data.shape))) #
         new_args += (offsets, offsets_pattern)
+        if overlap:
+            trims = da.from_array(trims, chunks=(1,) * len(pattern) + (-1, -1))
+            new_args += (trims, offsets_pattern)
+
         ref = da.reshape(da.blockwise(func, pattern,
                                       *new_args,
                                       adjust_chunks=adjust_chunks,
@@ -908,11 +972,13 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         ref = ref.compute()
         return ref
 
+    @deprecated_argument(since="0.15.0", name="lazy_result", alternative="lazy_output", removal="1.00.0")
     def center_of_mass(
         self,
         threshold=None,
         mask=None,
-        lazy_result=False,
+        lazy_result=None,
+        lazy_output=False,
         show_progressbar=True,
         chunk_calculations=None,
     ):
@@ -928,6 +994,8 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             this threshold value.
         mask : tuple (x, y, r), optional
             Round mask centered on x and y, with radius r.
+        signal_slice : tuple (low_x, high_x, low_y, high_y)
+            Slice the data. Equivilent to s.isig[low_x:high_x, low_y,
         lazy_result : bool, optional
             If True, will not compute the data directly, but
             return a lazy signal. Default False
@@ -1253,7 +1321,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                 extent_labels.append(l + "high")
                 extent_labels.append(l + "low")
         if get_intensity:
-            labels += ["intensity",]
+            labels += ["intensity", ]
         if extent_threshold is not None:
             labels += extent_labels
 
@@ -1270,45 +1338,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             print("No peaks found")
             return
         pks = np.vstack(peaks)
-
-        # getting rid of duplicate edge peaks or not real edge peaks
-        # if some peak is real then it will have a nearest neighbor peak
-        # with an intensity that is within the footprint and that is
-        # also a peak.
-        if is_lazy:
-            from scipy.spatial import KDTree
-            # sort over all the unspanned_axes
-            not_spanned = np.nonzero([c != s or c != (s,) for c, s in zip(self.data.chunks,
-                                                                          self.data.shape)])[0]
-            grids = get_overlap_grids(self.data,
-                                      footprint=footprint,
-                                      not_spanned=not_spanned)
-            inds = []
-
-            for g, s in zip(grids[not_spanned], not_spanned):
-                sorted_ind = np.argsort(pks[:, s])
-                sorted_col = pks[sorted_ind, s]
-                lows = g[:, 0]
-                highs = g[:, 1]
-                lo = np.searchsorted(sorted_col, lows, side="left")
-                hi = np.searchsorted(sorted_col, highs, side="right")
-                for l, h in zip(lo, hi):
-                    inds.append(sorted_ind[l:h])
-            inds = np.unique(np.hstack(inds))
-            in_grid = pks[inds, :dimensions]
-            tree = KDTree(in_grid)
-            dd, ii = tree.query(in_grid, k=[2])
-            max_dist = np.power(np.sum(np.power(footprint.shape, 2)), .5)
-            distance, index = np.squeeze(dd), np.squeeze(ii)
-            delete_ind = index[distance > max_dist]
-            cen_indexes = inds[distance <= max_dist]
-            nn_indexes = inds[cen_indexes]
-            org_int = pks[cen_indexes][:, dimensions]  # intensity of center
-            comp_int = pks[nn_indexes][:, dimensions]  # intensity of nearest neighbor
-            delete_ind = np.hstack([delete_ind, np.where(org_int < comp_int, cen_indexes, nn_indexes)])
-            delete_ind = np.unique(delete_ind)
-            pks = np.delete(pks, delete_ind, axis=0)
-
         from pyxem.signals.diffraction_vectors import DiffractionVectors2D
         peaks = DiffractionVectors2D(pks, labels=labels)
         return peaks
@@ -1756,25 +1785,25 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         if method == "Omega":
             one_d_integration = self.get_azimuthal_integral1d(npt=npt, **kwargs)
             variance = (
-                (one_d_integration ** 2).mean(axis=navigation_axes)
+                (one_d_integration**2).mean(axis=navigation_axes)
                 / one_d_integration.mean(axis=navigation_axes) ** 2
             ) - 1
             if dqe is not None:
                 sum_points = self.get_azimuthal_integral1d(
                     npt=npt, sum=True, **kwargs
                 ).mean(axis=navigation_axes)
-                variance = variance - ((sum_points ** -1) * dqe)
+                variance = variance - ((sum_points**-1) * dqe)
 
         elif method == "r":
             one_d_integration = self.get_azimuthal_integral1d(npt=npt, **kwargs)
-            integration_squared = (self ** 2).get_azimuthal_integral1d(
+            integration_squared = (self**2).get_azimuthal_integral1d(
                 npt=npt, **kwargs
             )
             # Full variance is the same as the unshifted phi=0 term in angular correlation
-            full_variance = (integration_squared / one_d_integration ** 2) - 1
+            full_variance = (integration_squared / one_d_integration**2) - 1
 
             if dqe is not None:
-                full_variance = full_variance - ((one_d_integration ** -1) * dqe)
+                full_variance = full_variance - ((one_d_integration**-1) * dqe)
 
             variance = full_variance.mean(axis=navigation_axes)
 
@@ -1786,19 +1815,19 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                 axis=navigation_axes
             )
             integration_squared = (
-                (self ** 2)
+                (self**2)
                 .get_azimuthal_integral1d(npt=npt, **kwargs)
                 .mean(axis=navigation_axes)
             )
-            variance = (integration_squared / one_d_integration ** 2) - 1
+            variance = (integration_squared / one_d_integration**2) - 1
 
             if dqe is not None:
                 sum_int = self.get_azimuthal_integral1d(npt=npt, **kwargs).mean()
-                variance = variance - (sum_int ** -1) * (1 / dqe)
+                variance = variance - (sum_int**-1) * (1 / dqe)
 
         elif method == "VImage":
             variance_image = (
-                (self ** 2).mean(axis=navigation_axes)
+                (self**2).mean(axis=navigation_axes)
                 / self.mean(axis=navigation_axes) ** 2
             ) - 1
             if dqe is not None:

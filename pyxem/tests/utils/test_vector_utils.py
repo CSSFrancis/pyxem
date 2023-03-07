@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2022 The pyXem developers
+# Copyright 2016-2023 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -17,6 +17,7 @@
 # along with pyXem.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import dask.array as da
 import pytest
 
 from transforms3d.euler import euler2mat
@@ -27,6 +28,8 @@ from pyxem.utils.vector_utils import detector_to_fourier
 from pyxem.utils.vector_utils import get_rotation_matrix_between_vectors
 from pyxem.utils.vector_utils import get_angle_cartesian
 from pyxem.utils.vector_utils import get_angle_cartesian_vec
+from pyxem.utils.vector_utils import trim_vectors, get_chunk_offsets
+from pyxem.utils.vector_utils import get_extent_along_dim
 
 
 def test_calculate_norms():
@@ -133,3 +136,48 @@ def test_get_angle_cartesian_vec_input_validation():
         match=r"shape of a .* and b .* must be the same",
     ):
         get_angle_cartesian_vec(np.empty((2, 3)), np.empty((5, 3)))
+
+
+def test_trim_vectors():
+    depth = {0: 2, 1: 3}
+    data = da.ones((10, 11, 20, 22),
+                   chunks=(2, 2, -1, -1))
+    overlapped = da.overlap.overlap(data, depth=depth, boundary=None)
+    new_shape = [len(c) for c in overlapped.chunks if len(c)!=1]
+    new_shape += [4, 2]
+    new_shape = tuple(new_shape)
+    trims = trim_vectors(overlapped, depth=depth)
+    assert trims.shape == new_shape
+    np.testing.assert_allclose(trims[1, 1], [[2, 4],
+                                             [3, 7],
+                                             [0, 0],
+                                             [0, 0]])
+
+
+def test_get_offsets():
+    depth = {0: 2, 1: 3}
+    data = da.ones((10, 11, 20, 22),
+                   chunks=(2, 2, -1, -1))
+    overlapped = da.overlap.overlap(data, depth=depth, boundary=None)
+    new_shape = [len(c) for c in overlapped.chunks if len(c)!=1]
+    new_shape += [4, 2]
+    new_shape = tuple(new_shape)
+    trims = trim_vectors(overlapped, depth=depth)
+    offsets = get_chunk_offsets(overlapped)
+
+    assert trims.shape == offsets.shape == new_shape
+
+
+def test_get_extent_along_dim():
+    x = np.zeros((10, 10, 10, 10))
+    x[4, 5, 3:8, 7] = 1
+    ext = get_extent_along_dim(chunk=x, dim=2,
+                               center=((4, 4),
+                                       (5, 6),
+                                       (4, 4),
+                                       (7, 7),)
+                               , threshold=0.4)
+    assert ext[0, 0] == 3
+    assert ext[0, 1] == 1
+    assert ext[1, 0] == -1  # this point isn't even above the threshold
+    assert ext[1, 1] == 0

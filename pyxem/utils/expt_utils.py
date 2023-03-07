@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2022 The pyXem developers
+# Copyright 2016-2023 The pyXem developers
 #
 # This file is part of pyXem.
 #
@@ -673,7 +673,7 @@ def peaks_as_gvectors(z, center, calibration):
 
     """
     g = (z - center) * calibration
-    return np.array([g[0].T[1], g[0].T[0]]).T
+    return g
 
 
 def investigate_dog_background_removal_interactive(
