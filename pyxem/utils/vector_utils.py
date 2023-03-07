@@ -19,10 +19,13 @@
 import numpy as np
 from dask.array.overlap import coerce_boundary, coerce_depth
 import math
+
+import skimage.feature
 from skimage.feature.peak import peak_local_max
 from itertools import product
 
 from scipy.spatial.distance import cdist
+from scipy.ndimage import maximum_filter, minimum_filter, label, center_of_mass
 from transforms3d.axangles import axangle2mat
 
 
@@ -390,7 +393,73 @@ def filter_vectors_near_basis(vectors, basis, distance=None):
     return closest_vectors
 
 
+def _exclude_border(label, border_width):
+    """Set label border values to 0.
+    """
+    # zero out label borders
+    for i, width in enumerate(border_width):
+        if width == 0:
+            continue
+        label[(slice(None),) * i + (slice(None, width),)] = 0
+        label[(slice(None),) * i + (slice(-width, None),)] = 0
+    return label
+
+
+def _find_peaks_inten_extent(peaks,
+                             data,
+                             dimensions,
+                             extent_threshold=None):
+    maxima = tuple([tuple(peaks[:, d]) for d in range(dimensions)])
+    intensity = data[maxima]
+    peaks = np.concatenate([peaks, intensity[:, np.newaxis]],
+                           axis=1)  # add intensity to peaks
+    # calculating the extent threshold in the chunk
+    if extent_threshold is not None:
+        threshold = peaks[:, -1] * extent_threshold
+        for d in range(dimensions):
+            peaks = np.concatenate([peaks, get_extent_along_dim(data,
+                                                                dim=d,
+                                                                center=maxima,
+                                                                threshold=threshold,
+                                                                )
+                                    ],
+                                   axis=1)
+    return peaks
+
+
+def find_peaks_min_max(data,
+                       size,
+                       threshold=2,
+                       exclude_border=True,
+                       **kwargs
+                       ):
+    data_max = maximum_filter(data,
+                              size=size,
+                              **kwargs)
+    maxima = (data == data_max)
+    data_min = minimum_filter(data,
+                              size=size,
+                              **kwargs)
+
+    from skimage.feature.peak import _get_excluded_border_width
+    border_width = _get_excluded_border_width(data,
+                                              size,
+                                              exclude_border=exclude_border)
+
+    maxima = _exclude_border(maxima, border_width=border_width)
+    # find all points above the threshold
+    diff = ((data_max - data_min) > threshold)
+
+    maxima[diff == 0] = 0
+    # Find th center of mass to determine peak positions
+    labeled, num_objects = label(maxima)
+    local_maxima = np.array(center_of_mass(data,
+                                           labeled,
+                                           range(1, num_objects + 1)))
+    return local_maxima
+
 def _find_peaks(data,
+                method,
                 offset=None,
                 overlap=None,
                 mask=None,
@@ -404,19 +473,27 @@ def _find_peaks(data,
     The underlying function finds the local max by finding point where
     a dilution doesn't change.
     """
+    method_dict = {"local_max": skimage.feature.peak_local_max,
+                   "min_max": find_peaks_min_max}
+    try:
+        method = method_dict[method]
+    except ValueError:
+        print("The method must be one of 'local_max' or 'min_max'.  The method: ",
+              + method + " does not exist.")
+        return
     if not all(spanned):
         kwargs["exclude_border"] = tuple([1 if s else 0 for s in spanned])
     if offset is not None:
         offset = np.squeeze(offset)
     dimensions = data.ndim
-    local_maxima = peak_local_max(data,
-                                  **kwargs)
+
+    local_maxima = method(data, **kwargs)
 
     # Catch no peaks
     if local_maxima.size == 0:
         return np.empty(1, dtype=object)
-        # Convert local_maxima to float64
-    lm = local_maxima.astype(np.int)
+        # Convert local_maxima to integers
+    lm = np.round(local_maxima).astype(np.int)
     if mask is not None:
         lm = np.array([c for c in lm if not mask[int(c[-2]), int(c[-1])]])
 
@@ -433,11 +510,15 @@ def _find_peaks(data,
                 isin = isin * below
         lm = lm[isin]
 
-
     if lm.size == 0:
         return np.empty(1, dtype=object)
 
     if get_intensity or extent_threshold is not None:
+        lm = _find_peaks_inten_extent(peaks=lm,
+                                      data=data,
+                                      dimensions=dimensions,
+                                      extent_threshold=extent_threshold
+                                      )
         maxima = tuple([tuple(lm[:, d]) for d in range(dimensions)])
         intensity = data[maxima]
         lm = np.concatenate([lm, intensity[:, np.newaxis]], axis=1)
@@ -523,9 +604,7 @@ def trim_vectors(x, depth, boundary=None):
     lower_overlaps = np.stack(np.meshgrid(*lower_overlaps, indexing='ij'), axis=-1)
     upper_overlaps = np.stack(np.meshgrid(*upper_overlaps, indexing='ij'), axis=-1)
 
-
-
     lower_overlaps = np.squeeze(lower_overlaps)
     upper_overlaps = np.squeeze(upper_overlaps)
 
-    return np.stack((lower_overlaps, upper_overlaps),axis=-1)
+    return np.stack((lower_overlaps, upper_overlaps), axis=-1)

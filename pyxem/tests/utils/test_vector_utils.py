@@ -142,7 +142,8 @@ def test_trim_vectors():
     depth = {0: 2, 1: 3}
     data = da.ones((10, 11, 20, 22),
                    chunks=(2, 2, -1, -1))
-    overlapped = da.overlap.overlap(data, depth=depth, boundary=None)
+    overlapped = da.overlap.overlap(data, depth=depth,
+                                    boundary=None)
     new_shape = [len(c) for c in overlapped.chunks if len(c)!=1]
     new_shape += [4, 2]
     new_shape = tuple(new_shape)
@@ -150,8 +151,8 @@ def test_trim_vectors():
     assert trims.shape == new_shape
     np.testing.assert_allclose(trims[1, 1], [[2, 4],
                                              [3, 7],
-                                             [0, 0],
-                                             [0, 0]])
+                                             [0, 20],
+                                             [0, 22]])
 
 
 def test_get_offsets():

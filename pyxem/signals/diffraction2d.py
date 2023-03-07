@@ -73,7 +73,7 @@ from pyxem.utils.signal import (
     transfer_navigation_axes,
 )
 
-from pyxem.utils.vector_utils import _find_peaks, get_chunk_offsets, get_overlap_grids
+from pyxem.utils.vector_utils import _find_peaks, get_chunk_offsets, trim_vectors
 import pyxem.utils.pixelated_stem_tools as pst
 import pyxem.utils.dask_tools as dt
 import pyxem.utils.marker_tools as mt
@@ -944,8 +944,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             data = da.overlap.overlap(self.data,
                               depth=overlaps,
                               boundary=boundary)
-            trims = trim_vectors(data,
-                                                    depth=overlaps,
+            trims = trim_vectors(data, depth=overlaps,
                                                     boundary=boundary)
 
         else:
@@ -1285,10 +1284,10 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                                                                       self.data.shape)])[0]
 
     def find_peaks_nd(self,
+                      method="local_max",
                       mask=None,
                       get_intensity=False,
                       extent_threshold=None,
-                      extend_threshold=True,
                       min_distance=3,
                       footprint = None,
                       **kwargs):
@@ -1326,6 +1325,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             labels += extent_labels
 
         peaks = self.map_blockwise(_find_peaks,
+                                   method=method,
                                    mask=mask,
                                    get_intensity=get_intensity,
                                    extent_threshold=extent_threshold,

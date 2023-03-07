@@ -1472,12 +1472,14 @@ class TestNDPeakFinding:
         assert len(intensities) == 8
 
     @pytest.mark.parametrize("chunks", ((20, 20,), (10, 10), (10, -1)))
-    def test_centers_chunked(self, three_section, chunks):
+    @pytest.mark.parametrize("method", ("local_max", "min_max"))
+    def test_centers_chunked(self, three_section, chunks, method):
         filtered = -three_section.filter(sigma=(3, 3, 3, 3))
         filtered = filtered.as_lazy()
         filtered.rechunk(nav_chunks=chunks)
         peaks = filtered.find_peaks_nd(threshold_abs=2,
-                                       extent_threshold=0.7, overlap=3)
+                                       extent_threshold=0.7,
+                                       overlap=3, method=method)
         intensities = peaks.data[:, 4]
         assert len(intensities) == 8
         np.testing.assert_array_equal(np.sort(peaks.data[:, 0]),
