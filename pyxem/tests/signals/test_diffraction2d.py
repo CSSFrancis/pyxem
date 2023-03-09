@@ -1477,9 +1477,16 @@ class TestNDPeakFinding:
         filtered = -three_section.filter(sigma=(3, 3, 3, 3))
         filtered = filtered.as_lazy()
         filtered.rechunk(nav_chunks=chunks)
-        peaks = filtered.find_peaks_nd(threshold_abs=2,
-                                       extent_threshold=0.7,
-                                       overlap=3, method=method)
+        if method =="min_max":
+            peaks = filtered.find_peaks_nd(threshold=0.1,
+                                           extent_threshold=0.7,
+                                           overlap=6,
+                                           method=method, size=6)
+        else:
+            peaks = filtered.find_peaks_nd(threshold_abs=2,
+                                           extent_threshold=0.7,
+                                           overlap=3,
+                                           method=method)
         intensities = peaks.data[:, 4]
         assert len(intensities) == 8
         np.testing.assert_array_equal(np.sort(peaks.data[:, 0]),

@@ -449,7 +449,6 @@ def find_peaks_min_max(data,
     maxima = _exclude_border(maxima, border_width=border_width)
     # find all points above the threshold
     diff = ((data_max - data_min) > threshold)
-
     maxima[diff == 0] = 0
     # Find th center of mass to determine peak positions
     labeled, num_objects = label(maxima)
@@ -459,9 +458,9 @@ def find_peaks_min_max(data,
     return local_maxima
 
 def _find_peaks(data,
-                method,
                 offset=None,
                 overlap=None,
+                method="local_max",
                 mask=None,
                 get_intensity=True,
                 extent_threshold=None,
@@ -519,7 +518,8 @@ def _find_peaks(data,
                                       dimensions=dimensions,
                                       extent_threshold=extent_threshold
                                       )
-        maxima = tuple([tuple(lm[:, d]) for d in range(dimensions)])
+        maxima = tuple([tuple(np.round(lm[:, d]).astype(int)) for d in range(dimensions)])
+
         intensity = data[maxima]
         lm = np.concatenate([lm, intensity[:, np.newaxis]], axis=1)
 
