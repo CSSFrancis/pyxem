@@ -487,9 +487,7 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         """
         dask_array = _get_dask_array(self)
 
-        dead_pixels = dt._find_dead_pixels(
-            dask_array, dead_pixel_value=dead_pixel_value, mask_array=mask_array
-        )
+        dead_pixels = dt._find_dead_pixels(dask_array,     dead_pixel_value=dead_pixel_value,       mask_array=mask_array)
         s_dead_pixels = LazySignal2D(dead_pixels)
         if not lazy_result:
             s_dead_pixels.compute(show_progressbar=show_progressbar)
