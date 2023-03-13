@@ -1433,7 +1433,8 @@ class TestNDPeakFinding:
         data = Diffraction2D(data)
         return data
 
-    @pytest.mark.parametrize("method", ["gaussian_filter", scipy.ndimage.gaussian_filter])
+    @pytest.mark.parametrize("method", ["gaussian_filter",
+                                        scipy.ndimage.gaussian_filter,])
     @pytest.mark.parametrize("lazy", [True, False])
     def test_filter(self, three_section, method, lazy):
         if lazy:
@@ -1441,6 +1442,22 @@ class TestNDPeakFinding:
         sigma = (3, 3, 3, 3)
         new = three_section.filter(method=method, sigma=sigma, inplace=False)
         three_section.filter(method=method, sigma=sigma, inplace=True)
+        np.testing.assert_array_almost_equal(new.data, three_section.data)
+
+    @pytest.mark.parametrize("lazy", [True, False])
+    def test_dog(self, three_section, lazy):
+        if lazy:
+            three_section = three_section.as_lazy()
+        sigma1 = (1, 1, 1, 1)
+        sigma2 = (3, 3, 3, 3)
+        new = three_section.filter(method="difference_of_gaussians",
+                                   sigma1=sigma1,
+                                   sigma2=sigma2,
+                                   inplace=False)
+        three_section.filter(method="difference_of_gaussians",
+                             sigma1=sigma1,
+                             sigma2=sigma2,
+                             inplace=True)
         np.testing.assert_array_almost_equal(new.data, three_section.data)
 
     def test_filter_lazy_fail(self, three_section):

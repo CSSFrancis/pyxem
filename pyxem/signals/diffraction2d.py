@@ -62,6 +62,8 @@ from pyxem.utils.expt_utils import (
     integrate_radially,
     medfilt_1d,
     sigma_clip,
+    difference_of_gaussians,
+    difference_of_gaussians_lazy
 )
 from pyxem.utils.dask_tools import (
     _get_dask_array,
@@ -1242,7 +1244,12 @@ class Diffraction2D(Signal2D, CommonDiffraction):
 
         """
         if isinstance(method, str):
-            if self._lazy:
+            if method == "difference_of_gaussians":
+                if self._lazy:
+                    _method = difference_of_gaussians_lazy
+                else:
+                    _method = difference_of_gaussians
+            elif self._lazy:
                 name = "dask_image.ndfilters"
                 _method = getattr(import_module(name), method)
             else:
