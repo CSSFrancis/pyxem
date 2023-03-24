@@ -785,6 +785,7 @@ def difference_of_gaussians_lazy(image,
                                )
     return result
 
+
 def difference_of_gaussians_template(image,
                                      sigma1,
                                      sigma2,
@@ -806,5 +807,4 @@ def difference_of_gaussians_template(image,
                             cval=cval,
                             truncate=truncate)
 
-return filtered1 - filtered2
-    return result
+    return filtered1 - filtered2
