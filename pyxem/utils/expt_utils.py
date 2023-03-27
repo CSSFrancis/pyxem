@@ -764,11 +764,13 @@ def difference_of_gaussians_lazy(image,
                                  order=0,
                                  mode="reflect",
                                  cval=0.0,
-                                 truncate=4.0
+                                 truncate=4.0,
+                                 **kwargs,
                                  ):
     from dask_image.ndfilters._gaussian import  _get_border, _get_sigmas
     from dask_image.ndfilters._utils import _get_depth_boundary
-    sigma = _get_sigmas(image, sigma2)
+    sigma2 = _get_sigmas(image, sigma2)
+    sigma1 = _get_sigmas(image, sigma1)
     depth = _get_border(image, sigma2, truncate)
     depth, boundary = _get_depth_boundary(image.ndim, depth, "none")
     result = image.map_overlap(difference_of_gaussians,
@@ -781,7 +783,8 @@ def difference_of_gaussians_lazy(image,
                                order=order,
                                mode=mode,
                                cval=cval,
-                               truncate=truncate
+                               truncate=truncate,
+                               **kwargs
                                )
     return result
 
