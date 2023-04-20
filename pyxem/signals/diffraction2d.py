@@ -1258,13 +1258,6 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         else:
             _method = method
 
-        if self._lazy:
-            if self.get_num_chunked_axes() > 1:
-                raise ValueError("Only one axis should be chunked when"
-                                 "filtering the dataset. The complexity"
-                                 "of filtering increases exponentially with"
-                                 "the number of unchunked dimensions so it"
-                                 "is highly recommended to rechunk your dataset.")
         new_data = _method(self.data, **kwargs)
         if inplace:
             self.data= new_data
