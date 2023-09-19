@@ -181,19 +181,19 @@ class ElectronDiffraction2D(Diffraction2D):
             the data array is assumed to be the center of the pattern.
         """
         if center is None:
-            center = np.array(self.axes_manager.signal_shape) / 2 * calibration
+            center = np.array(self.axes_manager.signal_shape) / 2
 
         dx = self.axes_manager.signal_axes[0]
         dy = self.axes_manager.signal_axes[1]
 
         dx.name = "kx"
         dx.scale = calibration
-        dx.offset = -center[0]
+        dx.offset = -center[0] * calibration
         dx.units = "$A^{-1}$"
 
         dy.name = "ky"
         dy.scale = calibration
-        dy.offset = -center[1]
+        dy.offset = -center[1] * calibration
         dy.units = "$A^{-1}$"
 
     def set_scan_calibration(self, calibration):
