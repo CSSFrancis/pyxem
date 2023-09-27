@@ -196,12 +196,12 @@ class ElectronDiffraction2D(Diffraction2D):
 
         dx.name = "kx"
         dx.scale = calibration
-        dx.offset = -center[0] * calibration
+        dx.offset = -center[0]
         dx.units = "$A^{-1}$"
 
         dy.name = "ky"
         dy.scale = calibration
-        dy.offset = -center[1] * calibration
+        dy.offset = -center[1]
         dy.units = "$A^{-1}$"
 
     def set_scan_calibration(self, calibration):
