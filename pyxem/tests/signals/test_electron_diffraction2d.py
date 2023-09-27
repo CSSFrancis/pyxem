@@ -162,17 +162,14 @@ class TestSimpleHyperspy:
         elif center_pixels is not None:
             assert np.all(
                 diffraction_pattern.isig[0.0, 0.0].data
-                == diffraction_pattern.isig[
-                    center_pixels[0] * calibration, center_pixels[1] * calibration
-                ].data
+                == diffraction_pattern.isig[center_pixels[0], center_pixels[1]].data
             )
         else:
-            pattern_center = np.array(diffraction_pattern.data.shape) / 2
+            pattern_center = np.array(diffraction_pattern.axes_manager.signal_shape) // 2
+            print(pattern_center)
             assert np.all(
                 diffraction_pattern.isig[0.0, 0.0].data
-                == diffraction_pattern.isig[
-                    pattern_center[0] * calibration, pattern_center[1] * calibration
-                ].data
+                == diffraction_pattern.isig[pattern_center[0], pattern_center[1]].data
             )
 
 
