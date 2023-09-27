@@ -165,8 +165,9 @@ class TestSimpleHyperspy:
                 == diffraction_pattern.isig[center_pixels[0], center_pixels[1]].data
             )
         else:
-            pattern_center = np.array(diffraction_pattern.axes_manager.signal_shape) // 2
-            print(pattern_center)
+            pattern_center = (
+                np.array(diffraction_pattern.axes_manager.signal_shape) // 2
+            )
             assert np.all(
                 diffraction_pattern.isig[0.0, 0.0].data
                 == diffraction_pattern.isig[pattern_center[0], pattern_center[1]].data
