@@ -168,7 +168,7 @@ class ElectronDiffraction2D(Diffraction2D):
                 exposure_time,
             )
 
-    def set_diffraction_calibration(self, calibration, center=None, center_pixels=None):
+    def set_diffraction_calibration(self, calibration, center=None, pixels=False):
         """Set diffraction pattern pixel size in reciprocal Angstroms and origin
         location.
 
@@ -179,17 +179,18 @@ class ElectronDiffraction2D(Diffraction2D):
         center : tuple
             Position of the direct beam center, in calibrated units. If None the center of
             the data array is assumed to be the center of the pattern unless `center_pixels` is given.
-        center_pixels : tuple
-            Position of the direct beam center, in pixels. Will only be used if `center` is not given.
+        pixels : bool
+            If True, the provided center is in pixel coordinates. Default is False which means
+            the provided center is in calibrated coordinates.
         """
-        if center is None and center_pixels is None:  # Use center of the pattern array
+        if center is None:  # Use center of the pattern array
             center = np.array(self.axes_manager.signal_shape) / 2 * calibration
-        elif center is None and center_pixels is not None:
+        elif pixels:  # Use provided center in pixel coordinates
             center = (
-                np.array(center_pixels) * calibration
+                np.array(center) * calibration
             )  # Use provided center in pixel coordinates
         else:
-            pass  # Ignore `center_pixels` if `center` is provided.
+            center = np.array(center)  # Use provided center in calibrated coordinates
 
         dx = self.axes_manager.signal_axes[0]
         dy = self.axes_manager.signal_axes[1]
