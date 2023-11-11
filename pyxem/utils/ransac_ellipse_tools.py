@@ -25,6 +25,7 @@ import warnings
 from hyperspy.signals import BaseSignal
 from hyperspy.misc.utils import isiterable
 import pyxem.utils.marker_tools as mt
+from pyxem.utils._deprecated import deprecated_argument
 
 
 def is_ellipse_good(
@@ -253,6 +254,7 @@ def _make_ellipse_model_params_focus(xf, yf, a, b, r):
     return params
 
 
+@deprecated_argument(name="max_trails", since="0.16.0", removal="0.17.0")
 def get_ellipse_model_ransac_single_frame(
     data,
     xf=128,
@@ -343,6 +345,7 @@ def get_ellipse_model_ransac_single_frame(
         else:
             break
     return model_ransac, inliers
+
 
 
 def get_ellipse_model_ransac(

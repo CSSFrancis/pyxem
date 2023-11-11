@@ -159,6 +159,9 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             **kwargs,
         )
 
+    @deprecated_argument(
+        name="parallel", since="0.16.0", removal="0.17.0"
+    )
     def shift_diffraction(
         self,
         shift_x,
@@ -239,6 +242,9 @@ class Diffraction2D(Signal2D, CommonDiffraction):
         if not inplace:
             return s_shift
 
+    @deprecated_argument(
+        name="parallel", since="0.16.0", removal="0.17.0"
+    )
     def rotate_diffraction(self, angle, parallel=True, show_progressbar=True):
         """
         Rotate the diffraction dimensions.
@@ -1495,6 +1501,9 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             kwargs["navigator"] = s_nav
             super().plot(*args, **kwargs)
 
+    @deprecated_argument("bool_array", since="0.16.0", removal="0.17.0")
+    @deprecated_argument("bool_invert", since="0.16.0", removal="0.17.0")
+    @deprecated_argument("size", since="0.16.0", removal="0.17.0")
     def add_peak_array_as_markers(
         self, peak_array, color="red", size=20, bool_array=None, bool_invert=False
     ):

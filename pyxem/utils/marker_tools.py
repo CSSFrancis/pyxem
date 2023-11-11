@@ -19,7 +19,7 @@
 import numpy as np
 from hyperspy.drawing._markers.point import Point
 from hyperspy.drawing._markers.line_segment import LineSegment
-
+from pyxem.utils._deprecated import deprecated
 
 def _get_4d_points_marker_list(
     peaks_list,
@@ -256,6 +256,7 @@ def _add_permanent_markers_to_signal(signal, marker_list):
         signal.metadata.Markers[marker_name] = marker
 
 
+@deprecated(since="0.16.0", removal="0.17.0")
 def add_peak_array_to_signal_as_markers(
     signal, peak_array, color="red", size=20, bool_array=None, bool_invert=False
 ):

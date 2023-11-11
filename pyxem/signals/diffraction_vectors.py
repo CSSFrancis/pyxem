@@ -82,6 +82,7 @@ def _find_max_length_peaks(peaks):
     return length_of_longest_peaks_list
 
 
+@deprecated(since="0.16.0", removal="0.17.0")
 def generate_marker_inputs_from_peaks(peaks):
     """Takes a peaks (defined in 2D) object from a STEM (more than 1 image) scan
     and returns markers.
