@@ -26,7 +26,7 @@ import warnings
 import hyperspy.api as hs
 from hyperspy.signals import Signal2D, BaseSignal
 from hyperspy._signals.lazy import LazySignal
-from hyperspy.misc.utils import isiterable
+from hyperspy.misc.utils import isiterable, _get_block_pattern
 from importlib import import_module
 from hyperspy.axes import UniformDataAxis
 
@@ -1284,6 +1284,47 @@ class Diffraction2D(Signal2D, CommonDiffraction):
             if show_progressbar:
                 pbar.unregister()
         return output_array
+
+    def get_integrated_intensity(self, rois):
+        if not isiterable(rois):
+            rois = [
+                rois,
+            ]
+        ind = [roi2indexes(roi, axes=self.axes_manager.signal_axes) for roi in rois]
+
+        def get_integrated_intensity_chunk(data, indexes):
+            return np.stack(
+                [data[..., i[0], i[1]].sum(axis=-1) for i in indexes], axis=-1
+            )
+
+        if not self._lazy:
+            int_inten = get_integrated_intensity_chunk(self.data, ind)
+        else:
+            new_shape = self.data.shape[:-2] + (len(ind),)
+            arg_pairs, adjust_chunks, new_axis, output_pattern = _get_block_pattern(
+                [
+                    self.data,
+                ],
+                output_shape=new_shape,
+            )
+            int_inten = da.blockwise(
+                get_integrated_intensity_chunk,
+                output_pattern,
+                *arg_pairs,
+                dtype=float,
+                adjust_chunks=adjust_chunks,
+                new_axes=new_axis,
+                concatenate=True,
+                indexes=ind,
+                align_arrays=False,
+                meta=np.array((), dtype=float),
+            )
+        sig = self._deepcopy_with_new_data(int_inten)
+        sig.axes_manager.remove(sig.axes_manager.signal_axes)
+        sig.axes_manager._append_axis(size=len(indexes), navigate=False)
+        sig = sig.T
+        sig.set_signal_type("virtual_dark_field")
+        return sig
 
     def peak_position_refinement_com(
         self, peak_array, square_size=10, lazy_result=True, show_progressbar=True
