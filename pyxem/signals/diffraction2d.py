@@ -63,6 +63,7 @@ from pyxem.utils.expt_utils import (
     sigma_clip,
     center_of_mass,
 )
+from pyxem.utils.virtual_images_utils import normalize_virtual_images
 from pyxem.utils._azimuthal_utils import (
     _slice_radial_integrate,
     _slice_radial_integrate1d,
@@ -1285,46 +1286,42 @@ class Diffraction2D(Signal2D, CommonDiffraction):
                 pbar.unregister()
         return output_array
 
-    def get_integrated_intensity(self, rois):
+    def get_virtual_image(self, rois, new_axis_dict=None, normalize=False):
+        """Get a virtual images from a set of rois"""
         if not isiterable(rois):
             rois = [
                 rois,
             ]
-        ind = [roi2indexes(roi, axes=self.axes_manager.signal_axes) for roi in rois]
+        if new_axis_dict is None:
+            new_axis_dict = {
+                "name": "Virtual Dark Field",
+                "offset": 0,
+                "scale": 1,
+                "units": "a.u.",
+                "size": len(rois),
+            }
 
-        def get_integrated_intensity_chunk(data, indexes):
-            return np.stack(
-                [data[..., i[0], i[1]].sum(axis=-1) for i in indexes], axis=-1
-            )
+        vdfs = [self.get_integrated_intensity(roi) for roi in rois]
 
-        if not self._lazy:
-            int_inten = get_integrated_intensity_chunk(self.data, ind)
-        else:
-            new_shape = self.data.shape[:-2] + (len(ind),)
-            arg_pairs, adjust_chunks, new_axis, output_pattern = _get_block_pattern(
-                [
-                    self.data,
-                ],
-                output_shape=new_shape,
-            )
-            int_inten = da.blockwise(
-                get_integrated_intensity_chunk,
-                output_pattern,
-                *arg_pairs,
-                dtype=float,
-                adjust_chunks=adjust_chunks,
-                new_axes=new_axis,
-                concatenate=True,
-                indexes=ind,
-                align_arrays=False,
-                meta=np.array((), dtype=float),
-            )
-        sig = self._deepcopy_with_new_data(int_inten)
-        sig.axes_manager.remove(sig.axes_manager.signal_axes)
-        sig.axes_manager._append_axis(size=len(indexes), navigate=False)
-        sig = sig.T
-        sig.set_signal_type("virtual_dark_field")
-        return sig
+        vdfim = hs.stack(
+            vdfs, new_axis_name=new_axis_dict["name"], show_progressbar=False
+        )
+
+        vdfim.set_signal_type("virtual_dark_field")
+
+        if vdfim.metadata.has_item("Diffraction.integrated_range"):
+            del vdfim.metadata.Diffraction.integrated_range
+        vdfim.metadata.set_item("Diffraction.roi_list", [f"{roi}" for roi in rois])
+
+        # Set new axis properties
+        if len(rois) > 1:
+            new_axis = vdfim.axes_manager[new_axis_dict["name"]]
+            for k, v in new_axis_dict.items():
+                setattr(new_axis, k, v)
+
+        if normalize:
+            vdfim.map(normalize_virtual_images, show_progressbar=False)
+        return vdfim
 
     def peak_position_refinement_com(
         self, peak_array, square_size=10, lazy_result=True, show_progressbar=True

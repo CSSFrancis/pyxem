@@ -30,6 +30,7 @@ from pyxem.signals import (
     Diffraction2D,
     LazyDiffraction2D,
     PolarDiffraction2D,
+    VirtualDarkFieldImage,
 )
 
 
@@ -641,6 +642,34 @@ class TestPyFAIIntegration:
 
 class TestVirtualImaging:
     # Tests that virtual imaging runs without failure
+
+    @pytest.mark.parametrize("normalize", [True, False])
+    def test_virtual_imaging(self, diffraction_pattern, normalize):
+        roi = hs.roi.CircleROI(3, 3, 5)
+        vi = diffraction_pattern.get_virtual_image(roi, normalize=normalize)
+        assert isinstance(vi, VirtualDarkFieldImage)
+        assert vi.data.shape == (2, 2)
+
+    @pytest.mark.parametrize("normalize", [True, False])
+    def test_multi_virtual_imaging(self, diffraction_pattern, normalize):
+        roi = [hs.roi.CircleROI(3, 3, 5), hs.roi.CircleROI(3, 3, 3)]
+        vi = diffraction_pattern.get_virtual_image(roi, normalize=normalize)
+        assert isinstance(vi, VirtualDarkFieldImage)
+        assert vi.data.shape == (2, 2, 2)
+
+    @pytest.mark.parametrize("normalize", [True, False])
+    def test_multi_virtual_imaging_lazy(self, diffraction_pattern, normalize):
+        roi = [
+            hs.roi.CircleROI(3, 3, 5),
+            hs.roi.CircleROI(3, 3, 3),
+            hs.roi.CircleROI(3, 3, 3),
+            hs.roi.RectangularROI(3, 3, 10, 10),
+        ]
+        diffraction_pattern = diffraction_pattern.as_lazy()
+        vi = diffraction_pattern.get_virtual_image(roi, normalize=normalize)
+        assert isinstance(vi, VirtualDarkFieldImage)
+        assert vi.data.shape == (4, 2, 2)
+        vi.compute()
 
     def test_plot_integrated_intensity(self, diffraction_pattern):
         roi = hs.roi.CircleROI(3, 3, 5)

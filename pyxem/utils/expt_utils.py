@@ -19,7 +19,6 @@
 import numpy as np
 import scipy.ndimage as ndi
 import pyxem as pxm  # for ElectronDiffraction2D
-from hyperspy.roi import CircleROI
 from skimage.draw import disk
 
 from scipy.interpolate import interp1d
@@ -844,28 +843,3 @@ def normalize_template_match(z, template, subtract_min=True, pad_input=True, **k
     if subtract_min:
         template_match = template_match - np.min(template_match)
     return template_match
-
-
-def roi2indexes(roi, axes):
-    scales = [a.scale for a in axes]
-    offsets = [a.offset for a in axes]
-    shape = [a.size for a in axes]
-    if isinstance(roi, CircleROI):
-        cx = np.round((roi.cx - offsets[0]) / scales[0]).astype(int)
-        cy = np.round((roi.cy - offsets[1]) / scales[1]).astype(int)
-        r = np.round(roi.r / scales[0]).astype(int)
-        rr, cc = disk(center=(cy, cx), radius=r, shape=shape)
-        r = roi.r / scales[0]
-        if roi.r_inner != 0:
-            r_in = np.round(roi.r_inner / scales[0]).astype(int)
-            rr2, cc2 = np.array(disk(center=(cy, cx), radius=r_in, shape=shape))
-            test = np.zeros(shape, dtype=bool)
-            test[rr, cc] = 1
-            test[rr2, cc2] = 0
-            rr, cc = np.where(test)
-        return rr, cc
-    else:
-        raise ValueError(
-            "Only CircleROI's are supported currently, please raise an issue if "
-            "you would like to see more support for different ROI's"
-        )
