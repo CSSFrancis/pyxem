@@ -30,6 +30,7 @@ then be deleted manually if desired.
 """
 
 from pyxem.data.simulated_tilt import tilt_boundary_data
+from pyxem.data.simulated_si import si_phase, si_tilt
 from pyxem.data._data import (
     au_grating,
     pdnip_glass,
@@ -47,4 +48,6 @@ __all__ = [
     "sample_with_g",
     "mgo_nanocrystals",
     "tilt_boundary_data",
+    "si_phase",
+    "si_tilt",
 ]
